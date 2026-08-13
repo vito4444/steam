@@ -28,8 +28,11 @@ namespace Decoder.Signal
     /// </summary>
     public sealed class FacsimileImage
     {
+        // 4:3，和示波管那块面以及屏幕纹理的比例一致。
+        // 比例对不上的话，图上圆的东西在屏幕上会变成椭圆，
+        // 而玩家没有任何参照物能看出那是显示畸变还是标记本身就是椭圆的。
         public const int DefaultWidth = 96;
-        public const int DefaultHeight = 64;
+        public const int DefaultHeight = 72;
 
         private readonly float[] _pixels;
 

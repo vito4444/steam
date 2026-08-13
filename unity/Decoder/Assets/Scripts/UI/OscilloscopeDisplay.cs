@@ -23,8 +23,10 @@ namespace Decoder.UI
         public Renderer targetRenderer;
 
         [Header("屏幕")]
+        // 纹理的宽高比要对上屏幕那块面的宽高比（0.58 × 0.44，约 4:3）。
+        // 画波形时对不上看不出来，画传真时一眼就露馅：圆的标记会被压成竖椭圆。
         [Tooltip("纹理宽度。这是 CPU 逐像素绘制，分辨率直接换算成每帧开销")]
-        public int textureWidth = 384;
+        public int textureWidth = 256;
 
         public int textureHeight = 192;
 
@@ -222,7 +224,7 @@ namespace Decoder.UI
         /// 而玩家看到的屏幕上永远有信号在跑。画成一条平线的话，自检读到的
         /// 亮部和对比度会远低于实际画面，照着调光只会越调越偏。
         /// </summary>
-        public static Texture2D CreateStandbyTexture(int width = 384, int height = 192)
+        public static Texture2D CreateStandbyTexture(int width = 256, int height = 192)
         {
             var pixels = new Color32[width * height];
             PaintGrid(pixels, width, height, DefaultBackgroundColor, DefaultGridColor, DefaultAxisColor);
