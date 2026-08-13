@@ -99,7 +99,10 @@ namespace Undertown.Game.Bootstrap
             yield return new WaitForEndOfFrame();
             yield return new WaitForSecondsRealtime(0.5f);
 
-            if (_runTheStill || _warmupMinutes > 0)
+            // Depth belongs in this test too. It was left out, so asking for the underground
+            // layer on its own quietly captured the surface, and the only way to get a cellar
+            // shot was to ask for a warm-up as well.
+            if (_runTheStill || _warmupMinutes > 0 || _depth > 0)
             {
                 var bootstrap = FindFirstObjectByType<GameBootstrap>();
                 if (bootstrap != null && _runTheStill)
