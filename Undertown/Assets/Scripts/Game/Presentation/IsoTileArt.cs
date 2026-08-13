@@ -34,16 +34,16 @@ namespace Undertown.Game.Presentation
             // legible in it. The reference's grass really is that olive, but it is set against
             // roofs and shadow, not against acres of trodden earth; here the ground itself has
             // to carry the contrast, so green leads by a little and earth keeps the red.
-            { TileKind.Grass,       new Color32(0x55, 0x5C, 0x2B, 0xFF) },
+            { TileKind.Grass,       new Color32(0x5A, 0x5C, 0x2A, 0xFF) },
             { TileKind.Dirt,        new Color32(0x73, 0x56, 0x30, 0xFF) },
-            { TileKind.Road,        new Color32(0x82, 0x65, 0x39, 0xFF) },
+            { TileKind.Road,        new Color32(0x8C, 0x6E, 0x40, 0xFF) },
             { TileKind.Water,       new Color32(0x2C, 0x4C, 0x58, 0xFF) },
             // Woodland floor is grass. Even a few shades darker, a wooded cell drew its own
             // diamond outline on the map, and a wood came out as a run of tiles rather than a
             // stand of trees. What marks it as woodland is the trees standing on it; the litter
             // and shade underneath them are painted as scatter, which does not follow the cell
             // boundary and so does not advertise it.
-            { TileKind.Forest,      new Color32(0x55, 0x5C, 0x2B, 0xFF) },
+            { TileKind.Forest,      new Color32(0x5A, 0x5C, 0x2A, 0xFF) },
             { TileKind.ClayDeposit, new Color32(0x6C, 0x42, 0x2E, 0xFF) },
             { TileKind.Rock,        new Color32(0x64, 0x60, 0x54, 0xFF) },
             { TileKind.DisusedMine, new Color32(0x54, 0x44, 0x30, 0xFF) },
