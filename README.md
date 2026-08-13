@@ -91,8 +91,15 @@ artifacts/      构建产物、截图、自检报告、配平记录（构建产�
 # 变异验证：故意把实现改坏，确认测试真的会红（约 2 分钟）
 ./tools/mutation-check.sh
 
-# 构建 Linux 版并真实运行，自动演练走完一个班次并抓帧（约 30 秒）
-./tools/playtest-capture.sh
+# 构建 Linux 版并真实运行，自动演练走完一个班次并抓帧（约 60 秒）
+# 参数：场景、运行秒数、传给播放器的参数、分辨率
+./tools/playtest-capture.sh Assets/Scenes/Station.unity 45 "-playtest -playtestSpeed 0.5"
+
+# 演练第五班（慢扫描传真）
+./tools/playtest-capture.sh Assets/Scenes/Station.unity 45 "-playtest -playtestSpeed 0.5 -playtestShift 5"
+
+# 要出高清展示图时把分辨率提上去，但演练多半走不完（见下方帧率一节）
+./tools/playtest-capture.sh Assets/Scenes/Station.unity 24 "-playtest" 1920x1080
 
 # 交叉构建 Windows x64 可执行文件（约 11 秒）
 ./tools/build-windows.sh
@@ -129,6 +136,8 @@ python3 tools/auto_tune_lighting.py --iterations 10 \
 ## 几个必须知道的限制
 
 **云端没有 GPU。** 截图走 Xvfb + Mesa llvmpipe 软件渲染。当前场景规模下渲染 1920×1080 约 1 秒一张，够用；场景复杂度上去之后会明显变慢。
+
+**软件渲染下游戏只有每秒零点几帧，这会伪装成玩法故障。** 自动演练每一步都是 `WaitForSeconds`，每次等待至少跨一帧，所以一段名义上两秒半的抄写实际要几十秒，现象是演练日志停在中间——这个项目已经因此长期误以为演练是跑通的。演练默认跑 1280×720 并支持 `-playtestSpeed` 压缩步长，要出高清展示图时再单独跑一次高分辨率的。同样的道理，任何按帧采样的逻辑都要按被采样信号的时间尺度细分，不能跟着帧率走。
 
 **云端没有音频设备。** 播放器日志里的 `FMOD failed to initialize the output device` 是环境所致，不是缺陷。接收状态的计算已经与音频渲染解耦，所以静音环境下仪表、调谐指示和玩法判定照常工作。
 
