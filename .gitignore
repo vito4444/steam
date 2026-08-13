@@ -1,0 +1,48 @@
+# Unity
+Unity/*/[Ll]ibrary/
+Unity/*/[Tt]emp/
+Unity/*/[Oo]bj/
+Unity/*/[Bb]uild/
+Unity/*/[Bb]uilds/
+Unity/*/[Ll]ogs/
+Unity/*/[Uu]serSettings/
+Unity/*/[Mm]emoryCaptures/
+Unity/*/[Rr]ecordings/
+Unity/*/.vs/
+Unity/*/.vsconfig
+Unity/*/*.csproj
+Unity/*/*.sln
+Unity/*/*.user
+Unity/*/*.unityproj
+Unity/*/*.pidb
+Unity/*/*.booproj
+Unity/*/*.svd
+Unity/*/*.pdb
+Unity/*/*.mdb
+Unity/*/*.opendb
+Unity/*/*.VC.db
+
+# Unity crash / stack traces
+sysinfo.txt
+crashlytics-build.properties
+
+# 构建产物
+build/
+dist/
+
+# 自检产出（体积大，只保留里程碑快照，其余不入库）
+selfcheck/**/shots/
+selfcheck/**/diff-vs-prev/
+
+# 系统
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# 凭据（任何情况下都不应入库）
+.env
+*.creds
+unity-creds*
+tools/core-tests/bin/
+tools/core-tests/obj/

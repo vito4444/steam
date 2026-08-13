@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    核心逻辑的独立测试宿主。
+
+    Abyssal.Core 里不引用任何 UnityEngine 类型，所以同一份源码既能被 Unity
+    编译进 Abyssal.Core 程序集，也能在这里被 dotnet test 直接跑。
+    跑一次是秒级，而走 Unity EditMode 是分钟级——这个差距决定了
+    核心模型能不能被高频迭代。
+
+    用法：
+      dotnet test tools/core-tests
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>Abyssal.Core.Tests</RootNamespace>
+    <AssemblyName>Abyssal.Core.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Unity/Abyssal/Assets/Abyssal/Core/**/*.cs" />
+    <Compile Include="../../Unity/Abyssal/Assets/Abyssal/Tests/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      固定 NUnit 3.x。Unity Test Framework 内置的是 NUnit 3，
+      而 NUnit 4 删掉了 Assert.Greater / Assert.Less 这类经典断言。
+      两边保持同一大版本，同一份测试源码才能在两个宿主下行为一致。
+    -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>
