@@ -4,6 +4,8 @@
     "references": [
         "Overclock.Core",
         "Abyssal.Runtime",
+        "UnityEngine.UI",
+        "Unity.InputSystem",
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Core.Runtime"
     ],

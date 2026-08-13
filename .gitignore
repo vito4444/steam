@@ -49,3 +49,5 @@ tools/core-tests/obj/
 Unity/Abyssal/Assets/Abyssal/Resources/
 Unity/Abyssal/Assets/Abyssal/Resources.meta
 Unity/Abyssal/Assets/Abyssal/Scenes/ControlCabin.unity*
+tools/balance-sweep/bin/
+tools/balance-sweep/obj/

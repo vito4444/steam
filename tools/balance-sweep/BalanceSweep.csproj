@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    平衡性扫描的命令行宿主。
+
+    直接编译 Overclock.Core 的源码，不经过 Unity。
+    整套核心逻辑不依赖 UnityEngine，所以几千局仿真几秒钟就能跑完——
+    这个速度是「靠数据调平衡」而不是「靠感觉调平衡」的前提。
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>BalanceSweep</AssemblyName>
+    <RootNamespace>Overclock.Tools</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../../Unity/Abyssal/Assets/Overclock/Core/**/*.cs" />
+  </ItemGroup>
+
+</Project>

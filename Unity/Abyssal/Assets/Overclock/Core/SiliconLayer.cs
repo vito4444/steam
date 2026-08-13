@@ -62,6 +62,20 @@ namespace Overclock.Core
         /// <summary>本层剩余的蚀刻预算。</summary>
         public int Budget { get; set; } = 40;
 
+        /// <summary>
+        /// 本局累积的架构升级。为 null 时用元件的原始数值。
+        /// 所有读取元件属性的地方都必须走 <see cref="Spec"/> 而不是直接查表，
+        /// 否则升级只会影响到一部分系统，玩家拿了升级却感觉不到变化。
+        /// </summary>
+        public RunModifiers Modifiers { get; set; }
+
+        /// <summary>取元件的有效属性，已经把本局的升级算进去。</summary>
+        public ComponentSpec Spec(ComponentKind kind)
+        {
+            var baseSpec = ComponentLibrary.Of(kind);
+            return Modifiers == null ? baseSpec : Modifiers.Apply(baseSpec);
+        }
+
         /// <summary>本层是否已经通过。</summary>
         public bool Cleared => HoldProgress >= RequiredHoldTime;
 
@@ -70,6 +84,13 @@ namespace Overclock.Core
 
         /// <summary>本层累计烧毁的元件数。</summary>
         public int BurnedCount { get; private set; }
+
+        /// <summary>
+        /// 本层出现过的最高温度。
+        /// 当前温度会在元件烧毁后回落（烧掉的东西不再发热），
+        /// 所以判断「这一层有多凶险」必须看历史峰值而不是此刻的读数。
+        /// </summary>
+        public double HistoricalPeak { get; private set; } = AmbientTemperature;
 
         public SiliconLayer(int width, int height)
         {
@@ -101,7 +122,7 @@ namespace Overclock.Core
         public double UtilizationAt(int x, int y)
         {
             if (!InBounds(x, y)) return 0.0;
-            var spec = ComponentLibrary.Of(_cells[Index(x, y)]);
+            var spec = Spec(_cells[Index(x, y)]);
             return spec.Throughput <= 0.0 ? 0.0 : Math.Min(1.0, _load[Index(x, y)] / spec.Throughput);
         }
 
@@ -110,7 +131,7 @@ namespace Overclock.Core
         {
             if (!InBounds(x, y)) return 0.0;
             int i = Index(x, y);
-            var spec = ComponentLibrary.Of(_cells[i]);
+            var spec = Spec(_cells[i]);
             if (spec.MeltingPoint <= AmbientTemperature) return 0.0;
             return Clamp01((_heat[i] - AmbientTemperature) / (spec.MeltingPoint - AmbientTemperature));
         }
@@ -138,10 +159,10 @@ namespace Overclock.Core
             if (_cells[i] == ComponentKind.Source || _cells[i] == ComponentKind.Sink) return false;
             if (_cells[i] == ComponentKind.DeadCell) return false;
 
-            int cost = ComponentLibrary.Of(kind).Cost;
+            int cost = Spec(kind).Cost;
             int refund = _cells[i] == ComponentKind.Empty
                 ? 0
-                : ComponentLibrary.Of(_cells[i]).Cost / 2;
+                : Spec(_cells[i]).Cost / 2;
 
             if (Budget + refund < cost) return false;
 
@@ -158,7 +179,7 @@ namespace Overclock.Core
             if (_burned[i]) return false;
             if (!ComponentLibrary.IsPlaceable(_cells[i])) return false;
 
-            Budget += ComponentLibrary.Of(_cells[i]).Cost / 2;
+            Budget += Spec(_cells[i]).Cost / 2;
             _cells[i] = ComponentKind.Empty;
             return true;
         }
@@ -182,6 +203,10 @@ namespace Overclock.Core
             }
 
             DiffuseHeat(dt);
+
+            double peak = PeakTemperature();
+            if (peak > HistoricalPeak) HistoricalPeak = peak;
+
             BurnOverheated();
             UpdateProgress(dt);
         }
@@ -224,7 +249,7 @@ namespace Overclock.Core
                 var kind = _cells[i];
                 if (_burned[i] || !ComponentLibrary.CarriesData(kind)) continue;
 
-                double capHere = ComponentLibrary.Of(kind).Throughput;
+                double capHere = Spec(kind).Throughput;
 
                 if (kind == ComponentKind.Source) AddEdge(superSource, i, capHere);
                 if (kind == ComponentKind.Sink) AddEdge(i, superSink, capHere);
@@ -239,7 +264,7 @@ namespace Overclock.Core
                     int j = Index(nx, ny);
                     if (_burned[j] || !ComponentLibrary.CarriesData(_cells[j])) continue;
 
-                    double cap = Math.Min(capHere, ComponentLibrary.Of(_cells[j]).Throughput);
+                    double cap = Math.Min(capHere, Spec(_cells[j]).Throughput);
                     AddEdge(i, j, cap);
                     AddEdge(j, i, cap);
                 }
@@ -312,7 +337,7 @@ namespace Overclock.Core
             for (int i = 0; i < n; i++)
             {
                 _load[i] *= 0.5;
-                var spec = ComponentLibrary.Of(_cells[i]);
+                var spec = Spec(_cells[i]);
                 if (spec.Throughput > 0.0) _load[i] = Math.Min(_load[i], spec.Throughput);
             }
         }
@@ -333,7 +358,7 @@ namespace Overclock.Core
             {
                 int i = Index(x, y);
                 var kind = _cells[i];
-                var spec = ComponentLibrary.Of(kind);
+                var spec = Spec(kind);
 
                 double exchange = 0.0;
                 foreach (var (dx, dy) in Neighbours)
@@ -343,7 +368,7 @@ namespace Overclock.Core
 
                     int j = Index(nx, ny);
                     // 两格之间的导热取较小值：一块散热片贴着坏块也传不出去热量。
-                    double k = Math.Min(spec.Conductivity, ComponentLibrary.Of(_cells[j]).Conductivity);
+                    double k = Math.Min(spec.Conductivity, Spec(_cells[j]).Conductivity);
                     exchange += k * (_scratch[j] - _scratch[i]);
                 }
 
@@ -366,7 +391,7 @@ namespace Overclock.Core
             for (int i = 0; i < _cells.Length; i++)
             {
                 if (_burned[i]) continue;
-                var spec = ComponentLibrary.Of(_cells[i]);
+                var spec = Spec(_cells[i]);
                 if (spec.MeltingPoint <= 0.0 || _heat[i] < spec.MeltingPoint) continue;
                 if (_cells[i] == ComponentKind.Empty || _cells[i] == ComponentKind.DeadCell) continue;
 

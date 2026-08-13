@@ -7,6 +7,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using Abyssal.EditorTools;
 using Overclock.Core;
+using UnityEngine.UI;
 
 namespace Overclock.EditorTools
 {
@@ -69,18 +70,24 @@ namespace Overclock.EditorTools
             SetupUrp.Run();
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            var layer = BuildShowcaseLayer();
+            var layer = BuildShowcaseLayer(out int layerIndex);
 
             var view = new LayerView();
             view.Build(layer, null);
 
-            // 跑一段仿真，让热量从流量里长出来。
-            // 全冷的板子看起来像一张静态电路图，热梯度才是这个游戏的画面主体。
-            for (int i = 0; i < 900; i++) layer.Step(0.05);
+            // 再跑一段，让热量在这个布局上稳定下来。
+            for (int i = 0; i < 400; i++) layer.Step(0.05);
             view.Refresh();
+            view.TickPackets(2.4f);
 
             var cam = CreateCamera();
             CreatePostProcessing();
+
+            // HUD 挂在相机上。有没有 HUD 是「一段技术演示」和「一个游戏」的分水岭。
+            var hud = new GameHud();
+            hud.Build(null, cam);
+            hud.Refresh(layer, layerIndex, 2);
+            Canvas.ForceUpdateCanvases();
 
             Debug.Log($"OVERCLOCK: layer built {layer.Width}x{layer.Height}, " +
                       $"throughput={layer.CurrentThroughput:F1}/{layer.TargetThroughput:F1}, " +
@@ -95,56 +102,32 @@ namespace Overclock.EditorTools
         /// 这不是随机生成的，而是手工摆出来的一个「玩得不错但也有代价」的中局状态——
         /// 宣传图要展示的是玩家玩出来的东西，不是一张空板子。
         /// </summary>
-        static SiliconLayer BuildShowcaseLayer()
+        /// <summary>
+        /// 用自动玩家实际打一层出来当展示布局。
+        ///
+        /// 手工摆的布局是「我觉得游戏该长这样」，而自动玩家打出来的是
+        /// 「按当前数值这游戏真会长成这样」。后者才有资格拿去当宣传素材，
+        /// 也才能暴露出布局上真实存在的丑陋之处。
+        /// </summary>
+        static SiliconLayer BuildShowcaseLayer(out int layerIndex)
         {
-            var layer = LayerGenerator.Generate(11, GridWidth, GridHeight, 0.45);
-            layer.Budget = 100000;
+            var run = new RunState(seed: 4242, totalLayers: 8);
+            var player = new AutoPlayer(AutoPlayer.Strategy.Balanced, seed: 77);
 
-            int midY = GridHeight / 2;
-
-            // 主干：一条横贯全场的总线。它是最亮也最热的一条线。
-            for (int x = 1; x < GridWidth - 1; x++)
-                layer.Place(x, midY, ComponentKind.Bus);
-
-            // 主干两侧贴散热片，但刻意只铺一半——右半段会烧起来。
-            for (int x = 1; x < GridWidth / 2; x++)
+            // 先打过前几层，让局内升级累积起来，展示的是中局而不是开局。
+            SiliconLayer layer = null;
+            for (int i = 0; i < 4; i++)
             {
-                layer.Place(x, midY - 1, ComponentKind.HeatSink);
-                layer.Place(x, midY + 1, ComponentKind.HeatSink);
+                layer = run.CreateLayer(GridWidth, GridHeight);
+                var result = player.PlayLayer(layer);
+                if (!result.Cleared) break;
+
+                var offers = run.DrawUpgrades();
+                if (offers.Count > 0) run.TakeUpgrade(offers[0]);
+                run.AdvanceLayer();
             }
 
-            // 上下的分支导线，把其余的源和汇接进主干。
-            for (int y = 0; y < GridHeight; y++)
-            {
-                if (y == midY || y == midY - 1 || y == midY + 1) continue;
-
-                for (int x = 1; x < GridWidth - 1; x++)
-                {
-                    if (layer.CellAt(x, y) != ComponentKind.Empty) continue;
-                    // 每隔几列留空，让画面有疏密变化，不至于铺成一整块。
-                    if ((x + y * 3) % 7 == 0) continue;
-                    layer.Place(x, y, ComponentKind.Trace);
-                }
-            }
-
-            // 几个缓冲器和压缩器，制造局部热点。
-            (int x, int y, ComponentKind kind)[] accents =
-            {
-                (GridWidth - 5, midY - 3, ComponentKind.Compressor),
-                (GridWidth - 7, midY + 3, ComponentKind.Compressor),
-                (GridWidth / 2 + 2, midY - 2, ComponentKind.Buffer),
-                (GridWidth / 2 + 3, midY + 2, ComponentKind.Buffer),
-                (5, midY - 4, ComponentKind.Splitter),
-                (7, midY + 4, ComponentKind.Splitter),
-            };
-
-            foreach (var (x, y, kind) in accents)
-            {
-                if (layer.CellAt(x, y) == ComponentKind.Empty ||
-                    ComponentLibrary.IsPlaceable(layer.CellAt(x, y)))
-                    layer.Place(x, y, kind);
-            }
-
+            layerIndex = run.LayerIndex;
             return layer;
         }
 

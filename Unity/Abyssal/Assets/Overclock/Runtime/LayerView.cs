@@ -30,6 +30,11 @@ namespace Overclock
         readonly List<MeshRenderer> _links = new List<MeshRenderer>();
         readonly List<(int a, int b)> _linkCells = new List<(int, int)>();
 
+        // 鼠标悬停的格子高亮框。它是玩家和这块板子之间唯一的触点，
+        // 必须在任何背景亮度下都能看清，所以用纯白和纯红两个极端色。
+        readonly List<MeshRenderer> _highlightEdges = new List<MeshRenderer>();
+        Transform _highlight;
+
         MaterialPropertyBlock _block;
         Material _substrateMaterial;
         Material _emissiveMaterial;
@@ -62,6 +67,7 @@ namespace Overclock
             BuildBodies();
             BuildLinks();
             BuildPackets();
+            BuildHighlight();
             Refresh();
         }
 
@@ -137,6 +143,60 @@ namespace Overclock
                     _linkCells.Add((_layer.Index(x, y), _layer.Index(nx, ny)));
                 }
             }
+        }
+
+        /// <summary>
+        /// 悬停高亮框。用四条细边而不是一整块半透明色块：
+        /// 色块会盖住格子里的元件，而玩家正需要看清自己要覆盖掉什么。
+        /// </summary>
+        void BuildHighlight()
+        {
+            _highlight = new GameObject("Highlight").transform;
+            _highlight.SetParent(Root, false);
+
+            const float thickness = 0.055f;
+            const float span = CellSize * 0.98f;
+
+            (Vector3 pos, Vector3 scale)[] edges =
+            {
+                (new Vector3(0f, 0f, span * 0.5f), new Vector3(span, thickness, thickness)),
+                (new Vector3(0f, 0f, -span * 0.5f), new Vector3(span, thickness, thickness)),
+                (new Vector3(span * 0.5f, 0f, 0f), new Vector3(thickness, thickness, span)),
+                (new Vector3(-span * 0.5f, 0f, 0f), new Vector3(thickness, thickness, span)),
+            };
+
+            foreach (var (pos, scale) in edges)
+            {
+                var edge = Make(_highlight, "Edge", PrimitiveType.Cube,
+                    pos + new Vector3(0f, 0.22f, 0f), scale, _emissiveMaterial);
+                _highlightEdges.Add(edge.GetComponent<MeshRenderer>());
+            }
+
+            _highlight.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// 更新悬停高亮。<paramref name="canPlace"/> 为假时框变红，
+        /// 玩家在按下鼠标之前就知道这一下放不下去。
+        /// </summary>
+        public void SetHighlight(Vector2Int cell, ComponentKind kind, bool canPlace)
+        {
+            if (_highlight == null) return;
+
+            if (cell.x < 0 || !_layer.InBounds(cell.x, cell.y))
+            {
+                _highlight.gameObject.SetActive(false);
+                return;
+            }
+
+            _highlight.gameObject.SetActive(true);
+            _highlight.localPosition = CellCenter(cell.x, cell.y);
+
+            var color = canPlace
+                ? OverclockPalette.Selection * 2.4f
+                : OverclockPalette.Critical * 2.8f;
+
+            foreach (var edge in _highlightEdges) SetColor(edge, color);
         }
 
         /// <summary>

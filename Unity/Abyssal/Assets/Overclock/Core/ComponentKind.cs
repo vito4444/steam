@@ -91,13 +91,16 @@ namespace Overclock.Core
                 case ComponentKind.Buffer:
                     return new ComponentSpec(11.0, 0.95, 0.22, 0.8, 165.0, 3);
                 case ComponentKind.Bus:
-                    return new ComponentSpec(20.0, 1.70, 0.45, 0.7, 175.0, 6);
+                    // 熔点必须低于一条无散热长总线的平衡温度（实测约 175 度），
+                    // 否则总线永远烧不掉，整个热量系统就没有意义了——
+                    // 之前提到 198 时，激进打法只是吞吐不够，而不是会把自己烧断。
+                    return new ComponentSpec(20.0, 1.70, 0.45, 0.7, 168.0, 6);
                 case ComponentKind.Splitter:
                     return new ComponentSpec(9.0, 0.70, 0.15, 0.9, 160.0, 4);
                 case ComponentKind.Compressor:
                     return new ComponentSpec(7.0, 2.10, 0.30, 0.6, 185.0, 7);
                 case ComponentKind.HeatSink:
-                    return new ComponentSpec(0.0, 0.00, 0.00, 6.5, 400.0, 4);
+                    return new ComponentSpec(0.0, 0.00, 0.00, 8.5, 400.0, 3);
                 case ComponentKind.DeadCell:
                     return new ComponentSpec(0.0, 0.00, 0.00, 0.05, 9999.0, 0);
                 default:
