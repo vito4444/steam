@@ -218,22 +218,38 @@ namespace Undertown.Core.Inspection
         }
 
         /// <summary>
-        /// Ceiling on what any single line of the audit can contribute. Without it, a
-        /// material with no ledger activity at all divides by a denominator of one and a
-        /// single finding annexes the town outright - which reads as a bug to the player
-        /// however defensible the arithmetic is.
+        /// Point at which a finding stops getting proportionally worse. Beyond it severity
+        /// still grows, but at a quarter of the rate.
         /// </summary>
-        public const int MaxSuspicionPerIssue = 25;
+        public const int SuspicionSoftCap = 25;
+
+        /// <summary>
+        /// Absolute ceiling on what any single line can contribute. Without one, a material
+        /// with no ledger activity at all divides by a denominator of one and a single
+        /// finding annexes the town outright, which reads as a bug however defensible the
+        /// arithmetic is.
+        /// </summary>
+        public const int MaxSuspicionPerIssue = 40;
 
         /// <summary>
         /// Converts a per-mille overshoot into suspicion points. Ten per mille of overshoot
         /// is one point, so a discrepancy that doubles the tolerance on an ordinary material
         /// is a nuisance while the same overshoot on contraband is a serious problem.
+        ///
+        /// Past the soft cap the curve flattens rather than stopping dead. A hard clamp made
+        /// severe findings indistinguishable from catastrophic ones, which quietly broke the
+        /// player's countermeasures: writing off part of a large shortfall left the displayed
+        /// exposure completely unchanged, so a manoeuvre that genuinely helped looked useless.
         /// </summary>
         private static int Weigh(int excessPerMille, MaterialId id, AuditSettings settings)
         {
             int weight = Materials.IsContraband(id) ? settings.ContrabandWeightPerMille : 1000;
-            int points = excessPerMille * weight / 1000 / 10;
+            int raw = excessPerMille * weight / 1000 / 10;
+
+            int points = raw <= SuspicionSoftCap
+                ? raw
+                : SuspicionSoftCap + (raw - SuspicionSoftCap) / 4;
+
             if (points < 1) points = 1;
             return points > MaxSuspicionPerIssue ? MaxSuspicionPerIssue : points;
         }

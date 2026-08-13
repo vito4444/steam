@@ -35,6 +35,8 @@ namespace Undertown.Game.UI
         private Text _suspicionBand;
 
         private readonly Dictionary<MaterialId, Text> _ledgerRows = new Dictionary<MaterialId, Text>();
+        private readonly Dictionary<MaterialId, Button> _writeOffButtons = new Dictionary<MaterialId, Button>();
+        private Button _bribeButton;
         private Text _spoilText;
         private Text _layerText;
         private Text _toolText;
@@ -177,6 +179,11 @@ namespace Undertown.Game.UI
             var title = UiFactory.Label(section.transform, "Title", "LEDGER", 20, ProceduralUiArt.InkDim);
             UiFactory.Place((RectTransform)title.transform, 16f, 174f, 200f, 24f);
 
+            // Sits on the title row rather than beside the verdict line: the verdict can run
+            // long ("+56 suspicion -> 56% Fines Pending") and was overlapping the button.
+            _bribeButton = MakeButton(section.transform, "Bribe", "", 386f, 170f, 188f, 28f);
+            _bribeButton.onClick.AddListener(() => BookCooking.BribeTheClerk(_town));
+
             var header = UiFactory.Label(section.transform, "Header",
                 Row("MATERIAL", "MADE", "USED", "LOSS", "STOCK", "GAP"), 16, ProceduralUiArt.InkDim);
             UiFactory.Place((RectTransform)header.transform, 16f, 150f, 558f, 22f);
@@ -185,9 +192,18 @@ namespace Undertown.Game.UI
             foreach (var id in Materials.All)
             {
                 if (!Materials.IsAudited(id)) continue;
+
                 var row = UiFactory.Label(section.transform, $"Row_{id}", "", 16, ProceduralUiArt.Ink);
-                UiFactory.Place((RectTransform)row.transform, 16f, y, 558f, 19f);
+                UiFactory.Place((RectTransform)row.transform, 16f, y, 470f, 19f);
                 _ledgerRows[id] = row;
+
+                // A write-off button per row, because spoilage is declared against a specific
+                // material and the player needs to see the hole it is closing while they do it.
+                var material = id;
+                var writeOff = MakeButton(section.transform, $"WriteOff_{id}", "write off", 490f, y - 1f, 84f, 20f);
+                writeOff.onClick.AddListener(() => WriteOffGap(material));
+                _writeOffButtons[id] = writeOff;
+
                 y -= 19f;
             }
 
@@ -195,6 +211,23 @@ namespace Undertown.Game.UI
             // adds up to, and it is the number the player actually steers by.
             _exposureText = UiFactory.Label(section.transform, "Exposure", "", 18, ProceduralUiArt.Ink);
             UiFactory.Place((RectTransform)_exposureText.transform, 16f, 8f, 558f, 22f);
+        }
+
+        /// <summary>
+        /// Writes off as much of a material's shortfall as the region's normal loss rate can
+        /// still explain. Deliberately capped at the plausible figure rather than the whole
+        /// gap: the decision the player faces is how much they can account for, not how much
+        /// they dare type in.
+        /// </summary>
+        private void WriteOffGap(MaterialId material)
+        {
+            int plausible = BookCooking.PlausibleSpoilage(_town, material);
+            int gap = _town.LedgerGap(material);
+            if (gap <= 0) return;
+
+            int written = BookCooking.DeclareSpoilage(_town, material, Mathf.Min(gap, plausible));
+            if (written == 0)
+                _town.Record($"nothing more can be written off against {Materials.DisplayName(material)}");
         }
 
         private void BuildBuildMenu(RectTransform bar)
@@ -366,7 +399,7 @@ namespace Undertown.Game.UI
             }
 
             RefreshAuditPreview();
-
+            RefreshCountermeasures();
             RefreshTool();
             RefreshLog();
         }
@@ -403,6 +436,48 @@ namespace Undertown.Game.UI
             _exposureText.color = band >= SuspicionBand.Fined
                 ? (Color)ProceduralUiArt.Danger
                 : (Color)ProceduralUiArt.Contraband;
+        }
+
+        /// <summary>
+        /// A write-off button is only offered where there is a hole to close and room in the
+        /// region's loss rate to close it with. Greying out the rest keeps the interface from
+        /// suggesting a move that would only make things worse.
+        /// </summary>
+        private void RefreshCountermeasures()
+        {
+            foreach (var pair in _writeOffButtons)
+            {
+                int gap = _town.LedgerGap(pair.Key);
+                int plausible = BookCooking.PlausibleSpoilage(_town, pair.Key);
+                bool useful = gap > 0 && plausible > 0 && _town.Coin > 0;
+
+                pair.Value.interactable = useful;
+                var label = pair.Value.GetComponentInChildren<Text>();
+                if (label == null) continue;
+
+                label.text = useful ? $"write off {Mathf.Min(gap, plausible)}" : "write off";
+                label.color = useful ? (Color)ProceduralUiArt.Contraband : new Color32(0x5A, 0x52, 0x46, 0xFF);
+            }
+
+            if (_bribeButton == null) return;
+
+            var bribeLabel = _bribeButton.GetComponentInChildren<Text>();
+            bool alreadyPaid = _town.BriberyActive;
+            bool affordable = _town.Coin >= BookCooking.BribeCost || _town.BlackCoin >= BookCooking.BribeCost;
+
+            _bribeButton.interactable = !alreadyPaid && affordable && _town.InspectorLevel > 1;
+            if (bribeLabel == null) return;
+
+            bribeLabel.text = alreadyPaid
+                ? "clerk paid"
+                : _town.InspectorLevel > 1
+                    ? $"bribe clerk ({BookCooking.BribeCost})"
+                    : "bribe: no use yet";
+            bribeLabel.color = alreadyPaid
+                ? new Color32(0x7C, 0xA6, 0x6B, 0xFF)
+                : _bribeButton.interactable
+                    ? (Color)ProceduralUiArt.Contraband
+                    : new Color32(0x5A, 0x52, 0x46, 0xFF);
         }
 
         private void RefreshWorkforce()

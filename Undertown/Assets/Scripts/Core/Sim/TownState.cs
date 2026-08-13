@@ -64,6 +64,9 @@ namespace Undertown.Core.Sim
 
         public WageLevel Wages = WageLevel.Standard;
 
+        /// <summary>A clerk has been paid to read the next return quickly. Spent on use.</summary>
+        public bool BriberyActive;
+
         /// <summary>Last day the daily reckoning ran, so a paused or fast-forwarded clock never skips one.</summary>
         public int LastNeedsDay;
 
@@ -153,7 +156,12 @@ namespace Undertown.Core.Sim
         /// </summary>
         public int SpoilExposure => Math.Max(0, SurfaceSpoil - SpoilTolerated);
 
-        public AuditSettings CurrentAuditSettings => AuditSettings.ForLevel(InspectorLevel);
+        /// <summary>
+        /// The settings the next audit will actually run under. A bribe eases one rank off
+        /// the inspector, which is why it is worth more against a senior one.
+        /// </summary>
+        public AuditSettings CurrentAuditSettings =>
+            AuditSettings.ForLevel(BriberyActive ? InspectorLevel - 1 : InspectorLevel);
 
         /// <summary>
         /// What an audit would find if one happened right now. This is the single most

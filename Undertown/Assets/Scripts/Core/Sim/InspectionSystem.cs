@@ -222,6 +222,13 @@ namespace Undertown.Core.Sim
             else
                 town.Record("the books balanced");
 
+            // A bribe buys one careless reading, not a standing arrangement.
+            if (town.BriberyActive)
+            {
+                town.BriberyActive = false;
+                town.Record("the clerk has been and gone; he will not be careless twice");
+            }
+
             town.LastAudit = report;
             inspector.Task = InspectorTask.Interrogating;
             inspector.TaskProgress = 0;

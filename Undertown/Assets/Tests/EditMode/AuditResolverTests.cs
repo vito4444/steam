@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using Undertown.Core.Economy;
 using Undertown.Core.Inspection;
+using Undertown.Core.Sim;
 
 namespace Undertown.Tests
 {
@@ -254,8 +255,8 @@ namespace Undertown.Tests
             int contrabandSuspicion = Audit(contraband, contrabandStock).TotalSuspicion;
 
             Assert.Greater(ordinarySuspicion, 0, "the fixture must actually produce a discrepancy");
-            Assert.Less(ordinarySuspicion * 3, AuditResolver.MaxSuspicionPerIssue + 1,
-                "the fixture must stay under the clamp for the ratio to be observable");
+            Assert.LessOrEqual(ordinarySuspicion * 3, AuditResolver.SuspicionSoftCap,
+                "the fixture must stay below the soft cap for the ratio to be observable");
             Assert.AreEqual(ordinarySuspicion * 3, contrabandSuspicion,
                 "contraband carries a threefold weight");
         }
@@ -275,6 +276,32 @@ namespace Undertown.Tests
 
             Assert.AreEqual(1, report.Issues.Count);
             Assert.AreEqual(AuditResolver.MaxSuspicionPerIssue, report.TotalSuspicion);
+            Assert.Less(report.TotalSuspicion, TownState.AnnexationThreshold,
+                "the worst possible single line still leaves the town standing");
+        }
+
+        /// <summary>
+        /// Severity has to stay monotonic past the soft cap. A hard clamp made a severe
+        /// finding indistinguishable from a catastrophic one, which silently broke the
+        /// player's countermeasures: closing part of a large shortfall changed nothing on
+        /// screen, so a manoeuvre that genuinely helped looked useless.
+        /// </summary>
+        [Test]
+        public void ReducingALargeShortfallAlwaysReducesTheFinding()
+        {
+            int previous = int.MaxValue;
+
+            for (int missing = 380; missing >= 60; missing -= 40)
+            {
+                var books = new LedgerBook();
+                books.RecordPurchase(MaterialId.Grain, 400);
+                var stock = new Dictionary<MaterialId, int> { { MaterialId.Grain, 400 - missing } };
+
+                int suspicion = Audit(books, stock, level: 3).TotalSuspicion;
+                Assert.Less(suspicion, previous,
+                    $"putting {missing} back on the shelf has to show up in the verdict");
+                previous = suspicion;
+            }
         }
 
         [Test]
