@@ -121,33 +121,125 @@ namespace Undertown.Game.Presentation
             }
         }
 
-        /// <summary>A walled building seen from above: wall block, roof slab on top, dark trim.</summary>
+        /// <summary>
+        /// A walled building seen from above. What separates this from a coloured rectangle
+        /// is entirely in the shading: a cast shadow down-right, a lit western face, a ridge
+        /// with a highlight along it, and courses ruled across the roof. Same silhouette,
+        /// completely different read.
+        /// </summary>
         private static void Structure(Color32[] px, int w, int h, Color32 wall, Color32 roof, Color32 trim)
         {
-            Fill(px, w, h, 1, 1, w - 2, h - 2, wall);
-            Fill(px, w, h, 1, h / 2, w - 2, h / 2 - 1, roof);
+            var shadow = new Color32(0x14, 0x10, 0x0C, 0x4E);
+            var shadowSoft = new Color32(0x14, 0x10, 0x0C, 0x28);
+            var roofLit = Lighten(roof, 26);
+            var roofDark = Darken(roof, 24);
+            var wallLit = Lighten(wall, 20);
+            var wallDark = Darken(wall, 22);
 
-            // Outline.
-            Fill(px, w, h, 0, 0, w, 1, trim);
-            Fill(px, w, h, 0, h - 1, w, 1, trim);
-            Fill(px, w, h, 0, 0, 1, h, trim);
-            Fill(px, w, h, w - 1, 0, 1, h, trim);
+            // Ground shadow down and to the right, in two bands so its outer edge falls off
+            // instead of ending in a hard black line against the grass.
+            Blend(px, w, h, 4, 0, w - 4, 2, shadowSoft);
+            Blend(px, w, h, w - 2, 0, 2, h - 4, shadowSoft);
+            Blend(px, w, h, 2, 1, w - 3, 2, shadow);
+            Blend(px, w, h, w - 4, 1, 2, h - 3, shadow);
 
-            // Ridge line down the middle of the roof reads as a pitched roof from above.
-            Fill(px, w, h, 1, h - h / 4, w - 2, 1, trim);
+            Fill(px, w, h, 1, 3, w - 4, h - 4, wall);
 
-            // A doorway on the south face.
-            Fill(px, w, h, w / 2 - 2, 1, 4, 5, trim);
+            // Wall shading: light from the upper left.
+            Fill(px, w, h, 1, 3, 2, h - 4, wallLit);
+            Fill(px, w, h, w - 5, 3, 2, h - 4, wallDark);
+
+            // Roof slab covering the upper half, with courses ruled across it.
+            int roofBase = h / 2;
+            Fill(px, w, h, 1, roofBase, w - 4, h - roofBase - 1, roof);
+            for (int y = roofBase + 2; y < h - 2; y += 4)
+                Fill(px, w, h, 2, y, w - 6, 1, roofDark);
+
+            // Ridge along the top with a highlight, which is what makes it read as pitched
+            // rather than as a flat coloured band.
+            int ridge = h - h / 4;
+            Fill(px, w, h, 1, ridge, w - 4, 1, trim);
+            Fill(px, w, h, 1, ridge + 1, w - 4, 1, roofLit);
+
+            Outline(px, w, h, 0, 0, w - 2, h - 2, trim);
+
+            // Doorway with a lintel on the south face.
+            int doorX = w / 2 - 2;
+            Fill(px, w, h, doorX, 4, 4, 5, new Color32(0x1A, 0x14, 0x0E, 0xFF));
+            Fill(px, w, h, doorX - 1, 9, 6, 1, trim);
         }
 
+        private static void Outline(Color32[] px, int w, int h, int x0, int y0, int rw, int rh, Color32 color)
+        {
+            Fill(px, w, h, x0, y0, rw, 1, color);
+            Fill(px, w, h, x0, y0 + rh - 1, rw, 1, color);
+            Fill(px, w, h, x0, y0, 1, rh, color);
+            Fill(px, w, h, x0 + rw - 1, y0, 1, rh, color);
+        }
+
+        private static void Blend(Color32[] px, int w, int h, int x0, int y0, int rw, int rh, Color32 color)
+        {
+            for (int y = y0; y < y0 + rh; y++)
+            for (int x = x0; x < x0 + rw; x++)
+            {
+                if (x < 0 || y < 0 || x >= w || y >= h) continue;
+                var under = px[y * w + x];
+                int a = color.a;
+                px[y * w + x] = new Color32(
+                    (byte)((color.r * a + under.r * (255 - a)) / 255),
+                    (byte)((color.g * a + under.g * (255 - a)) / 255),
+                    (byte)((color.b * a + under.b * (255 - a)) / 255),
+                    255);
+            }
+        }
+
+        private static Color32 Lighten(Color32 c, int amount) => new Color32(
+            (byte)Mathf.Min(255, c.r + amount), (byte)Mathf.Min(255, c.g + amount),
+            (byte)Mathf.Min(255, c.b + amount), c.a);
+
+        private static Color32 Darken(Color32 c, int amount) => new Color32(
+            (byte)Mathf.Max(0, c.r - amount), (byte)Mathf.Max(0, c.g - amount),
+            (byte)Mathf.Max(0, c.b - amount), c.a);
+
+        /// <summary>
+        /// An open working yard: trodden ground inside a post-and-rail fence. The posts are
+        /// what sell it - a plain rectangle of colour with a border reads as a UI element,
+        /// while the same rectangle with uprights every few pixels reads as an enclosure.
+        /// </summary>
         private static void Yard(Color32[] px, int w, int h, Color32 ground)
         {
-            Fill(px, w, h, 0, 0, w, h, ground);
-            var fence = C(0x5A, 0x46, 0x2C);
-            Fill(px, w, h, 0, 0, w, 1, fence);
-            Fill(px, w, h, 0, h - 1, w, 1, fence);
-            Fill(px, w, h, 0, 0, 1, h, fence);
-            Fill(px, w, h, w - 1, 0, 1, h, fence);
+            var shadow = C(0x14, 0x10, 0x0C);
+            Blend(px, w, h, 2, 0, w - 2, 2, new Color32(shadow.r, shadow.g, shadow.b, 0x55));
+
+            Fill(px, w, h, 0, 2, w - 2, h - 2, ground);
+
+            // Trodden patches, so the ground is not one flat tone.
+            var worn = Darken(ground, 14);
+            for (int i = 0; i < 5; i++)
+            {
+                int x = 4 + (i * 11) % Mathf.Max(1, w - 8);
+                int y = 5 + (i * 7) % Mathf.Max(1, h - 10);
+                Fill(px, w, h, x, y, 4, 2, worn);
+            }
+
+            var rail = C(0x6B, 0x53, 0x35);
+            var post = C(0x4A, 0x38, 0x22);
+
+            Fill(px, w, h, 0, 2, w - 2, 1, rail);
+            Fill(px, w, h, 0, h - 1, w - 2, 1, rail);
+            Fill(px, w, h, 0, 2, 1, h - 3, rail);
+            Fill(px, w, h, w - 3, 2, 1, h - 3, rail);
+
+            for (int x = 0; x < w - 2; x += 8)
+            {
+                Fill(px, w, h, x, 2, 2, 3, post);
+                Fill(px, w, h, x, h - 3, 2, 3, post);
+            }
+            for (int y = 2; y < h - 2; y += 8)
+            {
+                Fill(px, w, h, 0, y, 3, 2, post);
+                Fill(px, w, h, w - 4, y, 3, 2, post);
+            }
         }
 
         private static void Chamber(Color32[] px, int w, int h, Color32 floor, Color32 rim)

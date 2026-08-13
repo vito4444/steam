@@ -65,7 +65,8 @@ namespace Undertown.Game.Presentation
             for (int x = 0; x < _map.Width; x++, i++)
             {
                 positions[i] = new Vector3Int(x, y, 0);
-                primaryTiles[i] = ProceduralTileArt.TileFor(_map.Get(new Coord(x, y, _activeDepth)));
+                primaryTiles[i] = ProceduralTileArt.TileFor(
+                    _map.Get(new Coord(x, y, _activeDepth)), ProceduralTileArt.VariantAt(x, y));
                 overlayTiles[i] = OverlayTileAt(x, y);
             }
 
@@ -103,7 +104,8 @@ namespace Undertown.Game.Presentation
 
             // Otherwise show the whole town overhead so chambers can be sited away from roads
             // and buildings, which is where inspectors actually walk and tap.
-            return ProceduralTileArt.TileFor(_map.Get(new Coord(x, y, GridMap.SurfaceDepth)));
+            return ProceduralTileArt.TileFor(
+                _map.Get(new Coord(x, y, GridMap.SurfaceDepth)), ProceduralTileArt.VariantAt(x, y));
         }
 
         public void Configure(Tilemap primary, Tilemap overlay)
