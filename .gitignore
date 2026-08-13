@@ -30,9 +30,11 @@ unity/*/[Aa]ssets/Plugins/Editor/JetBrains*
 /build/
 /artifacts/build/
 
-# 自动化产物：截图与比对结果保留，中间日志不保留
+# 自动化产物：最终截图、自检报告与配平记录保留，中间过程不保留
 /artifacts/logs/
 /artifacts/tmp/
+/artifacts/tuning/iter_*.png
+/artifacts/tuning/run.log
 
 # 崩溃报告
 sysinfo.txt
