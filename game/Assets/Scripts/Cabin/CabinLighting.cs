@@ -82,6 +82,7 @@ namespace Maner.Cabin
             {
                 BuildPanelWashLights(cabinRoot);
             }
+            BuildShaftGlow(cabinRoot);
             if (!noPostFx)
             {
                 BuildVolume(cabinRoot);
@@ -244,6 +245,25 @@ namespace Maner.Cabin
                 light.range = 2.6f;
                 light.shadows = LightShadows.None;
             }
+        }
+
+        /// <summary>
+        /// 井筒里那点微光。它不照亮舱内任何东西，只是让舷窗外不至于是一块纯黑的圆——
+        /// 你能看见井壁的一圈支架轮廓，知道那里有很深的东西，但看不清。
+        /// 光源刻意放得很远且强度很低，罐笼经过时会先亮起再暗下去。
+        /// </summary>
+        public static void BuildShaftGlow(Transform parent)
+        {
+            var go = new GameObject("ShaftGlow");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = new Vector3(0f, 1.10f, CabinBuilder.RoomDepth * 0.5f + 1.9f);
+
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = new Color(0.62f, 0.70f, 0.86f);
+            light.intensity = ArgFloat("-manerShaftGlow", 5.5f);
+            light.range = 4.2f;
+            light.shadows = LightShadows.None;
         }
 
         static void BuildVolume(Transform parent)

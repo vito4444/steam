@@ -19,7 +19,10 @@ namespace Maner.Cabin
         static readonly float[] PanelYaw = { -40f, 0f, 40f };
         const float PanelTilt = 14f;
         const float PanelArcRadius = 1.62f;
-        const float PanelCenterHeight = 1.36f;
+        // 盘面中心高度。1.36 时面板顶边正好卡在通往舷窗的视线上，抬眼看不见井筒；
+        // 降到 1.20 之后视线越过盘面，而且这个高度本来就更接近真实控制台的人体工学——
+        // 盘面在腰到胸之间，操作员低头就能看全。
+        const float PanelCenterHeight = 1.20f;
         static readonly Vector3 PanelArcPivot = new Vector3(0f, 0f, -0.58f);
 
         public readonly Dictionary<ControlId, ControlVisual> Visuals = new Dictionary<ControlId, ControlVisual>();
@@ -239,8 +242,12 @@ namespace Maner.Cabin
 
             // 面板上方的仪表架。真实控制室里显示器与电报机都架在盘面之上，
             // 操作员低头读表、抬头读屏，两层信息各有各的位置。
-            desk.AddBox(new Vector3(w * 0.5f, h + 0.24f, -0.13f), new Vector3(w + 0.05f, 0.48f, 0.30f));
-            desk.AddBox(new Vector3(w * 0.5f, h + 0.50f, -0.02f), new Vector3(w + 0.09f, 0.05f, 0.34f));
+            // 中央面板刻意不建：正前方要留出通往舷窗的视线，抬眼就是井筒。
+            if (id != PanelId.Ventilation)
+            {
+                desk.AddBox(new Vector3(w * 0.5f, h + 0.24f, -0.13f), new Vector3(w + 0.05f, 0.48f, 0.30f));
+                desk.AddBox(new Vector3(w * 0.5f, h + 0.50f, -0.02f), new Vector3(w + 0.09f, 0.05f, 0.34f));
+            }
             Spawn($"Desk_{id}", panelRoot.transform, desk.ToMesh($"Panel_{id}_Desk"), Materials.FrameSteel);
 
             return panelRoot.transform;

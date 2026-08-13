@@ -40,12 +40,13 @@ namespace Maner.Cabin
             cardTexture = NewTexture(CardWidth, CardHeight, "T_OrderCard");
             crtBuffer = new Color32[CrtWidth * CrtHeight];
 
-            // 中央面板的上方空档，正好摆一台监视器。
-            var center = builder.PanelRoots[1];
-            BuildCrt(center, builder.Materials);
-            BuildTeleprinter(center, builder.Materials);
-            BuildOrderCard(builder.PanelRoots[0], builder.Materials);
-            BuildTelephone(builder.PanelRoots[2], builder.Materials);
+            // 中央正前方留给舷窗，装置分挂两侧的仪表架。
+            var power = builder.PanelRoots[0];
+            var hoist = builder.PanelRoots[2];
+            BuildCrt(power, builder.Materials);
+            BuildOrderCard(power, builder.Materials);
+            BuildTeleprinter(hoist, builder.Materials);
+            BuildTelephone(hoist, builder.Materials);
 
             RedrawCrt();
             RedrawTape();
@@ -74,7 +75,7 @@ namespace Maner.Cabin
             float w = ConsoleLayout.PanelWidth;
             var holder = new GameObject("CrtMonitor");
             holder.transform.SetParent(panel, false);
-            holder.transform.localPosition = new Vector3(w * 0.5f, 1.30f, 0.02f);
+            holder.transform.localPosition = new Vector3(w * 0.5f - 0.34f, 1.32f, 0.02f);
 
             var shell = new MeshBuilder();
             shell.AddBox(new Vector3(0f, 0f, -0.10f), new Vector3(0.40f, 0.34f, 0.22f));
@@ -96,7 +97,7 @@ namespace Maner.Cabin
             float w = ConsoleLayout.PanelWidth;
             var holder = new GameObject("Teleprinter");
             holder.transform.SetParent(panel, false);
-            holder.transform.localPosition = new Vector3(w * 0.5f - 0.46f, 1.24f, 0.02f);
+            holder.transform.localPosition = new Vector3(w * 0.5f + 0.30f, 1.30f, 0.02f);
 
             var body = new MeshBuilder();
             body.AddBox(new Vector3(0f, 0f, -0.06f), new Vector3(0.26f, 0.14f, 0.16f));
@@ -116,9 +117,10 @@ namespace Maner.Cabin
         // ————————————————— 任务卡 —————————————————
         void BuildOrderCard(Transform panel, CabinMaterials mats)
         {
+            float w = ConsoleLayout.PanelWidth;
             var holder = new GameObject("OrderCard");
             holder.transform.SetParent(panel, false);
-            holder.transform.localPosition = new Vector3(0.30f, 1.26f, 0.02f);
+            holder.transform.localPosition = new Vector3(w * 0.5f + 0.40f, 1.28f, 0.02f);
             holder.transform.localRotation = Quaternion.Euler(0f, 0f, -3.5f);
 
             var board = new MeshBuilder();
@@ -141,9 +143,10 @@ namespace Maner.Cabin
         // ————————————————— 电话 —————————————————
         void BuildTelephone(Transform panel, CabinMaterials mats)
         {
+            float w = ConsoleLayout.PanelWidth;
             var holder = new GameObject("Telephone");
             holder.transform.SetParent(panel, false);
-            holder.transform.localPosition = new Vector3(0.22f, 1.22f, 0.02f);
+            holder.transform.localPosition = new Vector3(w * 0.5f - 0.44f, 1.24f, 0.02f);
 
             var body = new MeshBuilder();
             body.AddBox(new Vector3(0f, 0f, -0.07f), new Vector3(0.20f, 0.24f, 0.16f));

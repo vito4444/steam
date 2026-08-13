@@ -16,7 +16,9 @@ namespace Maner.Cabin
         {
             var root = new GameObject(def.Id.ToString());
             root.transform.SetParent(panelRoot, false);
-            root.transform.localPosition = new Vector3(def.X, def.Y, 0f);
+            // 面板贴图在 UV 层面做了水平翻转（面板一律带 180 度偏航），
+            // 控件必须跟着翻，否则丝印标签会跑到另一个控件下面去。
+            root.transform.localPosition = new Vector3(ConsoleLayout.PanelWidth - def.X, def.Y, 0f);
 
             var visual = root.AddComponent<ControlVisual>();
             visual.Id = def.Id;

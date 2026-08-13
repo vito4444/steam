@@ -8,7 +8,7 @@
 玩家是一座三千米深井唯一的地面调度员，整局游戏待在一间控制舱里，
 靠一整面控制台把井下的人活着送上来。
 
-<img src="docs/progress/milestone-02-running.jpg" alt="控制舱实机画面" width="100%" />
+<img src="docs/progress/milestone-05-cabin.jpg" alt="控制舱实机画面" width="100%" />
 
 | 交付物 | 位置 | 状态 |
 | --- | --- | --- |
