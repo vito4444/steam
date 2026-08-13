@@ -38,20 +38,28 @@ namespace Undertown.Core.Economy
     {
         private MaterialFlow[] _flows = new MaterialFlow[Materials.Count];
 
+        /// <summary>
+        /// Bumped on every write. The interface shows a running estimate of what an audit
+        /// would cost, and recomputing that on a timer let the displayed estimate disagree
+        /// with the ledger rows printed directly above it - which is worse than not showing
+        /// it at all, because the player cannot tell which half to believe.
+        /// </summary>
+        public int Revision { get; private set; }
+
         public MaterialFlow Flow(MaterialId id) => _flows[(int)id];
 
-        public void RecordPurchase(MaterialId id, int qty) => _flows[(int)id].Purchased += Require(qty);
-        public void RecordProduction(MaterialId id, int qty) => _flows[(int)id].Produced += Require(qty);
-        public void RecordConsumption(MaterialId id, int qty) => _flows[(int)id].Consumed += Require(qty);
-        public void RecordSale(MaterialId id, int qty) => _flows[(int)id].Sold += Require(qty);
+        public void RecordPurchase(MaterialId id, int qty) { _flows[(int)id].Purchased += Require(qty); Revision++; }
+        public void RecordProduction(MaterialId id, int qty) { _flows[(int)id].Produced += Require(qty); Revision++; }
+        public void RecordConsumption(MaterialId id, int qty) { _flows[(int)id].Consumed += Require(qty); Revision++; }
+        public void RecordSale(MaterialId id, int qty) { _flows[(int)id].Sold += Require(qty); Revision++; }
 
         /// <summary>
         /// Loss is the one figure the player writes by hand rather than earning through
         /// play, which is exactly why the auditor cross-checks it against a regional baseline.
         /// </summary>
-        public void DeclareLoss(MaterialId id, int qty) => _flows[(int)id].DeclaredLoss += Require(qty);
+        public void DeclareLoss(MaterialId id, int qty) { _flows[(int)id].DeclaredLoss += Require(qty); Revision++; }
 
-        public void SetDeclaredLoss(MaterialId id, int qty) => _flows[(int)id].DeclaredLoss = Require(qty);
+        public void SetDeclaredLoss(MaterialId id, int qty) { _flows[(int)id].DeclaredLoss = Require(qty); Revision++; }
 
         /// <summary>Rolls the books forward: this period's physical count becomes next period's opening line.</summary>
         public void BeginPeriod(Func<MaterialId, int> physicalCount)
@@ -61,6 +69,7 @@ namespace Undertown.Core.Economy
                 var id = (MaterialId)i;
                 _flows[i] = new MaterialFlow { Opening = id == MaterialId.None ? 0 : physicalCount(id) };
             }
+            Revision++;
         }
 
         public LedgerBook Clone()

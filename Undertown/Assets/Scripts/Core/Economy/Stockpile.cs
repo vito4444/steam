@@ -11,12 +11,16 @@ namespace Undertown.Core.Economy
     {
         private readonly int[] _counts = new int[Materials.Count];
 
+        /// <summary>Bumped on every change, so the interface can tell when its figures are stale.</summary>
+        public int Revision { get; private set; }
+
         public int Get(MaterialId id) => _counts[(int)id];
 
         public void Add(MaterialId id, int qty)
         {
             if (qty < 0) throw new ArgumentOutOfRangeException(nameof(qty));
             _counts[(int)id] += qty;
+            Revision++;
         }
 
         /// <summary>Removes what it can and reports how much was actually taken.</summary>
@@ -25,6 +29,7 @@ namespace Undertown.Core.Economy
             if (qty < 0) throw new ArgumentOutOfRangeException(nameof(qty));
             int taken = Math.Min(qty, _counts[(int)id]);
             _counts[(int)id] -= taken;
+            if (taken > 0) Revision++;
             return taken;
         }
 
@@ -33,6 +38,7 @@ namespace Undertown.Core.Economy
             if (qty < 0) throw new ArgumentOutOfRangeException(nameof(qty));
             if (_counts[(int)id] < qty) return false;
             _counts[(int)id] -= qty;
+            Revision++;
             return true;
         }
 

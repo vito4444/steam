@@ -150,6 +150,21 @@ namespace Undertown.Core.Sim
 
         public AuditSettings CurrentAuditSettings => AuditSettings.ForLevel(InspectorLevel);
 
+        /// <summary>
+        /// What an audit would find if one happened right now. This is the single most
+        /// important number in the interface: an audit is an abstract thing to be threatened
+        /// by, and without a running total the player cannot tell a safe arrangement from a
+        /// fatal one until an inspector tells them, by which point it is too late to change.
+        /// </summary>
+        public AuditReport DryRunAudit() =>
+            AuditResolver.Resolve(Books, VisibleStock, Recipes, CurrentAuditSettings);
+
+        /// <summary>
+        /// The gap between what the books promise is on the shelf and what an inspector would
+        /// actually count. Positive means material has gone somewhere unexplained.
+        /// </summary>
+        public int LedgerGap(MaterialId id) => Books.Flow(id).ExpectedStock - VisibleStock(id);
+
         /// <summary>How much contraband the cellars can keep out of sight. Each cellar store holds this much.</summary>
         public const int HiddenStoragePerCellar = 120;
 

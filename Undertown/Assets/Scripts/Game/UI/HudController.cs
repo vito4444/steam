@@ -39,6 +39,10 @@ namespace Undertown.Game.UI
         private Text _layerText;
         private Text _toolText;
         private Text _logText;
+        private Text _exposureText;
+
+        private int _previewedRevision = -1;
+        private int _previewedSuspicion;
 
         private PlayerTools _tools;
         private readonly List<(Button button, BuildingKind kind)> _buildSlots = new List<(Button, BuildingKind)>();
@@ -152,7 +156,7 @@ namespace Undertown.Game.UI
             UiFactory.Place((RectTransform)title.transform, 16f, 174f, 200f, 24f);
 
             var header = UiFactory.Label(section.transform, "Header",
-                Row("MATERIAL", "BOUGHT", "MADE", "USED", "LOSS", "STOCK"), 16, ProceduralUiArt.InkDim);
+                Row("MATERIAL", "MADE", "USED", "LOSS", "STOCK", "GAP"), 16, ProceduralUiArt.InkDim);
             UiFactory.Place((RectTransform)header.transform, 16f, 150f, 558f, 22f);
 
             float y = 126f;
@@ -164,6 +168,11 @@ namespace Undertown.Game.UI
                 _ledgerRows[id] = row;
                 y -= 19f;
             }
+
+            // The verdict line. Everything above it is evidence; this is what the evidence
+            // adds up to, and it is the number the player actually steers by.
+            _exposureText = UiFactory.Label(section.transform, "Exposure", "", 18, ProceduralUiArt.Ink);
+            UiFactory.Place((RectTransform)_exposureText.transform, 16f, 8f, 558f, 22f);
         }
 
         private void BuildBuildMenu(RectTransform bar)
@@ -192,7 +201,7 @@ namespace Undertown.Game.UI
                 (BuildingKind.Tunnel, "Tunnel"),
                 (BuildingKind.Still, "Still"),
                 (BuildingKind.UnderStore, "Cellar"),
-                (BuildingKind.FalseWall, "False Wall"),
+                (BuildingKind.FalseWall, "Fake Wall"),
             };
 
             for (int i = 0; i < slots.Length; i++)
@@ -304,20 +313,72 @@ namespace Undertown.Game.UI
             foreach (var pair in _ledgerRows)
             {
                 var flow = _town.Books.Flow(pair.Key);
+                int gap = _town.LedgerGap(pair.Key);
+
+                // Contraband shows countable over actual. Printing only the countable figure
+                // read as "the moonshine is gone" when what it means is "the inspector cannot
+                // see it", which is the opposite of reassuring.
+                int visible = _town.VisibleStock(pair.Key);
+                int held = _town.Stock.Get(pair.Key);
+                string stockText = Materials.IsContraband(pair.Key) && held != visible
+                    ? $"{visible}/{held}"
+                    : visible.ToString();
+
                 pair.Value.text = Row(
                     Materials.DisplayName(pair.Key),
-                    flow.Purchased.ToString(),
                     flow.Produced.ToString(),
                     flow.Consumed.ToString(),
                     flow.DeclaredLoss.ToString(),
-                    _town.Stock.Get(pair.Key).ToString());
-                pair.Value.color = Materials.IsContraband(pair.Key)
-                    ? (Color)ProceduralUiArt.Contraband
-                    : (Color)ProceduralUiArt.Ink;
+                    stockText,
+                    gap == 0 ? "-" : gap.ToString("+#;-#"));
+
+                // A material whose books do not match the shelf is the thing to look at, so
+                // it is coloured by its gap rather than by whether it is contraband.
+                pair.Value.color = gap != 0
+                    ? (Color)ProceduralUiArt.Danger
+                    : Materials.IsContraband(pair.Key)
+                        ? (Color)ProceduralUiArt.Contraband
+                        : (Color)ProceduralUiArt.Ink;
             }
+
+            RefreshAuditPreview();
 
             RefreshTool();
             RefreshLog();
+        }
+
+        /// <summary>
+        /// Runs the audit against the current books without an inspector present and reports
+        /// what it would cost. Recomputed when the books or the stores actually change rather
+        /// than on a timer, so this line can never disagree with the ledger rows above it.
+        /// </summary>
+        private void RefreshAuditPreview()
+        {
+            if (_exposureText == null) return;
+
+            int revision = _town.Books.Revision + _town.Stock.Revision;
+            if (revision != _previewedRevision)
+            {
+                _previewedRevision = revision;
+                _previewedSuspicion = _town.DryRunAudit().TotalSuspicion;
+            }
+
+            int spoilExposure = _town.SpoilExposure;
+            int total = _previewedSuspicion + (spoilExposure > 0 ? 2 + spoilExposure / 10 : 0);
+
+            if (total <= 0)
+            {
+                _exposureText.text = "audited now: nothing to find";
+                _exposureText.color = new Color32(0x7C, 0xA6, 0x6B, 0xFF);
+                return;
+            }
+
+            int projected = Mathf.Min(100, _town.Suspicion + total);
+            var band = TownState.BandFor(projected);
+            _exposureText.text = $"audited now: +{total} suspicion  ->  {projected}%  {TownState.BandLabel(band)}";
+            _exposureText.color = band >= SuspicionBand.Fined
+                ? (Color)ProceduralUiArt.Danger
+                : (Color)ProceduralUiArt.Contraband;
         }
 
         private void RefreshTool()
@@ -367,8 +428,8 @@ namespace Undertown.Game.UI
             sb.Append(b.PadLeft(9));
             sb.Append(c.PadLeft(9));
             sb.Append(d.PadLeft(9));
-            sb.Append(e.PadLeft(9));
-            sb.Append(f.PadLeft(11));
+            sb.Append(e.PadLeft(12));
+            sb.Append(f.PadLeft(10));
             return sb.ToString();
         }
     }

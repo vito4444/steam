@@ -32,6 +32,13 @@ namespace Undertown.Game.Bootstrap
         /// </summary>
         private int _warmupMinutes;
 
+        /// <summary>
+        /// Starts the illicit works before the warm-up. They begin idle, so documenting what
+        /// a running contraband operation looks like means making the same choice a player
+        /// would rather than waiting for one that never comes.
+        /// </summary>
+        private bool _runTheStill;
+
         private void Start()
         {
             if (!ParseArguments()) { enabled = false; return; }
@@ -69,6 +76,9 @@ namespace Undertown.Game.Bootstrap
                     case "-autoshotWarmupMinutes" when i + 1 < args.Length:
                         int.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out _warmupMinutes);
                         break;
+                    case "-autoshotRunTheStill":
+                        _runTheStill = true;
+                        break;
                 }
             }
             return !string.IsNullOrEmpty(_directory);
@@ -82,10 +92,16 @@ namespace Undertown.Game.Bootstrap
             yield return new WaitForEndOfFrame();
             yield return new WaitForSecondsRealtime(0.5f);
 
-            if (_warmupMinutes > 0)
+            if (_runTheStill || _warmupMinutes > 0)
             {
                 var bootstrap = FindFirstObjectByType<GameBootstrap>();
-                if (bootstrap != null)
+                if (bootstrap != null && _runTheStill)
+                {
+                    int started = bootstrap.StartIllicitWorks();
+                    Debug.Log($"[SHOT] started {started} illicit workshop(s)");
+                }
+
+                if (bootstrap != null && _warmupMinutes > 0)
                 {
                     bootstrap.FastForward(_warmupMinutes);
                     Debug.Log($"[SHOT] fast-forwarded {_warmupMinutes} simulated minutes");

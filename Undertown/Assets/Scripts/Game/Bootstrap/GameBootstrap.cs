@@ -89,6 +89,22 @@ namespace Undertown.Game.Bootstrap
         public PlayerTools Tools => _controller != null ? _controller.Tools : null;
 
         /// <summary>
+        /// Starts every idle illicit workshop, the same act as clicking each one. Returns how
+        /// many were started.
+        /// </summary>
+        public int StartIllicitWorks()
+        {
+            int started = 0;
+            foreach (var building in _town.Buildings)
+            {
+                var def = building.Def;
+                if (def == null || !def.Illicit || def.WorkerSlots <= 0 || building.Working) continue;
+                if (building.ToggleWork()) started++;
+            }
+            return started;
+        }
+
+        /// <summary>
         /// Fast-forwards the simulation. Used by the screenshot harness to document states
         /// that would otherwise take minutes of real time to reach, such as an inspection.
         /// </summary>
@@ -104,10 +120,13 @@ namespace Undertown.Game.Bootstrap
                 InspectionSystem.Tick(_town, step);
             }
 
+            var dryRun = _town.DryRunAudit();
             Debug.Log($"[SMOKE] fast-forward landed on season {_town.Clock.Season + 1} day {_town.Clock.DayOfSeason} " +
                       $"{_town.Clock.TimeOfDayLabel}, suspicion {_town.Suspicion}, " +
                       $"grain {_town.Stock.Get(MaterialId.Grain)}, ale {_town.Stock.Get(MaterialId.Ale)}, " +
-                      $"moonshine {_town.Stock.Get(MaterialId.Moonshine)}");
+                      $"moonshine {_town.Stock.Get(MaterialId.Moonshine)}, " +
+                      $"grain gap {_town.LedgerGap(MaterialId.Grain)}, " +
+                      $"dry-run audit {dryRun.TotalSuspicion} from {dryRun.Issues.Count} issue(s)");
         }
 
         private void UpdateLayerBadge()
