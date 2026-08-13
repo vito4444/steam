@@ -44,8 +44,16 @@ namespace Hunter.Worldgen
             public readonly List<Transform> PatrolPoints = new();
         }
 
-        public SiteHandles Generate(Transform root)
+        LayoutPlan _plan;
+
+        /// <param name="plan">
+        /// Optional. When supplied the ruin is laid out from it, so segment widths, roof
+        /// coverage, cache placement and the bell's position all vary per seed. Without one
+        /// the generator falls back to the fixed nave the screenshot angles were framed on.
+        /// </param>
+        public SiteHandles Generate(Transform root, LayoutPlan plan = null)
         {
+            _plan = plan;
             var handles = new SiteHandles();
 
             BuildGround(root);
@@ -58,16 +66,83 @@ namespace Hunter.Worldgen
             BuildPuddles(root);
             BuildProps(root);
 
-            handles.LootCaches.Add(BuildLootCache(root, new Vector3(2.75f, 0f, 9.6f)).transform);
-            handles.LootCaches.Add(BuildLootCache(root, new Vector3(-5.4f, 0f, 22.5f)).transform);
-            handles.LootCaches.Add(BuildLootCache(root, new Vector3(4.9f, 0f, 33.8f)).transform);
+            foreach (var position in PlanCachePositions())
+                handles.LootCaches.Add(BuildLootCache(root, position).transform);
 
             handles.Hunter = BuildHunter(root, new Vector3(-0.62f, 0f, 0.55f)).transform;
-            handles.BellTower = BuildBellTower(root, new Vector3(-6.8f, 0f, 30f)).transform;
+            handles.BellTower = BuildBellTower(root, PlanBellPosition()).transform;
             BuildRivalSilhouettes(root, handles);
             BuildPatrolPoints(root, handles);
 
             return handles;
+        }
+
+        /// Caches follow the plan when there is one. Each segment's declared cache count is
+        /// spread across its length and pushed toward the walls, because loot in the middle
+        /// of an open floor is loot nobody has to take a risk to reach.
+        IEnumerable<Vector3> PlanCachePositions()
+        {
+            if (_plan == null)
+            {
+                yield return new Vector3(2.75f, 0f, 9.6f);
+                yield return new Vector3(-5.4f, 0f, 22.5f);
+                yield return new Vector3(4.9f, 0f, 33.8f);
+                yield break;
+            }
+
+            foreach (var segment in _plan.Segments)
+            {
+                for (int i = 0; i < segment.LootCaches; i++)
+                {
+                    float t = (i + 0.5f) / Mathf.Max(1, segment.LootCaches);
+                    float z = segment.StartZ + segment.Length * t + Range(-1.2f, 1.2f);
+                    float side = _rng.NextDouble() < 0.5 ? -1f : 1f;
+                    float x = side * (segment.HalfWidth - Range(1.2f, 2.4f));
+                    yield return new Vector3(x, 0f, z);
+                }
+
+                foreach (var branch in segment.Branches)
+                {
+                    if (!branch.HasCache) continue;
+                    yield return new Vector3(branch.Side * (segment.HalfWidth + branch.Depth * 0.65f),
+                        0f, branch.AlongZ);
+                }
+            }
+        }
+
+        Vector3 PlanBellPosition()
+        {
+            if (_plan?.Bell == null) return new Vector3(-6.8f, 0f, 30f);
+
+            var bell = _plan.Bell;
+            return new Vector3(-(bell.HalfWidth - 1.2f), 0f, bell.CentreZ);
+        }
+
+        /// Half width of the ruin at a given depth, from the plan when present.
+        float WidthAt(float z)
+        {
+            if (_plan == null) return 4.6f;
+
+            foreach (var segment in _plan.Segments)
+            {
+                if (z >= segment.StartZ && z < segment.EndZ) return segment.HalfWidth;
+            }
+            return _plan.Segments.Count > 0 ? _plan.Segments[^1].HalfWidth : 4.6f;
+        }
+
+        /// How deep the ruin runs. Geometry has to cover the whole plan or the bell and
+        /// vault end up outside the world.
+        float SiteDepth => _plan != null ? _plan.TotalLength : 58f;
+
+        bool RoofedAt(float z)
+        {
+            if (_plan == null) return true;
+
+            foreach (var segment in _plan.Segments)
+            {
+                if (z >= segment.StartZ && z < segment.EndZ) return segment.RoofIntact;
+            }
+            return false;
         }
 
         void BuildPatrolPoints(Transform root, SiteHandles handles)
@@ -75,14 +150,17 @@ namespace Hunter.Worldgen
             var container = new GameObject("PatrolPoints");
             container.transform.SetParent(root, false);
 
-            var positions = new[]
+            var positions = new List<Vector3>();
+            int stops = 8;
+            for (int i = 0; i < stops; i++)
             {
-                new Vector3(-4.2f, 0f, 12f), new Vector3(4.4f, 0f, 18f),
-                new Vector3(-5.1f, 0f, 26f), new Vector3(3.8f, 0f, 34f),
-                new Vector3(-2.4f, 0f, 42f), new Vector3(2.2f, 0f, 24f),
-            };
+                float z = Mathf.Lerp(10f, SiteDepth - 8f, (i + 0.5f) / stops);
+                float halfWidth = WidthAt(z);
+                float side = i % 2 == 0 ? -1f : 1f;
+                positions.Add(new Vector3(side * (halfWidth - 1.4f), 0f, z));
+            }
 
-            for (int i = 0; i < positions.Length; i++)
+            for (int i = 0; i < positions.Count; i++)
             {
                 var point = new GameObject($"Patrol_{i}");
                 point.transform.SetParent(container.transform, false);
@@ -180,8 +258,10 @@ namespace Hunter.Worldgen
             // Continuous, gently undulating pavement. Earlier revisions cut the floor into
             // individual slab boxes; every joint then cast its own silhouette and the
             // result read as a tray of tiles. Joint detail now comes from the normal map.
+            float depth = SiteDepth + 22f;
+            int rows = Mathf.Clamp(Mathf.RoundToInt(depth * 2.1f), 60, 320);
             mb.AddSmoothGrid(
-                new Vector3(-20f, 0f, -10f), 40f, 74f, 88, 156,
+                new Vector3(-22f, 0f, -10f), 44f, depth, 92, rows,
                 (x, z) =>
                 {
                     float broad = ProceduralTextures.Fbm(x * 0.045f + 11f, z * 0.045f + 3f, 3) - 0.5f;
@@ -279,7 +359,8 @@ namespace Hunter.Worldgen
             var mb = new MeshBuilder();
             var stone = new Color(0.44f, 0.44f, 0.45f);
 
-            for (int i = 0; i < 9; i++)
+            int bays = Mathf.Clamp(Mathf.RoundToInt((SiteDepth - 7.5f) / 5.4f), 6, 40);
+            for (int i = 0; i < bays; i++)
             {
                 float z = 7.5f + i * 5.4f;
                 for (int side = -1; side <= 1; side += 2)
@@ -288,7 +369,7 @@ namespace Hunter.Worldgen
                     // colonnade reads as ruined rather than as a repeating asset.
                     bool broken = _rng.NextDouble() < 0.34;
                     float height = broken ? Range(1.6f, 3.4f) : Range(6.4f, 7.6f);
-                    float x = side * (4.6f + Range(-0.25f, 0.25f));
+                    float x = side * (WidthAt(z) + Range(-0.25f, 0.25f));
                     var pos = new Vector3(x, 0f, z + Range(-0.5f, 0.5f));
                     var tint = stone * Range(0.82f, 1.12f);
 
@@ -330,7 +411,8 @@ namespace Hunter.Worldgen
         {
             var mb = new MeshBuilder();
             var stone = new Color(0.40f, 0.40f, 0.41f);
-            float[] depths = { 13f, 19.5f, 27f, 35f, 44f };
+            var depths = new List<float>();
+            for (float d = 13f; d < SiteDepth - 6f; d += Range(7f, 11f)) depths.Add(d);
 
             foreach (float z in depths)
             {
@@ -371,7 +453,7 @@ namespace Hunter.Worldgen
             // Scaffolds abandoned mid-repair, leaning against the colonnade.
             for (int i = 0; i < 7; i++)
             {
-                float z = Range(9f, 44f);
+                float z = Range(9f, SiteDepth - 6f);
                 int side = _rng.NextDouble() < 0.5 ? -1 : 1;
                 float x = side * Range(3.4f, 6.2f);
                 float height = Range(2.2f, 4.1f);
@@ -407,7 +489,7 @@ namespace Hunter.Worldgen
             // Poles with hanging banners, the marks of whoever claimed this ruin first.
             for (int i = 0; i < 6; i++)
             {
-                float z = Range(12f, 42f);
+                float z = Range(12f, SiteDepth - 8f);
                 int side = _rng.NextDouble() < 0.5 ? -1 : 1;
                 float x = side * Range(2.6f, 5.4f);
                 float poleHeight = Range(2.8f, 4.4f);
@@ -441,7 +523,7 @@ namespace Hunter.Worldgen
             // Coils of rope and dropped tools near the caches.
             for (int i = 0; i < 12; i++)
             {
-                float z = Range(6f, 40f);
+                float z = Range(6f, SiteDepth - 8f);
                 float x = Range(-8f, 8f);
                 timber.AddRock(new Vector3(x, 0.07f, z), Range(0.12f, 0.26f), NextSeed(),
                     wood * Range(0.7f, 1f), flatten: 0.32f);
@@ -498,7 +580,7 @@ namespace Hunter.Worldgen
                 else
                 {
                     x = Range(-14f, 14f);
-                    z = Range(-6f, 46f);
+                    z = Range(-6f, SiteDepth - 6f);
                     radius = Range(0.55f, 2.3f);
 
                     float dip = GroundHeight(x, z);
@@ -548,10 +630,11 @@ namespace Hunter.Worldgen
 
             for (int i = 0; i < 12; i++)
             {
-                float z = 8.5f + i * 3.7f + Range(-0.5f, 0.5f);
+                float z = 8.5f + i * (Mathf.Max(SiteDepth - 12f, 12f) / 12f) + Range(-0.5f, 0.5f);
                 float y = Range(7.2f, 8.4f);
 
-                // Roughly half the beams are gone, and the survivors are partial spans.
+                // Only where the plan says the roof survived, plus attrition on top.
+                if (!RoofedAt(z)) continue;
                 if (_rng.NextDouble() < 0.42) continue;
 
                 float span = Range(0.45f, 1f);
@@ -579,7 +662,7 @@ namespace Hunter.Worldgen
         {
             var mb = new MeshBuilder();
             var stone = new Color(0.38f, 0.38f, 0.40f);
-            var basePos = new Vector3(1.2f, 0f, 62f);
+            var basePos = new Vector3(1.2f, 0f, SiteDepth + 8f);
 
             for (int i = 0; i < 20; i++)
             {
@@ -604,8 +687,8 @@ namespace Hunter.Worldgen
 
             for (int i = 0; i < 150; i++)
             {
-                float z = Range(2.5f, 52f);
-                float spread = Mathf.Lerp(6f, 13f, Mathf.InverseLerp(0f, 52f, z));
+                float z = Range(2.5f, SiteDepth - 4f);
+                float spread = Mathf.Lerp(6f, 13f, Mathf.InverseLerp(0f, SiteDepth, z));
                 float x = Range(-spread, spread);
 
                 // Debris banks against the colonnade instead of carpeting the floor, which
@@ -619,7 +702,7 @@ namespace Hunter.Worldgen
             // A few large fallen blocks give the eye a scale reference in the midground.
             for (int i = 0; i < 10; i++)
             {
-                float z = Range(8f, 40f);
+                float z = Range(8f, SiteDepth - 8f);
                 float x = Range(-8f, 8f);
                 if (Mathf.Abs(x) < 3.0f) x += Mathf.Sign(x == 0 ? 1f : x) * 3.2f;
 

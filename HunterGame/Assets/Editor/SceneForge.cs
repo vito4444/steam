@@ -327,7 +327,13 @@ namespace Hunter.EditorTools
             DynamicGI.UpdateEnvironment();
 
             var root = new GameObject("AurumMist").transform;
-            var handles = new RuinSiteGenerator(20260813, palette).Generate(root);
+            // Seed is fixed so the screenshot angles stay comparable between revisions; the
+            // planner is what makes a different seed a different ruin.
+            const int siteSeed = 20260813;
+            var plan = LayoutPlanner.Plan(siteSeed, segmentCount: 8);
+            var handles = new RuinSiteGenerator(siteSeed, palette).Generate(root, plan);
+            Debug.Log($"FORGE_LAYOUT segments={plan.Segments.Count} length={plan.TotalLength:0.0} " +
+                      $"caches={plan.TotalCaches} bellZ={plan.Bell.CentreZ:0.0} vaultZ={plan.Vault.CentreZ:0.0}");
 
             BuildLighting(root);
             BuildAtmosphere(root);
@@ -407,12 +413,12 @@ namespace Hunter.EditorTools
             // Distant glow behind the tower, reading as the source of the gold mist.
             var mistCoreGo = new GameObject("MistCore");
             mistCoreGo.transform.SetParent(root, false);
-            mistCoreGo.transform.position = new Vector3(1f, 13f, 71f);
+            mistCoreGo.transform.position = new Vector3(1f, 13f, 118f);
             var mistCore = mistCoreGo.AddComponent<Light>();
             mistCore.type = LightType.Point;
             mistCore.color = new Color(1f, 0.90f, 0.66f);
-            mistCore.intensity = 7f;
-            mistCore.range = 70f;
+            mistCore.intensity = 5f;
+            mistCore.range = 110f;
             mistCore.shadows = LightShadows.None;
         }
 
@@ -553,7 +559,7 @@ namespace Hunter.EditorTools
 
             var sovereignGo = new GameObject("MistSovereign");
             sovereignGo.transform.SetParent(gameplayRoot.transform, false);
-            sovereignGo.transform.position = new Vector3(0f, 0f, 52f);
+            sovereignGo.transform.position = new Vector3(0f, 0f, 88f);
             var sovereignLight = new GameObject("SovereignAura");
             sovereignLight.transform.SetParent(sovereignGo.transform, false);
             var aura = sovereignLight.AddComponent<Light>();
