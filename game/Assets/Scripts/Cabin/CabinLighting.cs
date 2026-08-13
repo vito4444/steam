@@ -21,10 +21,10 @@ namespace Maner.Cabin
         // 屋子里，光源与物体的距离差本来就不足以产生明显衰减，用平行光模拟顶灯的
         // 主要投射方向在视觉上没有损失，还省掉了附加光源的开销。
         // 点光源保留下来，负责灯泡周围那一小圈暖色光晕。
-        const float KeyDirectionalIntensity = 0.08f;
-        const float FillDirectionalIntensity = 0.013f;
-        const float BulbGlowIntensity = 2.0f;
-        const float PanelWashIntensity = 1.2f;
+        const float KeyDirectionalIntensity = 0.34f;
+        const float FillDirectionalIntensity = 0.055f;
+        const float BulbGlowIntensity = 7.0f;
+        const float PanelWashIntensity = 4.2f;
         const float PostExposure = 0.10f;
         const float AmbientFillLux = 22f;
 
@@ -68,7 +68,7 @@ namespace Maner.Cabin
             bool noPostFx = HasArg("-manerNoPostFX");
             bool noFill = HasArg("-manerNoFill");
             bool noWash = HasArg("-manerNoWash");
-            Debug.Log($"[CabinLight] 构建标记 lighting-rev11-calibrated key={KeyDirectionalIntensity} " +
+            Debug.Log($"[CabinLight] 构建标记 lighting-rev13-postfx-calibrated key={KeyDirectionalIntensity} " +
                       $"fill={FillDirectionalIntensity} bulb={BulbGlowIntensity} wash={PanelWashIntensity} " +
                       $"noPostFX={noPostFx} noFill={noFill} noWash={noWash}");
 
@@ -238,11 +238,11 @@ namespace Maner.Cabin
 
                 var light = go.AddComponent<Light>();
                 light.type = LightType.Spot;
-                light.spotAngle = 62f;
-                light.innerSpotAngle = 22f;
+                light.spotAngle = 96f;
+                light.innerSpotAngle = 12f;
                 light.color = new Color(1f, 0.84f, 0.62f);
                 light.intensity = ArgFloat("-manerWash", PanelWashIntensity);
-                light.range = 2.6f;
+                light.range = 3.6f;
                 light.shadows = LightShadows.None;
             }
         }
@@ -283,8 +283,8 @@ namespace Maner.Cabin
 
             var colorAdjust = profile.Add<ColorAdjustments>(true);
             colorAdjust.postExposure.Override(ArgFloat("-manerExposure", PostExposure));
-            colorAdjust.contrast.Override(26f);
-            colorAdjust.saturation.Override(4f);
+            colorAdjust.contrast.Override(ArgFloat("-manerContrast", 13f));
+            colorAdjust.saturation.Override(ArgFloat("-manerSaturation", 11f));
             colorAdjust.colorFilter.Override(new Color(1f, 0.94f, 0.86f));
 
             var whiteBalance = profile.Add<WhiteBalance>(true);
@@ -292,9 +292,11 @@ namespace Maner.Cabin
             whiteBalance.tint.Override(-4f);
 
             var bloom = profile.Add<Bloom>(true);
-            bloom.threshold.Override(0.92f);
-            bloom.intensity.Override(0.55f);
-            bloom.scatter.Override(0.68f);
+            // 泛光压得很克制：软件光栅化下大范围扩散会在高对比边缘留下彩色伪影，
+            // 而这个场景里真正该发光的只有灯泡、指示灯与背光表盘。
+            bloom.threshold.Override(ArgFloat("-manerBloomThreshold", 1.38f));
+            bloom.intensity.Override(ArgFloat("-manerBloom", 0.15f));
+            bloom.scatter.Override(0.55f);
             bloom.tint.Override(new Color(1f, 0.86f, 0.66f));
 
             var vignette = profile.Add<Vignette>(true);

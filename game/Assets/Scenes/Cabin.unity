@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &1244824206
+--- !u!1 &100252273
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,39 +127,79 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1244824208}
-  - component: {fileID: 1244824207}
+  - component: {fileID: 100252277}
+  - component: {fileID: 100252276}
+  - component: {fileID: 100252275}
+  - component: {fileID: 100252274}
   m_Layer: 0
-  m_Name: AudioListener
+  m_Name: CabinRuntime
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &1244824207
-AudioListener:
+--- !u!114 &100252274
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1244824206}
+  m_GameObject: {fileID: 100252273}
   m_Enabled: 1
---- !u!4 &1244824208
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e99ce1c676706044f83da6b140cad93b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Maner.Cabin::Maner.Cabin.CabinHud
+--- !u!114 &100252275
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100252273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d1d55922a6dc1d55a681a01975f20e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Maner.Cabin::Maner.Cabin.PlayerRig
+  walkSpeed: 1.9
+  standEyeHeight: 1.62
+  crouchEyeHeight: 1.05
+  eyeHeightLerp: 8
+  lookSensitivity: 0.09
+  pitchLimit: 78
+  reachMeters: 1.35
+  dragMetersPerPixel: 0.00055
+--- !u!114 &100252276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100252273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49a77bb227f4db56aacdbf8aa43cd556, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Maner.Cabin::Maner.Cabin.CabinRuntime
+  buildOnAwake: 1
+  timeScale: 1
+--- !u!4 &100252277
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1244824206}
+  m_GameObject: {fileID: 100252273}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.62, z: -0.98}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1409010119
+--- !u!1 &430928438
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -167,10 +207,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1409010123}
-  - component: {fileID: 1409010122}
-  - component: {fileID: 1409010121}
-  - component: {fileID: 1409010120}
+  - component: {fileID: 430928442}
+  - component: {fileID: 430928441}
+  - component: {fileID: 430928440}
+  - component: {fileID: 430928439}
   m_Layer: 0
   m_Name: OperatorCamera
   m_TagString: MainCamera
@@ -178,13 +218,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1409010120
+--- !u!114 &430928439
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1409010119}
+  m_GameObject: {fileID: 430928438}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3008e8f935a0984f596a7ed079f87b31, type: 3}
@@ -198,13 +238,13 @@ MonoBehaviour:
   orbitCamera: 0
   quitWhenDone: 1
   orbitDegreesPerSecond: 9
---- !u!114 &1409010121
+--- !u!114 &430928440
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1409010119}
+  m_GameObject: {fileID: 430928438}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
@@ -242,13 +282,13 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!20 &1409010122
+--- !u!20 &430928441
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1409010119}
+  m_GameObject: {fileID: 430928438}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
@@ -293,13 +333,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!4 &1409010123
+--- !u!4 &430928442
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1409010119}
+  m_GameObject: {fileID: 430928438}
   serializedVersion: 2
   m_LocalRotation: {x: 0.025101874, y: 0, z: 0, w: 0.99968493}
   m_LocalPosition: {x: 0, y: 1.62, z: -0.98}
@@ -308,7 +348,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1709709556
+--- !u!1 &805158237
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -316,73 +356,33 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1709709560}
-  - component: {fileID: 1709709559}
-  - component: {fileID: 1709709558}
-  - component: {fileID: 1709709557}
+  - component: {fileID: 805158239}
+  - component: {fileID: 805158238}
   m_Layer: 0
-  m_Name: CabinRuntime
+  m_Name: AudioListener
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1709709557
-MonoBehaviour:
+--- !u!81 &805158238
+AudioListener:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1709709556}
+  m_GameObject: {fileID: 805158237}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e99ce1c676706044f83da6b140cad93b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Maner.Cabin::Maner.Cabin.CabinHud
---- !u!114 &1709709558
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1709709556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0d1d55922a6dc1d55a681a01975f20e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Maner.Cabin::Maner.Cabin.PlayerRig
-  walkSpeed: 1.9
-  standEyeHeight: 1.62
-  crouchEyeHeight: 1.05
-  eyeHeightLerp: 8
-  lookSensitivity: 0.09
-  pitchLimit: 78
-  reachMeters: 1.35
-  dragMetersPerPixel: 0.00055
---- !u!114 &1709709559
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1709709556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49a77bb227f4db56aacdbf8aa43cd556, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Maner.Cabin::Maner.Cabin.CabinRuntime
-  buildOnAwake: 1
-  timeScale: 1
---- !u!4 &1709709560
+--- !u!4 &805158239
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1709709556}
+  m_GameObject: {fileID: 805158237}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 1.62, z: -0.98}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -392,6 +392,6 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1709709560}
-  - {fileID: 1409010123}
-  - {fileID: 1244824208}
+  - {fileID: 100252277}
+  - {fileID: 430928442}
+  - {fileID: 805158239}

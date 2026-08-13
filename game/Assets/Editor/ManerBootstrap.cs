@@ -216,6 +216,28 @@ namespace Maner.EditorTools
             {
                 depthPriming.intValue = 0; // Disabled
             }
+
+            // 用代码创建的渲染器资产，postProcessData 字段是空的。
+            // 这个字段持有后处理各个 pass 所需的 shader 引用，为空时整条后处理链
+            // 会被静默跳过——相机上的 renderPostProcessing 仍然报告 true，
+            // Volume 里的色调映射、泛光、暗角也都配置正确，就是一点效果都没有。
+            var postProcessData = so.FindProperty("postProcessData");
+            if (postProcessData != null && postProcessData.objectReferenceValue == null)
+            {
+                const string defaultPath =
+                    "Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset";
+                var data = AssetDatabase.LoadAssetAtPath<ScriptableObject>(defaultPath);
+                if (data != null)
+                {
+                    postProcessData.objectReferenceValue = data;
+                    Console.WriteLine("[ManerBootstrap] 已为渲染器补上 PostProcessData");
+                }
+                else
+                {
+                    Console.WriteLine($"[ManerBootstrap] 找不到 {defaultPath}，后处理将不会生效");
+                }
+            }
+
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(rendererData);
             Console.WriteLine("[ManerBootstrap] 渲染器已切换为传统 Forward");

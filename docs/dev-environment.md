@@ -98,6 +98,7 @@ maner_unity -executeMethod Maner.EditorTools.ManerBootstrap.Run -logFile /tmp/bo
 | 丝印文字看着像被镜像 | 位图缓冲区按「左上为原点、Y 向下」绘制，与 Unity 纹理坐标原点在左下相反 | 上传前垂直翻转缓冲区 |
 | 贴图正确但显示为一块纯色 | 运行时创建的材质其 `_BaseMap_ST` 未必是 (1,1,0,0) | 显式设置 tiling 与 offset |
 | 点光源强度调 20 倍几乎无变化 | Unity 6 URP 使用物理光照单位，点光源以坎德拉计量，衰减远比预期陡 | 小空间内改用平行光承担主照明 |
+| 后处理完全不生效：色调映射、泛光、暗角全部无效，相机上的 `renderPostProcessing` 却报告 true | 用代码创建的 `UniversalRendererData`，其 `postProcessData` 字段为空，而这个字段持有后处理各 pass 所需的 shader 引用 | 从 URP 包里加载 `Runtime/Data/PostProcessData.asset` 并赋给渲染器 |
 | 构建报告成功但产物是旧代码 | 脚本有编译错误时 Unity 会退回上一次成功编译的程序集继续出包，且返回码为 0 | `tools/build.sh` 显式检查日志中的 `error CS` |
 
 诊断这类问题的有效手段有三个，都已固化到仓库里：
