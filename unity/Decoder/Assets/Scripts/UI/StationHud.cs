@@ -21,7 +21,9 @@ namespace Decoder.UI
         private static readonly Color PhosphorDim = new Color(0.24f, 0.62f, 0.32f, 1f);
         private static readonly Color Amber = new Color(1f, 0.72f, 0.26f, 1f);
         private static readonly Color Alert = new Color(1f, 0.36f, 0.28f, 1f);
-        private static readonly Color PanelBg = new Color(0.02f, 0.05f, 0.03f, 0.82f);
+        // 面板压得比较黑：这些字要盖在被台灯照亮的桌面上，
+        // 半透明的底在亮处会让磷光绿彻底糊掉。
+        private static readonly Color PanelBg = new Color(0.015f, 0.035f, 0.02f, 0.93f);
 
         [Header("接线")]
         public RadioReceiver receiver;
@@ -68,6 +70,9 @@ namespace Decoder.UI
         }
 
         private CampaignState _campaign = new CampaignState();
+
+        /// <summary>本班是否已经上报完毕，等玩家按 N 交班。</summary>
+        private bool _shiftComplete;
         private InputFocus _focus = InputFocus.Copy;
         private int _padPage = 1;
         private readonly StringBuilder _callsignBuffer = new StringBuilder(8);
@@ -253,6 +258,13 @@ namespace Decoder.UI
                 CycleLevel(1);
             }
 
+            // 交班。上报完才给按，否则玩家可能在还没听完的时候就跳过去了。
+            if (_shiftComplete && Input.GetKeyDown(KeyCode.N))
+            {
+                AdvanceToNextShift();
+                return;
+            }
+
             if (Input.GetKeyDown(KeyCode.Tab))
             {
                 _focus = (InputFocus)(((int)_focus + 1) % 3);
@@ -279,6 +291,27 @@ namespace Decoder.UI
             {
                 LookUpNextGroup();
             }
+        }
+
+        /// <summary>
+        /// 交班，进入下一班。
+        ///
+        /// 战役打完之后不再往前推：停在最后一班，横幅上说明这一点。
+        /// 与其造一个空班次让玩家对着静默的频段坐着，不如明说内容到这里为止。
+        /// </summary>
+        private void AdvanceToNextShift()
+        {
+            var all = ShiftLibrary.All();
+            if (_campaign.shiftIndex >= all.Length)
+            {
+                SetStatusBanner("垂直切片的内容到这里为止。");
+                AppendLog("后面的班次还没有写。你的记录已经存下来了。");
+                _shiftComplete = false;
+                return;
+            }
+
+            _shiftComplete = false;
+            LoadShift(all[_campaign.shiftIndex]);
         }
 
         private void SetPadPage(int page)
@@ -557,7 +590,9 @@ namespace Decoder.UI
                 accuracy = grade.Accuracy,
             });
             SaveSystem.Save(_campaign);
+            _shiftComplete = true;
 
+            AppendLog("本班结束。按 N 交班。");
             AppendLog($"已送出 · 准确度 {grade.Accuracy:P0} · {LevelLabel(_selectedLevel)}" +
                       $" · 呼号{(grade.CallsignCorrect ? "对" : "错")}" +
                       $" · 频率{(grade.FrequencyCorrect ? "对" : "错")}");
@@ -706,37 +741,37 @@ namespace Decoder.UI
 
             // 底部：上报单
             var reportPanel = Panel(root, "ReportPanel",
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 36f), new Vector2(1180f, 160f),
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(1240f, 184f),
                 pivot: new Vector2(0.5f, 0f));
             Label(reportPanel, "电报上报单", 22, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(24f, -14f), new Vector2(300f, 30f));
             // 上报单分四列排：等级在左，截获参数在中，操作提示在右，判定在最右。
             // 挤在一起会让玩家在最需要看清的时候读错自己填了什么。
-            Label(reportPanel, "威胁等级", 22, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(24f, -52f), new Vector2(200f, 30f));
+            Label(reportPanel, "威胁等级", 24, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(28f, -58f), new Vector2(220f, 32f));
             _levelText = Label(reportPanel, LevelLabel(_selectedLevel), 32, Amber, TextAnchor.UpperLeft,
-                new Vector2(24f, -84f), new Vector2(260f, 44f));
+                new Vector2(28f, -94f), new Vector2(280f, 50f));
 
-            Label(reportPanel, "呼号", 20, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(300f, -14f), new Vector2(120f, 26f));
+            Label(reportPanel, "呼号", 22, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(320f, -16f), new Vector2(140f, 28f));
             _formCallsignText = Label(reportPanel, "＿＿＿", 26, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(300f, -40f), new Vector2(200f, 34f));
-            Label(reportPanel, "频率 kHz", 20, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(300f, -80f), new Vector2(140f, 26f));
+                new Vector2(320f, -46f), new Vector2(220f, 40f));
+            Label(reportPanel, "频率 kHz", 22, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(320f, -94f), new Vector2(160f, 28f));
             _formFrequencyText = Label(reportPanel, "＿＿＿＿", 26, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(300f, -106f), new Vector2(200f, 34f));
+                new Vector2(320f, -124f), new Vector2(240f, 40f));
 
-            _focusHintText = Label(reportPanel, "正在填：抄收纸", 22, Amber, TextAnchor.UpperLeft,
-                new Vector2(540f, -14f), new Vector2(300f, 28f));
-            Label(reportPanel, "Tab 换栏 · L 查电码表", 18, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(540f, -46f), new Vector2(320f, 26f));
-            Label(reportPanel, "[ ] 翻页 · D 用当页解密", 18, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(540f, -72f), new Vector2(320f, 26f));
-            Label(reportPanel, "← → 等级 · 回车 送出", 18, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(540f, -98f), new Vector2(320f, 26f));
+            _focusHintText = Label(reportPanel, "正在填：抄收纸", 24, Amber, TextAnchor.UpperLeft,
+                new Vector2(600f, -16f), new Vector2(320f, 30f));
+            Label(reportPanel, "Tab 换栏 · L 查电码表", 20, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(600f, -54f), new Vector2(340f, 28f));
+            Label(reportPanel, "[ ] 翻页 · D 用当页解密", 20, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(600f, -86f), new Vector2(340f, 28f));
+            Label(reportPanel, "← → 等级 · 回车 送出", 20, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(600f, -118f), new Vector2(340f, 28f));
 
             _verdictText = Label(reportPanel, "", 24, Phosphor, TextAnchor.UpperRight,
-                new Vector2(-24f, -14f), new Vector2(280f, 130f), anchorRight: true);
+                new Vector2(-28f, -16f), new Vector2(280f, 150f), anchorRight: true);
 
             // 左中：密码本。玩家要自己从报头读页码再翻到那一页。
             var padPanel = Panel(root, "PadPanel",
