@@ -1,0 +1,21 @@
+{
+    "name": "Overclock.Runtime",
+    "rootNamespace": "Overclock",
+    "references": [
+        "Overclock.Core",
+        "Abyssal.Runtime",
+        "UnityEngine.UI",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
