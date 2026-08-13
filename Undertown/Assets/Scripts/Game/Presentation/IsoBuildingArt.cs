@@ -767,19 +767,29 @@ namespace Undertown.Game.Presentation
         private static void Chimney(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
             Scheme scheme, int peak)
         {
-            var brick = new Color32(0x6E, 0x4E, 0x3C, 0xFF);
-            var brickLit = new Color32(0x8E, 0x6A, 0x52, 0xFF);
+            var brick = new Color32(0x5C, 0x42, 0x33, 0xFF);
+            var brickLit = new Color32(0x72, 0x54, 0x40, 0xFF);
+            var mortar = new Color32(0x46, 0x33, 0x28, 0xFF);
             var cap = new Color32(0x24, 0x1C, 0x16, 0xFF);
 
             var stack = Iso.Project(cw * 0.72f, ch * 0.28f, ox, oy);
             int baseLift = scheme.WallHeight + peak / 2;
             int top = scheme.WallHeight + peak + 14;
 
+            // Seven pixels across rather than nine, coursed, and split into a lit and a shaded
+            // face down the corner. A plain slab of one colour at this width was the heaviest
+            // thing on any cottage and the eye went straight to it.
             for (int lift = baseLift; lift <= top; lift++)
-            for (int dx = -4; dx <= 4; dx++)
-                Plot(px, w, h, stack.x + dx, stack.y + lift, dx < -1 ? brickLit : brick);
+            for (int dx = -3; dx <= 3; dx++)
+            {
+                var tone = dx <= -1 ? brickLit : brick;
+                int course = lift - baseLift;
+                if (course % 3 == 0) tone = mortar;
+                else if ((dx + (course / 3) * 2 + 6) % 4 == 0) tone = Darken(tone, 10);
+                Plot(px, w, h, stack.x + dx, stack.y + lift, tone);
+            }
 
-            for (int dx = -5; dx <= 5; dx++)
+            for (int dx = -4; dx <= 4; dx++)
             {
                 Plot(px, w, h, stack.x + dx, stack.y + top + 1, cap);
                 Plot(px, w, h, stack.x + dx, stack.y + top + 2, cap);
@@ -972,8 +982,21 @@ namespace Undertown.Game.Presentation
                 var tone = ground;
                 if (kind == BuildingKind.Field)
                 {
-                    // Ploughed furrows running the length of the field.
-                    tone = (Mathf.RoundToInt(v * 6f) % 2 == 0) ? Lighten(ground, 16) : Darken(ground, 10);
+                    // Standing corn in drilled rows, not flat stripes. A field painted as two
+                    // alternating bands of colour reads as a rug; what says "crop" is the bare
+                    // earth showing in the gap between rows and the broken texture of the ears.
+                    float row = v * 5f;
+                    float frac = row - Mathf.Floor(row);
+                    int n = Hash(p.x, p.y * 3 + Mathf.FloorToInt(row));
+
+                    if (frac < 0.24f) tone = Darken(ground, 30);
+                    else
+                    {
+                        tone = n % 4 == 0 ? Lighten(ground, 28)
+                            : n % 3 == 0 ? Lighten(ground, 10)
+                            : ground;
+                        if (n % 13 == 0) Plot(px, w, h, p.x, p.y + 6, Lighten(ground, 44));
+                    }
                 }
 
                 Plot(px, w, h, p.x, p.y + 4, tone);
@@ -1205,19 +1228,42 @@ namespace Undertown.Game.Presentation
         {
             var straw = new Color32(0xAE, 0x94, 0x46, 0xFF);
             var strawDark = new Color32(0x84, 0x6E, 0x30, 0xFF);
+            var band = new Color32(0x66, 0x52, 0x24, 0xFF);
 
             for (int i = 0; i < 6; i++)
             {
-                float u = 0.5f + (i % 3) * (cw - 1f) / 2f;
-                float v = 0.5f + (i / 3) * (ch - 1f);
+                int n = Hash(i * 17 + cw, ch * 5 + i);
+
+                // Off the grid they were set out on, and no two the same height. Six identical
+                // cones at even spacing looked like a row of tents.
+                float u = 0.5f + (i % 3) * (cw - 1f) / 2f + ((n % 7) - 3) * 0.09f;
+                float v = 0.5f + (i / 3) * (ch - 1f) + (((n / 7) % 7) - 3) * 0.09f;
                 var p = Iso.Project(u, v, ox, oy);
 
-                for (int lift = 4; lift < 16; lift++)
+                int top = 13 + (n / 49) % 4;
+                for (int lift = 3; lift < top; lift++)
                 {
-                    int spread = lift < 10 ? 3 : lift < 13 ? 2 : 1;
+                    float t = (lift - 3) / (float)(top - 3);
+                    int spread = Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(4f, 0.6f, t * t)));
                     for (int dx = -spread; dx <= spread; dx++)
-                        Plot(px, w, h, p.x + dx, p.y + lift, dx < 0 ? straw : strawDark);
+                    {
+                        var tone = dx < 0 ? straw : strawDark;
+                        // Twine round the waist of the sheaf, and a ragged butt at the bottom.
+                        if (lift == 3 + (top - 3) / 3) tone = band;
+                        else if (Hash(p.x + dx, p.y + lift) % 6 == 0) tone = Darken(tone, 18);
+                        Plot(px, w, h, p.x + dx, p.y + lift, tone);
+                    }
                 }
+            }
+        }
+
+        private static int Hash(int a, int b)
+        {
+            unchecked
+            {
+                int n = (a * 73856093) ^ (b * 19349663);
+                n = (n ^ (n >> 13)) * 1274126177;
+                return (n ^ (n >> 16)) & 0x7FFFFFFF;
             }
         }
 
