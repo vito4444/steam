@@ -161,11 +161,34 @@ the key faces now. The keys and their grille were brass at 0.7 metallic, and a r
 metal with no environment to reflect comes out of a software rasteriser as pale
 yellow-green; both are bone bakelite and dull olive now.
 
+## The shape in the fog
+
+![The window](shots/07_the_window.png)
+
+The subject was one fixed figure for everybody. The biometric screen could report
+five limbs and the thing in the window would still have four, which means looking up
+from the desk told the player nothing — the window was decoration in a game whose
+whole subject is looking at someone and deciding whether they are still a person.
+
+The silhouette is built from the attributes now. Past four limbs an extra arm
+appears, set behind the shoulder and canted so the fog gives up an outline that does
+not resolve rather than a clearly drawn extra arm. Reach, stoop and how high the head
+sits vary per bearer, seeded off the permit serial so the same person stands the same
+way every time a night is replayed. The variation is small on purpose: a figure that
+is obviously deformed answers the question the player is meant to answer with
+paperwork, and one that is obviously normal makes the window pointless.
+
+Fixing this found a bug in it. A box scales about its centre, so a neck stretched by
+a factor rises half as far as the head it is meant to reach, and past about a hand's
+worth of lift the head came off and floated. A bug that looks like art direction,
+which is the kind that survives. The neck is computed to reach wherever the head
+ended up, and a test walks four hundred bearers checking it still touches.
+
 ## Verification
 
 ```
-107/107 edit-mode tests passed, 0 failed, 0 skipped
-self-check: 10 checkpoints, 60 ms/frame (16.6 fps), 259 renderers, 4178 triangles,
+114/114 edit-mode tests passed, 0 failed, 0 skipped
+self-check: 10 checkpoints, 61 ms/frame (16.5 fps), 259 renderers, 4178 triangles,
             12 lights, 0 errors, 4.6 MB managed heap
 input:      camera turned 18.7 degrees, 4 interactables hovered,
             click reached target, switch thrown by click
