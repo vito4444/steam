@@ -62,6 +62,11 @@ namespace Undertown.Core.Sim
         public SettlementReport LastSettlement;
         public bool GameOver;
 
+        public WageLevel Wages = WageLevel.Standard;
+
+        /// <summary>Last day the daily reckoning ran, so a paused or fast-forwarded clock never skips one.</summary>
+        public int LastNeedsDay;
+
         public int Suspicion { get; private set; }
         public int Coin;
         public int BlackCoin;

@@ -40,6 +40,9 @@ namespace Undertown.Game.UI
         private Text _toolText;
         private Text _logText;
         private Text _exposureText;
+        private Text _workforceText;
+        private Button _wageButton;
+        private Text _wageLabel;
 
         private int _previewedRevision = -1;
         private int _previewedSuspicion;
@@ -124,10 +127,10 @@ namespace Undertown.Game.UI
             UiFactory.Place((RectTransform)section.transform, 408f, 12f, 320f, SectionHeight);
 
             var title = UiFactory.Label(section.transform, "Title", "SUSPICION", 20, ProceduralUiArt.InkDim);
-            UiFactory.Place((RectTransform)title.transform, 16f, 164f, 200f, 26f);
+            UiFactory.Place((RectTransform)title.transform, 16f, 176f, 200f, 26f);
 
             var track = UiFactory.Fill(section.transform, "Track", new Color32(0x0C, 0x0A, 0x08, 0xFF));
-            UiFactory.Place((RectTransform)track.transform, 16f, 128f, 288f, 28f);
+            UiFactory.Place((RectTransform)track.transform, 16f, 142f, 288f, 28f);
 
             _suspicionFill = UiFactory.Fill(track.transform, "Fill", ProceduralUiArt.Danger);
             var fillRect = (RectTransform)_suspicionFill.transform;
@@ -138,13 +141,32 @@ namespace Undertown.Game.UI
             fillRect.sizeDelta = new Vector2(0f, -4f);
 
             _suspicionValue = UiFactory.Label(section.transform, "Value", "", 26, ProceduralUiArt.Ink, TextAnchor.MiddleRight);
-            UiFactory.Place((RectTransform)_suspicionValue.transform, 200f, 160f, 104f, 30f);
+            UiFactory.Place((RectTransform)_suspicionValue.transform, 200f, 172f, 104f, 30f);
 
             _suspicionBand = UiFactory.Label(section.transform, "Band", "", 20, ProceduralUiArt.Ink);
-            UiFactory.Place((RectTransform)_suspicionBand.transform, 16f, 92f, 288f, 26f);
+            UiFactory.Place((RectTransform)_suspicionBand.transform, 16f, 110f, 288f, 26f);
 
             _spoilText = UiFactory.Label(section.transform, "Spoil", "", 17, ProceduralUiArt.InkDim);
-            UiFactory.Place((RectTransform)_spoilText.transform, 16f, 60f, 288f, 26f);
+            UiFactory.Place((RectTransform)_spoilText.transform, 16f, 84f, 288f, 26f);
+
+            // Loyalty belongs beside suspicion rather than in a panel of its own: an
+            // inspector's questions are answered out of the town's discontent, so the two
+            // numbers are read together or not at all.
+            _workforceText = UiFactory.Label(section.transform, "Workforce", "", 17, ProceduralUiArt.InkDim);
+            UiFactory.Place((RectTransform)_workforceText.transform, 16f, 56f, 288f, 26f);
+
+            _wageButton = MakeButton(section.transform, "Wages", "", 16f, 12f, 288f, 34f);
+            _wageButton.onClick.AddListener(CycleWages);
+        }
+
+        /// <summary>
+        /// Wages are the one lever that trades coin directly for silence, so it sits one
+        /// click away rather than behind a management screen.
+        /// </summary>
+        private void CycleWages()
+        {
+            _town.Wages = _town.Wages == WageLevel.Generous ? WageLevel.Meagre : _town.Wages + 1;
+            _town.Record($"wages set to {NeedsSystem.WageLabel(_town.Wages)}");
         }
 
         private void BuildLedger(RectTransform bar)
@@ -310,6 +332,8 @@ namespace Undertown.Game.UI
                 : $"spoil in the open: {_town.SurfaceSpoil}";
             _spoilText.color = exposure > 0 ? (Color)ProceduralUiArt.Danger : (Color)ProceduralUiArt.InkDim;
 
+            RefreshWorkforce();
+
             foreach (var pair in _ledgerRows)
             {
                 var flow = _town.Books.Flow(pair.Key);
@@ -379,6 +403,39 @@ namespace Undertown.Game.UI
             _exposureText.color = band >= SuspicionBand.Fined
                 ? (Color)ProceduralUiArt.Danger
                 : (Color)ProceduralUiArt.Contraband;
+        }
+
+        private void RefreshWorkforce()
+        {
+            if (_workforceText == null) return;
+
+            int people = _town.Villagers.Count;
+            int loyalty = NeedsSystem.AverageLoyalty(_town);
+            int hungry = NeedsSystem.CountHungry(_town);
+            int talkers = NeedsSystem.CountWillTalk(_town);
+
+            var text = $"{people} townsfolk · loyalty {loyalty}";
+            if (hungry > 0) text += $" · {hungry} hungry";
+            if (talkers > 0) text += $" · {talkers} would talk";
+
+            _workforceText.text = text;
+            _workforceText.color = talkers > 0
+                ? (Color)ProceduralUiArt.Danger
+                : hungry > 0
+                    ? (Color)ProceduralUiArt.Contraband
+                    : (Color)ProceduralUiArt.InkDim;
+
+            if (_wageLabel == null && _wageButton != null)
+                _wageLabel = _wageButton.GetComponentInChildren<Text>();
+
+            if (_wageLabel != null)
+            {
+                int daily = NeedsSystem.WageCost(_town.Wages) * people;
+                _wageLabel.text = $"wages: {NeedsSystem.WageLabel(_town.Wages)}  ({daily} coin/day)";
+                _wageLabel.color = _town.Wages == WageLevel.Meagre
+                    ? (Color)ProceduralUiArt.Danger
+                    : (Color)ProceduralUiArt.InkDim;
+            }
         }
 
         private void RefreshTool()

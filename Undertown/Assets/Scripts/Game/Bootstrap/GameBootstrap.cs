@@ -71,6 +71,7 @@ namespace Undertown.Game.Bootstrap
                 _tickAccumulator -= wholeMinutes;
                 _town.Clock.Advance(wholeMinutes);
                 ProductionSystem.Tick(_town, wholeMinutes);
+                NeedsSystem.Tick(_town);
                 AgentSystem.Tick(_town, wholeMinutes);
                 InspectionSystem.Tick(_town, wholeMinutes);
             }
@@ -116,6 +117,7 @@ namespace Undertown.Game.Bootstrap
                 int step = Mathf.Min(chunk, minutes - elapsed);
                 _town.Clock.Advance(step);
                 ProductionSystem.Tick(_town, step);
+                NeedsSystem.Tick(_town);
                 AgentSystem.Tick(_town, step);
                 InspectionSystem.Tick(_town, step);
             }

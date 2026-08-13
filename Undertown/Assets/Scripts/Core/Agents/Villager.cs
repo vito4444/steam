@@ -32,6 +32,12 @@ namespace Undertown.Core.Agents
         /// <summary>Whether this worker knows about the undeclared works. Only those who go down there do.</summary>
         public bool KnowsAboutTheWorks;
 
+        /// <summary>Consecutive days without a ration. Hunger compounds rather than accruing flatly.</summary>
+        public int DaysHungry;
+
+        public bool Housed = true;
+        public bool Paid = true;
+
         public const int TalksThreshold = 35;
 
         public List<Coord> Path;
@@ -51,6 +57,18 @@ namespace Undertown.Core.Agents
         }
 
         public bool WillTalk => Loyalty < TalksThreshold;
+
+        /// <summary>The grievance an inspector would hear about first, or null if there is none.</summary>
+        public string Grievance
+        {
+            get
+            {
+                if (DaysHungry > 0) return DaysHungry == 1 ? "hungry" : $"hungry {DaysHungry} days";
+                if (!Paid) return "unpaid";
+                if (!Housed) return "no bed";
+                return null;
+            }
+        }
 
         public bool Underground => !Position.IsSurface;
 

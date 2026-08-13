@@ -248,12 +248,31 @@ namespace Undertown.Core.Sim
             inspector.TaskProgress = 0;
 
             var witness = PickWitness(town);
-            if (witness != null && witness.WillTalk && witness.KnowsAboutTheWorks)
+            if (witness == null)
             {
-                inspector.Findings.Add($"{witness.Name} talked");
-                town.AddSuspicion(22, $"{witness.Name} answered his questions honestly");
+                inspector.Task = InspectorTask.Departing;
+                return;
             }
-            else if (witness != null)
+
+            string grievance = witness.Grievance;
+
+            if (witness.WillTalk && witness.KnowsAboutTheWorks)
+            {
+                inspector.Findings.Add(grievance == null
+                    ? $"{witness.Name} talked"
+                    : $"{witness.Name} talked; {grievance}");
+                town.AddSuspicion(22, grievance == null
+                    ? $"{witness.Name} answered his questions honestly"
+                    : $"{witness.Name} is {grievance}, and said so along with everything else");
+            }
+            else if (witness.WillTalk)
+            {
+                // Someone unhappy but out of the loop cannot give up the chamber. What they
+                // can do is tell the inspector this is a town worth coming back to.
+                inspector.Findings.Add($"{witness.Name} complained ({grievance ?? "discontent"})");
+                town.AddSuspicion(4, $"{witness.Name} had complaints, though nothing he could use");
+            }
+            else
             {
                 town.Record($"{witness.Name} said nothing useful");
             }
