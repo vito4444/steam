@@ -422,14 +422,33 @@ namespace Undertown.Game.Presentation
                 int half = Mathf.RoundToInt(Mathf.Lerp(9f, 2f, t * t));
                 for (int dx = -half; dx <= half; dx++)
                 {
-                    var tone = dx < -half / 3 ? hayLit : dx > half / 2 ? hayDark : hay;
+                    // Shaded across most of its width, not just at the far edge. Lit down one
+                    // third and dark down another read as a flat yellow triangle from any
+                    // distance; a rick is round, and what says so is the turn from light to
+                    // dark happening across the whole face.
+                    float across = dx / (float)Mathf.Max(1, half);
+                    var tone = across < -0.45f ? hayLit
+                        : across < 0.1f ? hay
+                        : across < 0.55f ? Mix(hay, hayDark, 0.5f)
+                        : hayDark;
+
                     // Straw pulled out in wisps rather than a smooth cone.
-                    if ((dx * 7 + lift * 13 + variant * 5) % 9 == 0) tone = hayDark;
+                    if ((dx * 7 + lift * 13 + variant * 5) % 9 == 0) tone = Mix(tone, hayDark, 0.6f);
+                    if ((dx * 5 - lift * 3 + variant) % 17 == 0) tone = hayLit;
+
                     Plot(px, cx + dx, cy + lift, tone);
                 }
+
+                // Courses of straw laid round it, which also stops the cone reading as smooth.
+                if (lift % 5 == 2)
+                    for (int dx = -half + 1; dx <= half - 1; dx += 2)
+                        Plot(px, cx + dx, cy + lift, Mix(hayDark, hay, 0.35f));
             }
 
             for (int dx = -3; dx <= 3; dx++) Plot(px, cx + dx, cy + top, hayDark);
+
+            // The pole it was built round, left standing out of the top.
+            for (int lift = top; lift < top + 5; lift++) Plot(px, cx, cy + lift, C(0x50, 0x3C, 0x24));
         }
 
         /// <summary>Fired brick stacked to season, in courses laid crossways to bind.</summary>
@@ -617,6 +636,11 @@ namespace Undertown.Game.Presentation
         }
 
         private static Color32 C(byte r, byte g, byte b) => new Color32(r, g, b, 0xFF);
+
+        private static Color32 Mix(Color32 a, Color32 b, float t) => new Color32(
+            (byte)Mathf.RoundToInt(a.r + (b.r - a.r) * t),
+            (byte)Mathf.RoundToInt(a.g + (b.g - a.g) * t),
+            (byte)Mathf.RoundToInt(a.b + (b.b - a.b) * t), 0xFF);
 
         private static int Hash(int a, int b, int salt)
         {

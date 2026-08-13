@@ -175,13 +175,66 @@ namespace Undertown.Game.Presentation
                     break;
 
                 case TileKind.Road:
-                    // Wheel ruts running along the diamond's long axis.
-                    for (int i = -12; i <= 12; i++)
+                {
+                    // Wheel ruts running along the diamond's long axis, with the crown between
+                    // them worn paler and loose stone thrown to the verges.
+                    var rut = new Color32(0x64, 0x4D, 0x2B, 0xFF);
+                    var crown = new Color32(0x8E, 0x70, 0x40, 0xFF);
+                    for (int i = -14; i <= 14; i++)
                     {
-                        Plot(px, w, h, cx + i * 2, cy + i - 4, new Color32(0x6A, 0x52, 0x2E, 0xFF));
-                        Plot(px, w, h, cx + i * 2, cy + i + 3, new Color32(0x6A, 0x52, 0x2E, 0xFF));
+                        Plot(px, w, h, cx + i * 2, cy + i - 4, rut);
+                        Plot(px, w, h, cx + i * 2 + 1, cy + i - 4, Shift(rut, 6));
+                        Plot(px, w, h, cx + i * 2, cy + i + 3, rut);
+                        Plot(px, w, h, cx + i * 2 + 1, cy + i + 3, Shift(rut, 6));
+                        if ((i & 1) == 0) Plot(px, w, h, cx + i * 2, cy + i, crown);
+                    }
+
+                    for (int i = 0; i < 7; i++)
+                    {
+                        int gx = Hash(i, variant, 383) % w;
+                        int gy = skirt + Hash(i, variant, 907) % Iso.TileHeight;
+                        Plot(px, w, h, gx, gy, Shift(ColorOf(kind), 20));
                     }
                     break;
+                }
+
+                case TileKind.Dirt:
+                {
+                    // Trodden ground. With nothing but the per-pixel jitter on it, bare earth
+                    // came out as a flat sheet the moment the camera closed to two screen
+                    // pixels per pixel of art, and the yards are a good part of the frame.
+                    //
+                    // Three marks, all of them things a working yard would actually have on
+                    // it: drag scuffs along the grid axis where loads have been hauled, stones
+                    // brought up by the traffic, and straw trodden in.
+                    var scuff = Darken(ColorOf(kind), 18);
+                    var stone = Shift(ColorOf(kind), 22);
+                    var straw = new Color32(0x8A, 0x74, 0x40, 0xFF);
+
+                    for (int i = 0; i < 14; i++)
+                    {
+                        int gx = Hash(i, variant, 149) % w;
+                        int gy = skirt + Hash(i, variant, 733) % Iso.TileHeight;
+                        int roll = Hash(i, variant, 61) % 10;
+
+                        if (roll < 5)
+                        {
+                            for (int k = 0; k < 3 + roll; k++)
+                                Plot(px, w, h, gx + k * 2, gy + k, scuff);
+                        }
+                        else if (roll < 8)
+                        {
+                            Plot(px, w, h, gx, gy, stone);
+                            Plot(px, w, h, gx + 1, gy, Shift(stone, -10));
+                        }
+                        else
+                        {
+                            Plot(px, w, h, gx, gy, straw);
+                            Plot(px, w, h, gx + 2, gy + 1, straw);
+                        }
+                    }
+                    break;
+                }
 
                 case TileKind.Water:
                 {
