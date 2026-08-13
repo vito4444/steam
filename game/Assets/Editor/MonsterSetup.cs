@@ -138,8 +138,8 @@ namespace Monster.EditorTools
             tonemapping.mode.Override(TonemappingMode.Neutral);
 
             var colorAdjustments = Add<ColorAdjustments>();
-            colorAdjustments.postExposure.Override(-0.30f);
-            colorAdjustments.contrast.Override(5f);
+            colorAdjustments.postExposure.Override(-0.62f);
+            colorAdjustments.contrast.Override(9f);
             colorAdjustments.saturation.Override(-9f);
             colorAdjustments.colorFilter.Override(new Color(1.0f, 0.97f, 0.93f));
 
@@ -161,7 +161,7 @@ namespace Monster.EditorTools
             bloom.tint.Override(new Color(1f, 0.90f, 0.76f));
 
             var vignette = Add<Vignette>();
-            vignette.intensity.Override(0.36f);
+            vignette.intensity.Override(0.46f);
             vignette.smoothness.Override(0.52f);
             vignette.color.Override(new Color(0.015f, 0.015f, 0.022f));
 

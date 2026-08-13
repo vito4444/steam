@@ -1,0 +1,255 @@
+# M3 — the three things that were missing
+
+M2 ended with a booth that looked right and a rules engine that was sound, and a
+gap list that opened with three entries marked high severity. All three were the
+same complaint in different words: the game was a form-filling exercise wearing a
+checkpoint's clothes. Nothing arrived, nobody spoke, and the moment a shift ended
+you were told exactly how you had done.
+
+This milestone closes all three.
+
+Everything below was produced by the automated self-check running the built Linux
+player headlessly on a GPU-less VM. No screenshot here was staged by hand.
+
+---
+
+## 1. Vehicles arrive, wait, and leave
+
+Until now the only sign that a new vehicle had pulled up was that the paperwork
+on the desk changed.
+
+The road outside is a state machine now. Headlights close through the fog, the
+vehicle stops at the line and the subject steps out of the cab, and when a
+decision is made the barrier either lifts and it drives through or it stays down
+and the vehicle reverses back into the fog.
+
+Refusing produces the same picture whether the player held, referred or alarmed.
+The player is never shown which of their refusals was the right one.
+
+| approaching | at the window | admitted |
+|---|---|---|
+| ![](shots/approach.png) | ![](shots/booth_idle.png) | ![](shots/admitted.png) |
+
+Three things had to be fixed before any of that read on screen.
+
+**The barrier could not lift.** It was eight loose arm segments at fixed
+positions. The arm hangs off a pivot at the post now.
+
+**The vehicle's lamps were on the wrong ends.** Headlamps and tail lamps were
+both on the end facing the booth, which read as a car that had already driven
+through and parked backwards. Headlamps face the barrier now and tail lamps face
+away, so a vehicle driving through leads with its headlights and one reversing
+away shows its tails.
+
+**Unity's fog attenuates geometry but does not scatter light.** A headlamp in fog
+was two hard pixels, not a glare. Additive halo billboards put the scattering in
+by hand. The first attempt sized them at 2.6 m, almost all of which sat below the
+window sill, leaving a barely visible arc; at 5 m enough of the halo clears the
+sill to read as oncoming headlights — and the subject at the window is now
+silhouetted against them, which is the single biggest improvement to the hero
+shot this milestone.
+
+## 2. The interrogation
+
+Two of the manual's criteria were free. The pause before a subject answers and a
+second voice underneath the first were printed on the cabin monitor as finished
+readings, so the player got them without doing anything.
+
+They are obtained by asking now. Four keys on the desk put a question through the
+glass, and the reply lands after however long this particular bearer takes to
+start answering — waited out in real time as well as printed. Asking costs time
+the player is short of, which turns "check everything" from a routine into a
+decision.
+
+![](shots/intercom.png)
+
+The keys sit across the desk from the verdict switches on purpose. One row asks a
+question and the other ends someone's night; mixing them on one plate would
+invite the wrong one being thrown under pressure.
+
+The interrogation also had to be load-bearing rather than decorative, so it
+carries a criterion of its own:
+
+> **C-17** — Where the district a bearer names aloud is not the district on the
+> permit. REFER.
+
+Asking is the only way to find that out. C-17 went in through every guard the
+rules engine already had: a new observable attribute, a generator violation, and
+the fairness test that no criterion may test something the desk does not show.
+
+The second voice is drawn as a two-row block trace as well as being audible.
+Audio alone cannot be verified on a machine with no sound card, and more to the
+point it cannot be relied on by a player with the volume down.
+
+## 3. The game stops telling you whether you were right
+
+This is the concept's central pillar and until now it was a line in a design
+document. The morning report graded every decision the moment the shift ended.
+
+It cannot be honoured one shift at a time, so there is a campaign: thirty nights,
+a flat wage of six credits per vehicle processed, and errors that come back later
+as notices of deduction.
+
+| the morning report | what the post brought |
+|---|---|
+| ![](shots/morning_report.png) | ![](shots/consequence.png) |
+
+Note what the report does not say. Processed, quota, wage, withheld, net,
+balance — and nothing about accuracy. Because the wage is flat, accuracy cannot
+be reverse-engineered from the money either. The 54 credits withheld on night six
+are not attributed to any decision; they refer to a night.
+
+What comes back depends on the mistake:
+
+| mistake | arrives | as |
+|---|---|---|
+| admitted something that was not a person | 3 nights later | an incident at a place down the road |
+| turned away someone who was a person | 2 nights later | the missing persons column, by name |
+| any error at all | 4 nights later | a notice of deduction naming the night |
+| a correct alarm | 5 nights later | a memorandum that explicitly carries no award |
+
+Roughly two nights in five also bring a district circular about heater fuel or
+stationery requisitions, referring to nothing at all. That is load-bearing:
+without post that means nothing, an envelope on the mat is itself a verdict and
+the whole delay becomes decoration.
+
+A night can bring nine items, so desk objects can be leafed through — clicking
+something you are already leaning over turns the page instead of sitting back.
+
+---
+
+## The road outside
+
+The view through the window was a barrier and a silhouette pasted on a flat grey
+wall. The treeline meant to fix that sat between seventeen and twenty-three
+metres, where this fog leaves six percent of the geometry showing.
+
+Distance was not the only problem. **Everything unlit converges on the fog's own
+colour.** A black tree at twenty metres is not a dark shape against grey, it is
+grey. Dark geometry cannot give fog depth past about ten metres.
+
+So the depth out there is built from lamps: an amber beacon at ten metres, a work
+light at fifteen whose halo is all that reaches the booth, and a hut at eighteen
+that is nothing but two lit windows. Plus a chicane, a kerb, a fence the fog cuts
+off rather than ends, and delineator posts whose reflector tips are emissive —
+a retroreflector returns light to its source, which no material in a rasteriser
+does, so it is faked. When a vehicle comes down the road they light in sequence.
+
+The posts also had to grow. The window sill hides everything below a line falling
+from 0.95 m at six metres to 0.5 m at twelve; they were 0.88 m and never cleared
+it.
+
+## Grading against the concept
+
+The self-check measures the render against the concept art rather than trusting
+an opinion about it. Before this milestone's grade pass, and after:
+
+| metric | before | after | concept |
+|---|---|---|---|
+| mean luma | 0.1264 | 0.0912 | 0.0957 |
+| contrast (σ) | 0.1380 | 0.1203 | 0.1170 |
+| warm/cool balance | 0.0730 | 0.0526 | 0.0533 |
+| left third | 0.1019 | 0.0661 | 0.0708 |
+| right third | 0.1288 | 0.0947 | 0.0473 |
+
+Post exposure went from −0.30 to −0.62, contrast from 5 to 9, vignette from 0.36
+to 0.46. Luma, contrast and colour balance are now within five percent of the
+target. The right third is still twice as bright as the concept's, which is
+partly a real difference — the concept's composition does not run the desk to
+the right edge of frame — and partly the cabin monitor, which cannot be dimmed
+without making it unreadable.
+
+## Concept art for this milestone
+
+| the arrival | the desk |
+|---|---|
+| ![](../../concepts/art/m3_arrival.png) | ![](../../concepts/art/m3_desk.png) |
+
+---
+
+## Bugs this milestone surfaced
+
+Five, all of which had been shipping silently.
+
+**Portrait faces could come out as near-solid blocks.** Mismatched photographs
+were made by flipping three cells of the sixteen-cell grid, which changed how
+many cells were lit and pushed some patterns to thirteen of sixteen — nothing to
+compare against. Mismatches swap lit cells for unlit ones now, which moves the
+pattern without changing its density. The first attempt at that picked each swap
+from the pattern as it changed, so a second swap could undo the first and a
+"mismatched" face came out identical to the permit; the cells are chosen up front
+now, all distinct.
+
+**The density balancer only ever visited six of the sixteen cells**, because it
+stepped by three. A pattern too dense in the other ten could not be thinned. It
+walks every cell now, in a fixed order so results stay deterministic.
+
+**The monitors were Lit materials.** The desk lamp fell across the nearest one
+and washed its face from green to pale yellow, which no CRT has ever done. They
+are unlit now — a phosphor screen emits and does not reflect — and the lamp's
+cone was narrowed and re-aimed at the paperwork it is supposed to light.
+
+**Regenerating the phosphor overlay texture without regenerating the material
+that referenced it left the reference dangling.** URP sampled white, the overlay
+became an opaque black rectangle, and every monitor in the booth went blank with
+no error anywhere. The atmosphere materials are always recreated now, and a
+missing texture is logged rather than silently rendered as a solid quad.
+
+**One test was wrong rather than the code.** A flawless campaign earns the same
+total whatever the seed, because the wage is flat and the queue lengths are
+fixed — that is what the flat wage is for. The test fingerprints the post
+instead, which does differ by seed.
+
+## Tests
+
+48 → 67. The nineteen new ones cover the interrogation (8) and the campaign and
+its consequences (11).
+
+Three of them exist specifically to protect the design pillar, because it is easy
+to break by accident:
+
+- `TheMorningReportNeverRevealsHowManyWereCorrect` — a flawless night and a night
+  spent waving everything through must produce an identical first statement.
+- `NoNoticeEverStatesWhetherADecisionWasRight` — no notice may contain the words
+  correct, incorrect, wrong, right, mistake or error.
+- `SomeMailRefersToNothingAtAll` — a flawless campaign must still get plenty of
+  post, or any envelope at all is a verdict.
+
+And `CareIsPaidBetterThanCarelessnessAcrossACampaign` asserts what the per-night
+report deliberately hides: across thirty nights, reading the manual pays better
+than not.
+
+The self-check now plays six nights rather than one — correctly on the first and
+carelessly after — because a consequence that arrives three nights later cannot
+be photographed in a single night. Last run: 96 vehicles processed, 54 credits
+withheld, 0 errors logged.
+
+## Where it stands
+
+| | |
+|---|---|
+| frame time | 57 ms (18 fps) on Mesa llvmpipe, no GPU |
+| renderers | 229 |
+| triangles | 3,978 |
+| edit-mode tests | 67 passing |
+| self-check errors | 0 |
+
+## What is still missing
+
+Reassessed from M2's list.
+
+1. **Audio has never been heard.** Synthesised, structurally tested, and now
+   wired to the intercom as well — but this machine has no audio device. *Medium.*
+2. **No save/load.** A thirty-night campaign cannot be resumed, which makes the
+   campaign length theoretical. This is now the largest gap. *High.*
+3. **Interaction is untested by a human.** Look, hover, lean-in and the new
+   leafing are exercised only by the scripted self-check. *Medium.*
+4. **Props still have no surface detail** beyond the grunge-mapped large
+   surfaces. *Medium.*
+5. **The monitors are flat quads.** No curved glass, no barrel distortion. *Low.*
+6. **Legacy input, not the Input System.** No rebinding. *Low.*
+7. **Validated only on a software rasteriser.** Post-processing, shadow filtering
+   and anti-aliasing will differ on a real GPU, and the grade above was tuned
+   against llvmpipe output. *Known limitation.*
+8. **No questioning consequences.** Asking costs time but the time is not yet
+   scarce enough to hurt: there is no clock pressure inside a shift. *Medium.*
