@@ -74,6 +74,7 @@ namespace Maner.Cabin
 
             BuildAmbientAudio();
             PushAllVisuals(true);
+            BindPlayerAndHud();
         }
 
         void Update()
@@ -141,6 +142,41 @@ namespace Maner.Cabin
             source.volume = 0.38f;
             source.playOnAwake = false;
             source.Play();
+        }
+
+        /// <summary>
+        /// 把玩家操作端与界面接到运行时。自动驾驶模式下不接管鼠标，
+        /// 这样无人值守截图不会因为光标锁定而卡住。
+        /// </summary>
+        void BindPlayerAndHud()
+        {
+            var camera = Camera.main;
+            if (camera == null)
+            {
+                Debug.LogWarning("[Cabin] 场景里没有主相机，玩家操作端未启用");
+                return;
+            }
+
+            var rig = GetComponent<PlayerRig>();
+            if (rig != null)
+            {
+                if (autoPilot == null)
+                {
+                    rig.Bind(this, camera);
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                }
+                else
+                {
+                    rig.enabled = false;
+                }
+            }
+
+            var hud = GetComponent<CabinHud>();
+            if (hud != null)
+            {
+                hud.Bind(this, rig);
+            }
         }
 
         void PushAllVisuals(bool snap)

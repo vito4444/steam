@@ -445,6 +445,11 @@ namespace Maner.EditorTools
 
             cameraGo.AddComponent<Maner.SelfCheck.AutoScreenshotRunner>();
 
+            // 玩家操作端与屏幕层界面。两者都由 CabinRuntime 在初始化末尾绑定，
+            // 因为它们要拿到运行时生成的控制舱。
+            runtimeGo.AddComponent<Maner.Cabin.PlayerRig>();
+            runtimeGo.AddComponent<Maner.Cabin.CabinHud>();
+
             var listener = new GameObject("AudioListener");
             listener.transform.position = cameraGo.transform.position;
             listener.AddComponent<AudioListener>();
