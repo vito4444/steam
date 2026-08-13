@@ -27,10 +27,15 @@ namespace Undertown.Game.Presentation
             { TileKind.Rock,        new Color32(0x6E, 0x6E, 0x66, 0xFF) },
             { TileKind.DisusedMine, new Color32(0x54, 0x44, 0x30, 0xFF) },
 
-            { TileKind.Earth,       new Color32(0x4C, 0x40, 0x32, 0xFF) },
-            { TileKind.Cavity,      new Color32(0x2A, 0x23, 0x1B, 0xFF) },
-            { TileKind.Bedrock,     new Color32(0x33, 0x36, 0x3B, 0xFF) },
-            { TileKind.Aquifer,     new Color32(0x2F, 0x5A, 0x70, 0xFF) },
+            // Underground, solid ground is dark and excavated ground is light. That is the
+            // opposite of the physical truth - a hole in the earth is darker than the earth -
+            // and it is the right way round for the screen: what the player needs to find at a
+            // glance is where the tunnels run, and a tunnel lit by the lamps working in it
+            // reads instantly against dead rock.
+            { TileKind.Earth,       new Color32(0x2B, 0x23, 0x1A, 0xFF) },
+            { TileKind.Cavity,      new Color32(0x84, 0x6C, 0x4A, 0xFF) },
+            { TileKind.Bedrock,     new Color32(0x26, 0x28, 0x2C, 0xFF) },
+            { TileKind.Aquifer,     new Color32(0x2A, 0x50, 0x66, 0xFF) },
         };
 
         private static readonly Dictionary<int, Tile> Cache = new Dictionary<int, Tile>();
@@ -186,13 +191,22 @@ namespace Undertown.Game.Presentation
                     break;
 
                 case TileKind.Cavity:
-                    // A swept floor with rubble against the walls.
+                    // A swept floor, darker towards the edges so a run of tunnel reads as a
+                    // corridor with walls rather than as a flat light patch.
+                    for (int y = 0; y < h; y++)
+                    for (int x = 0; x < w; x++)
+                    {
+                        if (px[y * w + x].a == 0) continue;
+                        float dx = Mathf.Abs(x - (w - 1) / 2f) / (w / 2f);
+                        float dy = Mathf.Abs(y - (h - 1) / 2f) / (h / 2f);
+                        float toEdge = dx + dy;
+                        if (toEdge > 0.72f) px[y * w + x] = Darken(px[y * w + x], 26);
+                    }
                     for (int i = 0; i < 4; i++)
                     {
                         int gx = Hash(i, variant, 733) % w;
-                        int gy = skirt + Hash(i, variant, 191) % Iso.TileHeight;
-                        if (!Iso.InsideDiamond(gx, gy - skirt, w, Iso.TileHeight)) continue;
-                        Plot(px, w, h, gx, gy, new Color32(0x3E, 0x34, 0x28, 0xFF));
+                        int gy = Hash(i, variant, 191) % Iso.TileHeight;
+                        Plot(px, w, h, gx, gy, new Color32(0x54, 0x44, 0x30, 0xFF));
                     }
                     break;
 

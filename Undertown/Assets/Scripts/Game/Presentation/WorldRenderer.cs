@@ -18,7 +18,11 @@ namespace Undertown.Game.Presentation
     public sealed class WorldRenderer : MonoBehaviour
     {
         private const float SurfaceOverlayAlpha = 0.62f;
-        private const float UndergroundOverlayAlpha = 0.16f;
+
+        // Faint enough to place yourself by and no more. The town overhead is context for
+        // reading the tunnels, and at any higher value it stops being context and becomes the
+        // picture, which defeats the point of having switched layers.
+        private const float UndergroundOverlayAlpha = 0.09f;
 
         [SerializeField] private Tilemap _primary;
         [SerializeField] private Tilemap _overlay;

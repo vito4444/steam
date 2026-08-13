@@ -5,319 +5,559 @@ using Undertown.Core.Buildings;
 namespace Undertown.Game.Presentation
 {
     /// <summary>
-    /// Buildings drawn as solids in the isometric projection: two visible wall faces, a
-    /// pitched roof with two slopes, and a cast shadow on the ground.
+    /// Buildings drawn as solids: two lit wall faces, a gable end, a pitched roof with eaves
+    /// that overhang, and a shadow on the ground.
     ///
-    /// This is the part the flat top-down version could not do at all. A building seen from
-    /// directly above is a rectangle with a pattern on it; seen at 2:1 it has a silhouette,
-    /// and silhouette is most of what makes a town readable.
+    /// The pitch is the part that has to be got right. A roof's ridge is drawn higher up the
+    /// screen than its eaves by the height of the pitch, but the far eaves are already higher
+    /// than the near ones by half the building's depth in cells. If the pitch is not taller
+    /// than that, the ridge lands below the far eaves and both slopes read as one flat plane
+    /// tilted the wrong way - which is what the first version did, and why every roof looked
+    /// like a lean-to. The pitch therefore scales with the footprint rather than being a fixed
+    /// number of pixels.
     /// </summary>
     public static class IsoBuildingArt
     {
         private static readonly Dictionary<BuildingKind, Sprite> Cache = new Dictionary<BuildingKind, Sprite>();
 
+        /// <summary>How far the eaves stand out past the walls, in cells.</summary>
+        private const float Overhang = 0.22f;
+
         private struct Scheme
         {
             public Color32 Wall;
             public Color32 Roof;
-            public Color32 Trim;
+            public Color32 Timber;
+            public Color32 Plinth;
+
+            /// <summary>Wall height in pixels, eaves to plinth.</summary>
             public int WallHeight;
-            public int RoofHeight;
+
+            /// <summary>Extra pixels the ridge rises above the far eaves, on top of the
+            /// minimum the footprint already forces.</summary>
+            public int Pitch;
+
             public bool Thatch;
+            public bool HalfTimbered;
+            public bool Chimney;
         }
 
         public static Sprite For(BuildingKind kind)
         {
             if (Cache.TryGetValue(kind, out var cached) && cached != null) return cached;
-            var sprite = Build(kind);
-            Cache[kind] = sprite;
-            return sprite;
+            return Cache[kind] = Build(kind);
         }
 
         private static Sprite Build(BuildingKind kind)
         {
             var def = BuildingCatalog.Get(kind);
-            int cellsW = Mathf.Max(1, def?.Width ?? 1);
-            int cellsH = Mathf.Max(1, def?.Height ?? 1);
+            int cw = Mathf.Max(1, def?.Width ?? 1);
+            int ch = Mathf.Max(1, def?.Height ?? 1);
 
             var scheme = SchemeFor(kind);
-            int footW = Iso.FootprintWidth(cellsW, cellsH);
-            int footH = Iso.FootprintHeight(cellsW, cellsH);
-            int total = footH + scheme.WallHeight + scheme.RoofHeight + 6;
+            bool ridgeAlongX = cw >= ch;
 
-            var px = new Color32[footW * total];
-            var clear = new Color32(0, 0, 0, 0);
-            for (int i = 0; i < px.Length; i++) px[i] = clear;
+            // Depth across the ridge, in cells: what the pitch has to beat.
+            int across = ridgeAlongX ? ch : cw;
+            int peak = across * Iso.HalfHeight / 2 + scheme.Pitch;
 
-            int offsetX = cellsH * Iso.HalfWidth;
-            int offsetY = footH;
+            int marginX = Mathf.CeilToInt(Overhang * Iso.TileWidth) + 4;
+            int footW = Iso.FootprintWidth(cw, ch) + marginX * 2;
+            int footH = Iso.FootprintHeight(cw, ch);
+            int total = footH + scheme.WallHeight + peak + marginX + 12;
 
-            if (IsOpenGround(kind))
-                PaintYard(px, footW, total, cellsW, cellsH, offsetX, offsetY, kind);
+            var px = Blank(footW, total);
+            int ox = ch * Iso.HalfWidth + marginX;
+            int oy = footH;
+
+            if (def != null && def.Underground)
+                PaintUnderground(px, footW, total, cw, ch, ox, oy, kind);
+            else if (IsOpenGround(kind))
+                PaintYard(px, footW, total, cw, ch, ox, oy, kind);
             else
-                PaintSolid(px, footW, total, cellsW, cellsH, offsetX, offsetY, scheme, kind);
+                PaintSolid(px, footW, total, cw, ch, ox, oy, scheme, kind, ridgeAlongX, peak);
 
-            var pivot = Iso.OriginPivot(cellsW, cellsH, total);
+            var pivot = new Vector2(
+                (ch * Iso.HalfWidth + marginX) / (float)footW,
+                (footH - Iso.HalfHeight) / (float)total);
+
             return ToSprite(px, footW, total, $"iso_{kind}", pivot);
         }
 
         private static bool IsOpenGround(BuildingKind kind) =>
-            kind == BuildingKind.Field || kind == BuildingKind.ClayPit || kind == BuildingKind.Sawpit ||
-            kind == BuildingKind.Tunnel;
+            kind == BuildingKind.Field || kind == BuildingKind.ClayPit ||
+            kind == BuildingKind.Sawpit || kind == BuildingKind.Tunnel;
 
-        /// <summary>A walled structure: shadow, ground slab, two wall faces, then a pitched roof.</summary>
         private static void PaintSolid(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
-            Scheme scheme, BuildingKind kind)
+            Scheme scheme, BuildingKind kind, bool ridgeAlongX, int peak)
         {
             Shadow(px, w, h, cw, ch, ox, oy);
-
-            var wallLeft = scheme.Wall;
-            var wallRight = Darken(scheme.Wall, 34);
-            int wallTop = scheme.WallHeight;
-
-            // Wall faces are the two lower edges of the footprint diamond extruded upwards.
-            for (int lift = 0; lift < wallTop; lift++)
-            {
-                // South-west face: the edge from the west corner down to the south corner.
-                for (int t = 0; t <= ch * Iso.HalfWidth; t++)
-                {
-                    float v = ch - t / (float)Iso.HalfWidth / ch * ch;
-                    var p = Iso.Project(0f, ch - t / (float)(ch * Iso.HalfWidth) * ch, ox, oy);
-                    Plot(px, w, h, p.x - t, p.y - t / 2 + lift, wallLeft);
-                }
-
-                // South-east face.
-                for (int t = 0; t <= cw * Iso.HalfWidth; t++)
-                {
-                    var p = Iso.Project(cw, ch, ox, oy);
-                    Plot(px, w, h, p.x - t, p.y + t / 2 + lift, wallRight);
-                }
-            }
-
-            FillFace(px, w, h, cw, ch, ox, oy, wallTop, wallLeft, wallRight, scheme.Trim);
-            PaintRoof(px, w, h, cw, ch, ox, oy, wallTop, scheme);
-            Details(px, w, h, cw, ch, ox, oy, wallTop, kind, scheme);
+            Walls(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
+            Openings(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX);
+            Roof(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
+            if (scheme.Chimney) Chimney(px, w, h, cw, ch, ox, oy, scheme, peak);
         }
 
         /// <summary>
-        /// Rasterises the two visible wall faces properly, by walking the footprint edges in
-        /// cell space and extruding each point upward.
+        /// The two faces the viewer can see, extruded from the footprint's near edges, plus the
+        /// gable triangle on whichever of them is an end wall.
         /// </summary>
-        private static void FillFace(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
-            int wallTop, Color32 left, Color32 right, Color32 trim)
+        private static void Walls(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme, bool ridgeAlongX, int peak)
         {
-            const int steps = 256;
+            var left = scheme.Wall;
+            var right = Darken(scheme.Wall, 30);
+            int wallTop = scheme.WallHeight;
+            int steps = Mathf.Max(cw, ch) * 96;
 
+            // South-facing wall, the edge from the west corner to the south corner.
             for (int i = 0; i <= steps; i++)
-            {
-                float t = i / (float)steps;
-
-                // West corner (0,ch) to south corner (cw,ch): the left-facing wall.
-                var a = Iso.Project(t * cw, ch, ox, oy);
-                for (int lift = 0; lift < wallTop; lift++)
-                    Plot(px, w, h, a.x, a.y + lift, Shade(left, lift, wallTop));
-                Plot(px, w, h, a.x, a.y + wallTop, trim);
-
-                // South corner (cw,ch) to east corner (cw,0): the right-facing wall.
-                var b = Iso.Project(cw, (1f - t) * ch, ox, oy);
-                for (int lift = 0; lift < wallTop; lift++)
-                    Plot(px, w, h, b.x, b.y + lift, Shade(right, lift, wallTop));
-                Plot(px, w, h, b.x, b.y + wallTop, trim);
-            }
-
-            // Close the interior so the walls read as a solid block rather than two ribbons.
-            for (int i = 0; i <= steps; i++)
-            {
-                float t = i / (float)steps;
-                var edge = Iso.Project(t * cw, ch, ox, oy);
-                var inner = Iso.Project(t * cw, 0f, ox, oy);
-                for (int y = inner.y; y <= edge.y; y++)
-                for (int lift = 0; lift < wallTop; lift++)
-                    Plot(px, w, h, edge.x, y + lift, Shade(left, lift, wallTop));
-            }
-        }
-
-        /// <summary>Two roof slopes meeting at a ridge, drawn over the top of the walls.</summary>
-        private static void PaintRoof(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
-            int wallTop, Scheme scheme)
-        {
-            var lit = Lighten(scheme.Roof, 22);
-            var dark = Darken(scheme.Roof, 30);
-            var ridgeColor = Lighten(scheme.Roof, 42);
-            const int steps = 320;
-
-            // The ridge runs along the longer axis so the roof reads as a real pitch.
-            bool ridgeAlongX = cw >= ch;
-            int peak = scheme.RoofHeight;
-
-            for (int i = 0; i <= steps; i++)
-            for (int j = 0; j <= steps; j++)
             {
                 float u = i / (float)steps * cw;
-                float v = j / (float)steps * ch;
+                var p = Iso.Project(u, ch, ox, oy);
+                int gable = ridgeAlongX ? 0 : GableAt(u / cw, peak);
+                Column(px, w, h, p.x, p.y, wallTop + gable, left, scheme, u * Iso.TileWidth);
+            }
 
-                // Distance from the ridge line, normalised, drives both height and shading.
-                float across = ridgeAlongX ? (v / ch) : (u / cw);
-                float fromRidge = Mathf.Abs(across - 0.5f) * 2f;
-                int lift = wallTop + Mathf.RoundToInt((1f - fromRidge) * peak);
-
-                var p = Iso.Project(u, v, ox, oy);
-                bool sunSide = ridgeAlongX ? v < ch * 0.5f : u > cw * 0.5f;
-                var shade = sunSide ? lit : dark;
-
-                // Courses of tile or thatch across the slope.
-                int course = Mathf.RoundToInt(fromRidge * peak);
-                if (!scheme.Thatch && course % 3 == 0) shade = Darken(shade, 14);
-                if (scheme.Thatch && (i + j) % 7 == 0) shade = Darken(shade, 10);
-
-                PlotOver(px, w, h, p.x, p.y + lift, shade);
-                if (fromRidge < 0.03f) PlotOver(px, w, h, p.x, p.y + lift, ridgeColor);
+            // East-facing wall, from the south corner to the east corner.
+            for (int i = 0; i <= steps; i++)
+            {
+                float v = (1f - i / (float)steps) * ch;
+                var p = Iso.Project(cw, v, ox, oy);
+                int gable = ridgeAlongX ? GableAt(v / ch, peak) : 0;
+                Column(px, w, h, p.x, p.y, wallTop + gable, right, scheme, v * Iso.TileWidth);
             }
         }
 
-        private static void PaintYard(Color32[] px, int w, int h, int cw, int ch, int ox, int oy, BuildingKind kind)
+        /// <summary>Height of the gable triangle at a fraction across the end wall.</summary>
+        private static int GableAt(float acrossFraction, int peak) =>
+            Mathf.RoundToInt((1f - Mathf.Abs(acrossFraction - 0.5f) * 2f) * peak);
+
+        /// <summary>
+        /// One vertical strip of wall: plinth at the bottom, render above it, a timber post
+        /// every so often, and a band of shade under the eaves.
+        /// </summary>
+        private static void Column(Color32[] px, int w, int h, int x, int y, int top,
+            Color32 baseColor, Scheme scheme, float alongWallPx)
+        {
+            bool post = scheme.HalfTimbered && ((int)alongWallPx % 22) < 3;
+
+            for (int lift = 0; lift < top; lift++)
+            {
+                Color32 tone;
+                if (lift < 4) tone = scheme.Plinth;
+                else if (post) tone = scheme.Timber;
+                else tone = Shade(baseColor, lift, top);
+
+                // Under the eaves the wall falls into shadow, which is what separates a roof
+                // from the wall it sits on.
+                if (lift > top - 4) tone = Darken(tone, 26);
+                Plot(px, w, h, x, y + lift, tone);
+            }
+        }
+
+        /// <summary>Two slopes meeting at a ridge, with eaves standing out past the walls.</summary>
+        private static void Roof(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme, bool ridgeAlongX, int peak)
+        {
+            var lit = Lighten(scheme.Roof, 26);
+            var dark = Darken(scheme.Roof, 34);
+            var ridge = Lighten(scheme.Roof, 48);
+            var edge = Darken(scheme.Roof, 52);
+
+            float u0 = -Overhang, u1 = cw + Overhang;
+            float v0 = -Overhang, v1 = ch + Overhang;
+            int steps = Mathf.Max(cw, ch) * 150;
+
+            for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
+            {
+                float u = Mathf.Lerp(u0, u1, i / (float)steps);
+                float v = Mathf.Lerp(v0, v1, j / (float)steps);
+
+                float across = ridgeAlongX
+                    ? Mathf.InverseLerp(v0, v1, v)
+                    : Mathf.InverseLerp(u0, u1, u);
+                float fromRidge = Mathf.Abs(across - 0.5f) * 2f;
+
+                int lift = scheme.WallHeight + Mathf.RoundToInt((1f - fromRidge) * peak);
+                var p = Iso.Project(u, v, ox, oy);
+
+                bool sunSide = across < 0.5f;
+                var tone = sunSide ? lit : dark;
+
+                if (scheme.Thatch)
+                {
+                    int clump = (Mathf.RoundToInt(u * 40f) * 7 + Mathf.RoundToInt(v * 40f) * 13) % 11;
+                    if (clump < 3) tone = Darken(tone, 12);
+                    else if (clump > 8) tone = Lighten(tone, 10);
+                }
+                else
+                {
+                    // Courses of tile ruled across the slope, parallel to the ridge.
+                    int course = Mathf.RoundToInt(fromRidge * peak * 2f);
+                    if (course % 5 == 0) tone = Darken(tone, 18);
+                }
+
+                if (fromRidge > 0.985f) tone = edge;
+                if (fromRidge < 0.035f) tone = ridge;
+
+                Plot(px, w, h, p.x, p.y + lift, tone);
+            }
+        }
+
+        private static void Openings(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme, bool ridgeAlongX)
+        {
+            var frame = new Color32(0x2A, 0x1E, 0x14, 0xFF);
+            var glow = new Color32(0xE8, 0xBA, 0x58, 0xFF);
+            var glowDim = new Color32(0xB8, 0x8E, 0x3E, 0xFF);
+            int wallTop = scheme.WallHeight;
+
+            // A door on the south wall, arched, with a stone threshold.
+            var door = Iso.Project(cw * 0.5f, ch, ox, oy);
+            int doorTop = Mathf.Min(wallTop - 5, 20);
+            for (int lift = 0; lift < doorTop; lift++)
+            {
+                int half = lift > doorTop - 4 ? 3 : 5;
+                for (int dx = -half; dx <= half; dx++)
+                    Plot(px, w, h, door.x + dx, door.y + lift, lift < 2 ? scheme.Plinth : frame);
+            }
+
+            // Windows along both visible walls, set below the eaves.
+            for (int i = 0; i < cw; i++)
+            {
+                var p = Iso.Project(i + 0.5f, ch, ox, oy);
+                if (Mathf.Abs(p.x - door.x) < 10) continue;
+                Window(px, w, h, p.x, p.y, wallTop, frame, glow);
+            }
+
+            for (int i = 0; i < ch; i++)
+            {
+                var p = Iso.Project(cw, i + 0.5f, ox, oy);
+                Window(px, w, h, p.x, p.y, wallTop, frame, glowDim);
+            }
+        }
+
+        private static void Window(Color32[] px, int w, int h, int x, int y, int wallTop,
+            Color32 frame, Color32 glow)
+        {
+            int top = wallTop - 6;
+            int bottom = Mathf.Max(6, top - 9);
+
+            for (int lift = bottom - 1; lift <= top + 1; lift++)
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                bool border = lift == bottom - 1 || lift == top + 1 || dx == -4 || dx == 4;
+                Plot(px, w, h, x + dx, y + lift, border ? frame : glow);
+            }
+
+            // A mullion, which is what stops a window reading as a glowing sticker.
+            for (int lift = bottom; lift <= top; lift++) Plot(px, w, h, x, y + lift, frame);
+        }
+
+        private static void Chimney(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme, int peak)
+        {
+            var brick = new Color32(0x6E, 0x4E, 0x3C, 0xFF);
+            var brickLit = new Color32(0x8E, 0x6A, 0x52, 0xFF);
+            var cap = new Color32(0x24, 0x1C, 0x16, 0xFF);
+
+            var stack = Iso.Project(cw * 0.72f, ch * 0.28f, ox, oy);
+            int baseLift = scheme.WallHeight + peak / 2;
+            int top = scheme.WallHeight + peak + 14;
+
+            for (int lift = baseLift; lift <= top; lift++)
+            for (int dx = -4; dx <= 4; dx++)
+                Plot(px, w, h, stack.x + dx, stack.y + lift, dx < -1 ? brickLit : brick);
+
+            for (int dx = -5; dx <= 5; dx++)
+            {
+                Plot(px, w, h, stack.x + dx, stack.y + top + 1, cap);
+                Plot(px, w, h, stack.x + dx, stack.y + top + 2, cap);
+            }
+        }
+
+        /// <summary>
+        /// What is underground is plant, not architecture: a still, sacks, pit props, a ladder.
+        ///
+        /// Drawing cellars the same way as houses gave them roofs, and a roof underground is
+        /// nonsense that also hides the thing the player came down to see. The excavated floor
+        /// is already drawn by the tilemap and is deliberately the lightest surface down there,
+        /// so anything placed on it has to sit low and leave most of it showing.
+        /// </summary>
+        private static void PaintUnderground(Color32[] px, int w, int h, int cw, int ch,
+            int ox, int oy, BuildingKind kind)
+        {
+            switch (kind)
+            {
+                case BuildingKind.Still: Still(px, w, h, cw, ch, ox, oy); break;
+                case BuildingKind.UnderStore: Sacks(px, w, h, cw, ch, ox, oy); break;
+                case BuildingKind.Tunnel: PitProps(px, w, h, cw, ch, ox, oy); break;
+                case BuildingKind.HiddenEntrance: Ladder(px, w, h, cw, ch, ox, oy); break;
+                case BuildingKind.FalseWall: BlindWall(px, w, h, cw, ch, ox, oy); break;
+                default: PitProps(px, w, h, cw, ch, ox, oy); break;
+            }
+        }
+
+        private static void Still(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            var copper = new Color32(0xA8, 0x6A, 0x32, 0xFF);
+            var copperLit = new Color32(0xD2, 0x96, 0x4E, 0xFF);
+            var copperDark = new Color32(0x70, 0x44, 0x1E, 0xFF);
+            var brick = new Color32(0x5A, 0x40, 0x34, 0xFF);
+            var fire = new Color32(0xF0, 0x9A, 0x38, 0xFF);
+            var pipe = new Color32(0x8E, 0x5A, 0x2C, 0xFF);
+
+            var c = Iso.Project(cw * 0.5f, ch * 0.55f, ox, oy);
+
+            // Brick firebox with the fire showing through its mouth.
+            for (int lift = 0; lift < 9; lift++)
+            for (int dx = -13; dx <= 13; dx++)
+                Plot(px, w, h, c.x + dx, c.y + lift, dx < -4 ? Lighten(brick, 16) : brick);
+            for (int lift = 2; lift < 7; lift++)
+            for (int dx = -4; dx <= 4; dx++)
+                Plot(px, w, h, c.x + dx, c.y + lift, lift > 4 ? fire : Lighten(fire, 30));
+
+            // The pot itself, a squat copper drum with a domed head.
+            for (int lift = 9; lift < 30; lift++)
+            {
+                int half = lift < 26 ? 12 : 12 - (lift - 26) * 3;
+                for (int dx = -half; dx <= half; dx++)
+                {
+                    var tone = dx < -half / 2 ? copperLit : dx > half / 2 ? copperDark : copper;
+                    if (lift == 14 || lift == 22) tone = Darken(tone, 34);
+                    Plot(px, w, h, c.x + dx, c.y + lift, tone);
+                }
+            }
+
+            // Swan neck running off to the condenser.
+            for (int t = 0; t < 18; t++)
+            {
+                int x = c.x + 2 + t;
+                int y = c.y + 30 - t * t / 14;
+                Plot(px, w, h, x, y, pipe);
+                Plot(px, w, h, x, y + 1, copperLit);
+                Plot(px, w, h, x, y + 2, pipe);
+            }
+
+            for (int lift = 0; lift < 12; lift++)
+            for (int dx = -3; dx <= 3; dx++)
+                Plot(px, w, h, c.x + 19 + dx, c.y + lift, dx < 0 ? Lighten(copper, 14) : copperDark);
+        }
+
+        private static void Sacks(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            var hessian = new Color32(0x9E, 0x8A, 0x5E, 0xFF);
+            var hessianLit = new Color32(0xC0, 0xAA, 0x76, 0xFF);
+            var hessianDark = new Color32(0x6E, 0x5E, 0x3E, 0xFF);
+            var tie = new Color32(0x50, 0x42, 0x2A, 0xFF);
+
+            for (int i = 0; i < 5; i++)
+            {
+                float u = 0.35f + (i % 3) * (cw - 0.7f) / 2f;
+                float v = 0.35f + (i / 3) * (ch - 0.7f);
+                var p = Iso.Project(u, v, ox, oy);
+                int lean = (i % 2 == 0) ? 1 : -1;
+
+                for (int lift = 0; lift < 15; lift++)
+                {
+                    int half = lift < 3 ? 6 : lift < 11 ? 7 : 7 - (lift - 11) * 2;
+                    for (int dx = -half; dx <= half; dx++)
+                    {
+                        var tone = dx < -half / 2 ? hessianLit : dx > half / 2 ? hessianDark : hessian;
+                        Plot(px, w, h, p.x + dx + lift * lean / 8, p.y + lift, tone);
+                    }
+                }
+                for (int dx = -2; dx <= 2; dx++)
+                    Plot(px, w, h, p.x + dx + lean, p.y + 14, tie);
+            }
+        }
+
+        private static void PitProps(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            var timber = new Color32(0x63, 0x4A, 0x2C, 0xFF);
+            var timberLit = new Color32(0x86, 0x66, 0x3E, 0xFF);
+
+            for (int side = 0; side < 2; side++)
+            {
+                var p = Iso.Project(cw * 0.5f, side == 0 ? 0.12f : ch - 0.12f, ox, oy);
+                for (int lift = 0; lift < 20; lift++)
+                {
+                    Plot(px, w, h, p.x - 11, p.y + lift, timberLit);
+                    Plot(px, w, h, p.x - 10, p.y + lift, timber);
+                    Plot(px, w, h, p.x + 10, p.y + lift, timber);
+                    Plot(px, w, h, p.x + 11, p.y + lift, Darken(timber, 18));
+                }
+                for (int dx = -12; dx <= 12; dx++)
+                {
+                    Plot(px, w, h, p.x + dx, p.y + 20, timberLit);
+                    Plot(px, w, h, p.x + dx, p.y + 21, timber);
+                    Plot(px, w, h, p.x + dx, p.y + 22, Darken(timber, 22));
+                }
+            }
+        }
+
+        private static void Ladder(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            var timber = new Color32(0x74, 0x58, 0x34, 0xFF);
+            var dark = new Color32(0x14, 0x0E, 0x0A, 0xFF);
+            var sky = new Color32(0x8E, 0x8A, 0x6E, 0xFF);
+
+            var c = Iso.Project(cw * 0.5f, ch * 0.5f, ox, oy);
+
+            // A hole in the roof of the chamber, with daylight coming down it.
+            for (int dy = -6; dy <= 6; dy++)
+            for (int dx = -14; dx <= 14; dx++)
+                if (dx * dx + dy * dy * 5 <= 196) Plot(px, w, h, c.x + dx, c.y + dy + 26, dy > 2 ? sky : dark);
+
+            for (int lift = 0; lift < 30; lift++)
+            {
+                Plot(px, w, h, c.x - 5, c.y + lift, timber);
+                Plot(px, w, h, c.x + 5, c.y + lift, Darken(timber, 20));
+                if (lift % 5 == 0)
+                    for (int dx = -5; dx <= 5; dx++) Plot(px, w, h, c.x + dx, c.y + lift, Lighten(timber, 18));
+            }
+        }
+
+        private static void BlindWall(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            var stone = new Color32(0x5E, 0x54, 0x46, 0xFF);
+            var stoneLit = new Color32(0x7C, 0x72, 0x60, 0xFF);
+            var mortar = new Color32(0x3A, 0x33, 0x2A, 0xFF);
+
+            int steps = Mathf.Max(cw, ch) * 96;
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                var p = Iso.Project(t * cw, ch * 0.5f, ox, oy);
+                for (int lift = 0; lift < 26; lift++)
+                {
+                    bool course = lift % 6 == 0 || (i * 40 / steps + lift / 6) % 5 == 0;
+                    Plot(px, w, h, p.x, p.y + lift, course ? mortar : lift > 18 ? stoneLit : stone);
+                }
+            }
+        }
+
+        private static void PaintYard(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            BuildingKind kind)
         {
             Shadow(px, w, h, cw, ch, ox, oy);
 
             Color32 ground;
             switch (kind)
             {
-                case BuildingKind.Field: ground = new Color32(0x9A, 0x83, 0x3C, 0xFF); break;
+                case BuildingKind.Field: ground = new Color32(0x9E, 0x86, 0x3E, 0xFF); break;
                 case BuildingKind.ClayPit: ground = new Color32(0x8E, 0x55, 0x3C, 0xFF); break;
                 case BuildingKind.Tunnel: ground = new Color32(0x35, 0x2C, 0x22, 0xFF); break;
                 default: ground = new Color32(0x7B, 0x66, 0x46, 0xFF); break;
             }
 
-            const int steps = 320;
-            for (int i = 0; i <= steps; i++)
+            int steps = Mathf.Max(cw, ch) * 150;
             for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
             {
                 float u = i / (float)steps * cw;
                 float v = j / (float)steps * ch;
                 var p = Iso.Project(u, v, ox, oy);
 
-                var shade = ground;
-                if (kind == BuildingKind.Field && ((int)(u * 4) % 2 == 0))
-                    shade = Lighten(ground, 18);
-                if (kind == BuildingKind.ClayPit)
+                var tone = ground;
+                if (kind == BuildingKind.Field)
                 {
-                    float toCentre = Mathf.Abs(u / cw - 0.5f) + Mathf.Abs(v / ch - 0.5f);
-                    shade = Darken(ground, Mathf.RoundToInt((1f - toCentre) * 40f));
+                    // Ploughed furrows running the length of the field.
+                    tone = (Mathf.RoundToInt(v * 6f) % 2 == 0) ? Lighten(ground, 16) : Darken(ground, 10);
+                }
+                else if (kind == BuildingKind.ClayPit)
+                {
+                    float toEdge = Mathf.Min(Mathf.Min(u, cw - u), Mathf.Min(v, ch - v));
+                    tone = Darken(ground, Mathf.RoundToInt(Mathf.Clamp01(toEdge) * 34f));
                 }
 
-                PlotOver(px, w, h, p.x, p.y + 4, shade);
+                Plot(px, w, h, p.x, p.y + 4, tone);
             }
 
-            // Fence posts and rails around the perimeter.
-            var rail = new Color32(0x6B, 0x53, 0x35, 0xFF);
-            var post = new Color32(0x46, 0x35, 0x20, 0xFF);
-            for (int i = 0; i <= steps; i++)
-            {
-                float t = i / (float)steps;
-                Perimeter(px, w, h, cw, ch, ox, oy, t, rail, 4, 5);
-                if (i % 26 != 0) continue;
-                Perimeter(px, w, h, cw, ch, ox, oy, t, post, 4, 9);
-            }
-
+            Palings(px, w, h, cw, ch, ox, oy);
             if (kind == BuildingKind.Sawpit) LogPile(px, w, h, cw, ch, ox, oy);
             if (kind == BuildingKind.Field) Sheaves(px, w, h, cw, ch, ox, oy);
         }
 
-        private static void Perimeter(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
-            float t, Color32 color, int baseLift, int height)
+        private static void Palings(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
         {
-            var points = new[]
-            {
-                Iso.Project(t * cw, 0f, ox, oy),
-                Iso.Project(t * cw, ch, ox, oy),
-                Iso.Project(0f, t * ch, ox, oy),
-                Iso.Project(cw, t * ch, ox, oy),
-            };
+            var rail = new Color32(0x74, 0x5A, 0x38, 0xFF);
+            var post = new Color32(0x4C, 0x39, 0x22, 0xFF);
+            int steps = Mathf.Max(cw, ch) * 120;
 
-            foreach (var p in points)
-                for (int lift = baseLift; lift < baseLift + height; lift++)
-                    PlotOver(px, w, h, p.x, p.y + lift, color);
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                var edges = new[]
+                {
+                    Iso.Project(t * cw, 0f, ox, oy),
+                    Iso.Project(t * cw, ch, ox, oy),
+                    Iso.Project(0f, t * ch, ox, oy),
+                    Iso.Project(cw, t * ch, ox, oy),
+                };
+
+                bool isPost = i % (steps / (Mathf.Max(cw, ch) * 4)) == 0;
+                foreach (var p in edges)
+                {
+                    for (int lift = 4; lift < (isPost ? 15 : 10); lift++)
+                        Plot(px, w, h, p.x, p.y + lift, isPost ? post : rail);
+                    if (!isPost) continue;
+                    for (int lift = 8; lift < 10; lift++) Plot(px, w, h, p.x, p.y + lift, rail);
+                }
+            }
         }
 
         private static void LogPile(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
         {
             var bark = new Color32(0x5E, 0x44, 0x28, 0xFF);
-            var cut = new Color32(0xC0, 0x9C, 0x64, 0xFF);
+            var barkLit = new Color32(0x7C, 0x5E, 0x3A, 0xFF);
+            var cut = new Color32(0xC4, 0xA0, 0x68, 0xFF);
 
-            for (int log = 0; log < 3; log++)
-            for (int i = 0; i <= 120; i++)
+            for (int row = 0; row < 3; row++)
+            for (int i = 0; i <= 200; i++)
             {
-                float t = i / 120f;
-                var p = Iso.Project(0.3f + t * (cw - 0.6f), 0.5f + log * 0.35f, ox, oy);
-                for (int lift = 5; lift < 11; lift++)
-                    PlotOver(px, w, h, p.x, p.y + lift, lift > 8 ? Lighten(bark, 18) : bark);
-                if (i > 116) for (int lift = 5; lift < 11; lift++) PlotOver(px, w, h, p.x, p.y + lift, cut);
+                float t = i / 200f;
+                var p = Iso.Project(0.35f + t * (cw - 0.7f), 0.5f + row * 0.4f, ox, oy);
+                for (int lift = 5; lift < 12; lift++)
+                    Plot(px, w, h, p.x, p.y + lift, lift > 9 ? barkLit : bark);
+                if (i > 195) for (int lift = 5; lift < 12; lift++) Plot(px, w, h, p.x, p.y + lift, cut);
             }
         }
 
         private static void Sheaves(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
         {
-            var straw = new Color32(0xC6, 0xA8, 0x4E, 0xFF);
+            var straw = new Color32(0xCE, 0xB0, 0x56, 0xFF);
+            var strawDark = new Color32(0x9C, 0x82, 0x3A, 0xFF);
+
             for (int i = 0; i < 6; i++)
             {
-                float u = 0.4f + (i % 3) * (cw - 0.8f) / 2f;
-                float v = 0.4f + (i / 3) * (ch - 0.8f);
+                float u = 0.5f + (i % 3) * (cw - 1f) / 2f;
+                float v = 0.5f + (i / 3) * (ch - 1f);
                 var p = Iso.Project(u, v, ox, oy);
-                for (int lift = 4; lift < 14; lift++)
+
+                for (int lift = 4; lift < 16; lift++)
                 {
-                    int spread = lift < 9 ? 2 : 1;
+                    int spread = lift < 10 ? 3 : lift < 13 ? 2 : 1;
                     for (int dx = -spread; dx <= spread; dx++)
-                        PlotOver(px, w, h, p.x + dx, p.y + lift, straw);
+                        Plot(px, w, h, p.x + dx, p.y + lift, dx < 0 ? straw : strawDark);
                 }
-            }
-        }
-
-        private static void Details(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
-            int wallTop, BuildingKind kind, Scheme scheme)
-        {
-            var dark = new Color32(0x1A, 0x14, 0x0E, 0xFF);
-            var glow = new Color32(0xE0, 0xB0, 0x50, 0xFF);
-
-            // A door on the south-facing wall.
-            var door = Iso.Project(cw * 0.5f, ch, ox, oy);
-            for (int lift = 1; lift < Mathf.Min(wallTop - 1, 14); lift++)
-            for (int dx = -4; dx <= 4; dx++)
-                Plot(px, w, h, door.x + dx, door.y + lift, dark);
-
-            // Windows, lit, spaced along the same wall.
-            for (int i = 1; i <= cw; i++)
-            {
-                var wnd = Iso.Project(i - 0.5f, ch, ox, oy);
-                if (Mathf.Abs(wnd.x - door.x) < 8) continue;
-                for (int lift = wallTop - 12; lift < wallTop - 5; lift++)
-                for (int dx = -3; dx <= 3; dx++)
-                    Plot(px, w, h, wnd.x + dx, wnd.y + lift, glow);
-            }
-
-            if (kind == BuildingKind.Brewery || kind == BuildingKind.TownHall)
-            {
-                var stack = Iso.Project(cw * 0.75f, ch * 0.25f, ox, oy);
-                int top = wallTop + scheme.RoofHeight + 10;
-                for (int lift = wallTop; lift < top; lift++)
-                for (int dx = -3; dx <= 3; dx++)
-                    PlotOver(px, w, h, stack.x + dx, stack.y + lift, new Color32(0x6E, 0x5A, 0x44, 0xFF));
-                for (int dx = -3; dx <= 3; dx++)
-                    PlotOver(px, w, h, stack.x + dx, stack.y + top, new Color32(0x2A, 0x22, 0x1A, 0xFF));
             }
         }
 
         private static void Shadow(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
         {
-            var shadow = new Color32(0x14, 0x10, 0x0C, 0x55);
-            const int steps = 200;
+            var shadow = new Color32(0x16, 0x12, 0x0C, 0x4A);
+            int steps = Mathf.Max(cw, ch) * 100;
 
-            for (int i = 0; i <= steps; i++)
             for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
             {
-                float u = i / (float)steps * cw;
-                float v = j / (float)steps * ch;
+                float u = Mathf.Lerp(-Overhang, cw + Overhang, i / (float)steps);
+                float v = Mathf.Lerp(-Overhang, ch + Overhang, j / (float)steps);
                 var p = Iso.Project(u, v, ox, oy);
-                Blend(px, w, h, p.x + 4, p.y - 2, shadow);
+                Blend(px, w, h, p.x + 6, p.y - 3, shadow);
             }
         }
 
@@ -326,36 +566,90 @@ namespace Undertown.Game.Presentation
             switch (kind)
             {
                 case BuildingKind.TownHall:
-                    return new Scheme { Wall = C(0xC0, 0xB4, 0x9A), Roof = C(0x93, 0x3E, 0x2E), Trim = C(0x4A, 0x3A, 0x28), WallHeight = 26, RoofHeight = 20 };
+                    return new Scheme
+                    {
+                        Wall = C(0xCA, 0xBE, 0xA4), Roof = C(0x9C, 0x42, 0x30),
+                        Timber = C(0x53, 0x3A, 0x26), Plinth = C(0x6E, 0x6A, 0x62),
+                        WallHeight = 34, Pitch = 16, HalfTimbered = true, Chimney = true,
+                    };
                 case BuildingKind.Warehouse:
-                    return new Scheme { Wall = C(0x74, 0x58, 0x38), Roof = C(0x4A, 0x3E, 0x2E), Trim = C(0x2E, 0x24, 0x18), WallHeight = 30, RoofHeight = 16 };
+                    return new Scheme
+                    {
+                        Wall = C(0x7C, 0x5E, 0x3C), Roof = C(0x50, 0x44, 0x34),
+                        Timber = C(0x4A, 0x36, 0x20), Plinth = C(0x54, 0x4E, 0x46),
+                        WallHeight = 38, Pitch = 12, HalfTimbered = true,
+                    };
                 case BuildingKind.Brewery:
-                    return new Scheme { Wall = C(0x93, 0x6E, 0x44), Roof = C(0x4E, 0x60, 0x46), Trim = C(0x33, 0x26, 0x18), WallHeight = 24, RoofHeight = 18 };
+                    return new Scheme
+                    {
+                        Wall = C(0x9C, 0x76, 0x48), Roof = C(0x4C, 0x62, 0x48),
+                        Timber = C(0x4E, 0x36, 0x22), Plinth = C(0x60, 0x5A, 0x50),
+                        WallHeight = 32, Pitch = 14, HalfTimbered = true, Chimney = true,
+                    };
                 case BuildingKind.House:
-                    return new Scheme { Wall = C(0xA6, 0x84, 0x58), Roof = C(0xBE, 0x9A, 0x50), Trim = C(0x46, 0x34, 0x20), WallHeight = 18, RoofHeight = 16, Thatch = true };
+                    return new Scheme
+                    {
+                        Wall = C(0xC2, 0xAE, 0x8C), Roof = C(0xBE, 0x9A, 0x50),
+                        Timber = C(0x59, 0x3E, 0x28), Plinth = C(0x64, 0x5E, 0x54),
+                        WallHeight = 26, Pitch = 14, Thatch = true, HalfTimbered = true,
+                        Chimney = true,
+                    };
                 case BuildingKind.Still:
-                    return new Scheme { Wall = C(0x5E, 0x4C, 0x36), Roof = C(0xA8, 0x6E, 0x2E), Trim = C(0x22, 0x1A, 0x12), WallHeight = 16, RoofHeight = 10 };
+                    return new Scheme
+                    {
+                        Wall = C(0x64, 0x50, 0x38), Roof = C(0xA8, 0x6E, 0x2E),
+                        Timber = C(0x3A, 0x2A, 0x1A), Plinth = C(0x40, 0x38, 0x30),
+                        WallHeight = 20, Pitch = 8,
+                    };
                 case BuildingKind.UnderStore:
-                    return new Scheme { Wall = C(0x54, 0x46, 0x34), Roof = C(0x3E, 0x33, 0x26), Trim = C(0x20, 0x18, 0x10), WallHeight = 14, RoofHeight = 8 };
+                    return new Scheme
+                    {
+                        Wall = C(0x5A, 0x4A, 0x36), Roof = C(0x42, 0x36, 0x28),
+                        Timber = C(0x33, 0x26, 0x1A), Plinth = C(0x38, 0x30, 0x28),
+                        WallHeight = 18, Pitch = 6,
+                    };
                 case BuildingKind.FalseWall:
-                    return new Scheme { Wall = C(0x4C, 0x40, 0x32), Roof = C(0x46, 0x3A, 0x2C), Trim = C(0x38, 0x2E, 0x22), WallHeight = 18, RoofHeight = 4 };
+                    return new Scheme
+                    {
+                        Wall = C(0x50, 0x44, 0x34), Roof = C(0x48, 0x3C, 0x2E),
+                        Timber = C(0x3A, 0x30, 0x24), Plinth = C(0x34, 0x2C, 0x22),
+                        WallHeight = 22, Pitch = 4,
+                    };
                 case BuildingKind.HiddenEntrance:
-                    return new Scheme { Wall = C(0x5A, 0x48, 0x30), Roof = C(0x8A, 0x6C, 0x3E), Trim = C(0x24, 0x1C, 0x12), WallHeight = 12, RoofHeight = 6 };
+                    return new Scheme
+                    {
+                        Wall = C(0x62, 0x4E, 0x34), Roof = C(0x8A, 0x6C, 0x3E),
+                        Timber = C(0x3A, 0x2A, 0x18), Plinth = C(0x44, 0x3C, 0x30),
+                        WallHeight = 16, Pitch = 6, Thatch = true,
+                    };
                 default:
-                    return new Scheme { Wall = C(0x8A, 0x70, 0x4E), Roof = C(0x6E, 0x50, 0x36), Trim = C(0x38, 0x2A, 0x1C), WallHeight = 20, RoofHeight = 14 };
+                    return new Scheme
+                    {
+                        Wall = C(0x94, 0x78, 0x52), Roof = C(0x72, 0x54, 0x38),
+                        Timber = C(0x46, 0x32, 0x20), Plinth = C(0x56, 0x50, 0x46),
+                        WallHeight = 26, Pitch = 12,
+                    };
             }
         }
 
         private static Color32 C(byte r, byte g, byte b) => new Color32(r, g, b, 0xFF);
 
-        /// <summary>Walls darken towards their base, which is what gives a face its curve.</summary>
-        private static Color32 Shade(Color32 c, int lift, int wallTop)
+        /// <summary>Walls darken towards the ground, which is what gives a flat face relief.</summary>
+        private static Color32 Shade(Color32 c, int lift, int top)
         {
-            int delta = -14 + lift * 22 / Mathf.Max(1, wallTop);
+            int delta = -18 + lift * 28 / Mathf.Max(1, top);
             return new Color32(
                 (byte)Mathf.Clamp(c.r + delta, 0, 255),
                 (byte)Mathf.Clamp(c.g + delta, 0, 255),
                 (byte)Mathf.Clamp(c.b + delta, 0, 255), c.a);
+        }
+
+        private static Color32[] Blank(int w, int h)
+        {
+            var px = new Color32[w * h];
+            var clear = new Color32(0, 0, 0, 0);
+            for (int i = 0; i < px.Length; i++) px[i] = clear;
+            return px;
         }
 
         private static void Plot(Color32[] px, int w, int h, int x, int y, Color32 color)
@@ -363,9 +657,6 @@ namespace Undertown.Game.Presentation
             if (x < 0 || y < 0 || x >= w || y >= h) return;
             px[y * w + x] = color;
         }
-
-        private static void PlotOver(Color32[] px, int w, int h, int x, int y, Color32 color) =>
-            Plot(px, w, h, x, y, color);
 
         private static void Blend(Color32[] px, int w, int h, int x, int y, Color32 color)
         {

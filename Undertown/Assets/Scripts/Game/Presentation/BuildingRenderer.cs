@@ -84,17 +84,25 @@ namespace Undertown.Game.Presentation
                 if (def == null || pair.Value == null) continue;
 
                 bool onActiveLayer = building.Origin.Depth == _activeDepth;
-                float alpha = onActiveLayer ? 1f : 0.35f;
+                if (!onActiveLayer)
+                {
+                    // Faint, cold and dark. A building is an opaque block of colour, so what
+                    // reads as a discreet ghost for a tile still dominates the screen for a
+                    // house: underground, the town overhead was drowning out the tunnels the
+                    // player switched layers to look at.
+                    pair.Value.color = new Color(0.34f, 0.36f, 0.42f, 0.30f);
+                    continue;
+                }
 
                 if (def.WorkerSlots > 0 && !building.Working)
                 {
-                    pair.Value.color = new Color(0.52f, 0.55f, 0.62f, alpha);
+                    pair.Value.color = new Color(0.52f, 0.55f, 0.62f, 1f);
                     continue;
                 }
 
                 pair.Value.color = building.Starved
-                    ? new Color(0.85f, 0.72f, 0.5f, alpha)
-                    : new Color(1f, 1f, 1f, alpha);
+                    ? new Color(0.85f, 0.72f, 0.5f, 1f)
+                    : Color.white;
             }
         }
 
