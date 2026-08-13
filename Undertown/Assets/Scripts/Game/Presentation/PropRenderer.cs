@@ -33,10 +33,14 @@ namespace Undertown.Game.Presentation
             {
                 var cell = new Coord(x, y, depth);
                 var kind = _map.Get(cell);
-                if (!IsoPropArt.HasProp(kind)) continue;
+
+                Sprite art = IsoPropArt.HasProp(kind)
+                    ? IsoPropArt.For(kind, IsoTileArt.VariantAt(x, y))
+                    : ClutterOn(cell, kind);
+                if (art == null) continue;
 
                 var sprite = Take(used++);
-                sprite.sprite = IsoPropArt.For(kind, IsoTileArt.VariantAt(x, y));
+                sprite.sprite = art;
                 sprite.transform.position = _world.CellCentre(cell);
 
                 // One below the building on the same cell: scenery is behind anything the
@@ -47,6 +51,41 @@ namespace Undertown.Game.Presentation
 
             for (int i = used; i < _pool.Count; i++)
                 if (_pool[i] != null) _pool[i].enabled = false;
+        }
+
+        /// <summary>
+        /// Sparse clutter on the town's trodden ground. Driven off the cell coordinate rather
+        /// than a random draw so it is stable across redraws and identical between runs of the
+        /// same seed - the rest of the game is deterministic and the scenery should not be the
+        /// one thing that shifts under the player when they toggle a layer.
+        ///
+        /// It is not placed on cells a building occupies; that is checked by the caller only
+        /// loosely, since a building sprite covers its own footprint anyway and a crate poking
+        /// out from behind a wall reads as a yard rather than as a mistake.
+        /// </summary>
+        private static Sprite ClutterOn(Coord cell, TileKind kind)
+        {
+            if (kind != TileKind.Dirt && kind != TileKind.Road) return null;
+
+            int h = Hash(cell.X, cell.Y);
+            if (h % 9 != 0) return null;
+
+            var choices = new[]
+            {
+                IsoPropArt.Clutter.Woodpile, IsoPropArt.Clutter.Crates, IsoPropArt.Clutter.Barrels,
+                IsoPropArt.Clutter.Cart, IsoPropArt.Clutter.Well, IsoPropArt.Clutter.Fence,
+            };
+            return IsoPropArt.ForClutter(choices[(h / 9) % choices.Length]);
+        }
+
+        private static int Hash(int x, int y)
+        {
+            unchecked
+            {
+                int h = x * 374761393 + y * 668265263;
+                h = (h ^ (h >> 13)) * 1274126177;
+                return (h ^ (h >> 16)) & 0x7FFFFFFF;
+            }
         }
 
         private SpriteRenderer Take(int index)

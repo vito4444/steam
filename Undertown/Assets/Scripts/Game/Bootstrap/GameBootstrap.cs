@@ -314,10 +314,15 @@ namespace Undertown.Game.Bootstrap
             float sizeForWidth = spanX / (2f * aspect);
             cam.orthographicSize = Mathf.Max(3.5f, Mathf.Max(sizeForHeight, sizeForWidth));
 
+            // The HUD covers the bottom band of the viewport, so the visible area's centre sits
+            // above the camera's. Putting the town in the middle of what can actually be seen
+            // means moving the camera down by half the hidden band, not up: raising it pushes
+            // the southern edge of the settlement underneath the HUD, which is where the town
+            // hall was disappearing to.
             float hiddenWorldHeight = cam.orthographicSize * 2f * hudFraction;
             cam.transform.position = new Vector3(
                 (min.x + max.x) / 2f,
-                (min.y + max.y) / 2f + hiddenWorldHeight / 2f,
+                (min.y + max.y) / 2f - hiddenWorldHeight / 2f,
                 -10f);
         }
     }

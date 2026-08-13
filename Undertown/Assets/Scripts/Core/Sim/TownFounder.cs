@@ -17,24 +17,82 @@ namespace Undertown.Core.Sim
         {
             var map = town.Map;
             int roadY = FindRoadRow(map);
+            int cx = map.Width / 2;
 
-            // North side of the road, west to east.
-            PlaceNear(town, BuildingKind.TownHall, map.Width / 2 - 8, roadY + 2);
-            PlaceNear(town, BuildingKind.Warehouse, map.Width / 2 - 3, roadY + 2);
-            PlaceNear(town, BuildingKind.Brewery, map.Width / 2 + 1, roadY + 2);
-            PlaceNear(town, BuildingKind.Sawpit, map.Width / 2 + 7, roadY + 2);
+            // Laid out over a roughly square block of cells rather than strung along the road.
+            //
+            // This is a constraint the projection imposes on the layout, not a matter of
+            // taste. A row of buildings running east-west becomes a diagonal band on screen,
+            // because +x goes down-right and +y goes up-right; a settlement built along one
+            // street ends up as a thin line across the corner of the display with empty
+            // pasture on either side of it. Spreading the same buildings over equal spans of
+            // x and y makes a compact diamond, which is what a town is supposed to look like
+            // from here.
+            Pave(map, cx - 8, roadY - 1, cx + 11, roadY, TileKind.Road);
+            Pave(map, cx - 1, roadY - 5, cx, roadY + 11, TileKind.Road);
+            Pave(map, cx + 5, roadY, cx + 6, roadY + 11, TileKind.Dirt);
+            Pave(map, cx - 6, roadY + 5, cx + 9, roadY + 6, TileKind.Dirt);
 
-            // South side.
-            PlaceNear(town, BuildingKind.House, map.Width / 2 - 8, roadY - 4);
-            PlaceNear(town, BuildingKind.House, map.Width / 2 - 5, roadY - 4);
-            PlaceNear(town, BuildingKind.House, map.Width / 2 - 2, roadY - 4);
-            PlaceNear(town, BuildingKind.Field, map.Width / 2 + 2, roadY - 4);
-            PlaceNear(town, BuildingKind.Field, map.Width / 2 + 6, roadY - 4);
-            PlaceNear(town, BuildingKind.ClayPit, map.Width / 2 - 12, roadY - 3);
+            // The civic block, north of the street.
+            PlaceNear(town, BuildingKind.TownHall, cx - 6, roadY + 1);
+            PlaceNear(town, BuildingKind.Warehouse, cx + 1, roadY + 1);
+            PlaceNear(town, BuildingKind.Brewery, cx + 7, roadY + 1);
 
-            FoundHiddenWorks(town, map.Width / 2 + 2, roadY + 3);
+            // Dwellings behind it, off the lane.
+            PlaceNear(town, BuildingKind.House, cx - 6, roadY + 7);
+            PlaceNear(town, BuildingKind.House, cx - 3, roadY + 7);
+            PlaceNear(town, BuildingKind.House, cx + 1, roadY + 7);
+            PlaceNear(town, BuildingKind.House, cx + 7, roadY + 7);
+            PlaceNear(town, BuildingKind.Sawpit, cx + 7, roadY + 10);
+
+            // Working ground south of the street, where the fields have room.
+            PlaceNear(town, BuildingKind.House, cx - 6, roadY - 4);
+            PlaceNear(town, BuildingKind.ClayPit, cx - 3, roadY - 4);
+            PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 4);
+            PlaceNear(town, BuildingKind.Field, cx + 6, roadY - 4);
+
+            // Yards: trodden earth around everything that was built, which is what stops the
+            // buildings looking as though they were dropped onto untouched pasture.
+            TreadYards(town);
+
+            FoundHiddenWorks(town, cx + 7, roadY + 3);
 
             town.Record("the town is yours");
+        }
+
+        /// <summary>
+        /// Lays a surface over a rectangle, leaving water and anything already harder than
+        /// grass alone: a road does not run through the river, and paving over the clay you
+        /// were going to dig would be self-defeating.
+        /// </summary>
+        private static void Pave(GridMap map, int x0, int y0, int x1, int y1, TileKind surface)
+        {
+            for (int y = y0; y <= y1; y++)
+            for (int x = x0; x <= x1; x++)
+            {
+                var cell = new Coord(x, y);
+                if (!map.InBounds(cell)) continue;
+
+                var existing = map.Get(cell);
+                if (existing != TileKind.Grass && existing != TileKind.Forest) continue;
+                map.Set(cell, surface);
+            }
+        }
+
+        /// <summary>Beats a ring of bare earth around every building above ground.</summary>
+        private static void TreadYards(TownState town)
+        {
+            var map = town.Map;
+            foreach (var building in town.Buildings)
+            {
+                var def = building.Def;
+                if (def == null || def.Underground) continue;
+
+                Pave(map,
+                    building.Origin.X - 1, building.Origin.Y - 1,
+                    building.Origin.X + def.Width, building.Origin.Y + def.Height,
+                    TileKind.Dirt);
+            }
         }
 
         private static int FindRoadRow(GridMap map)
