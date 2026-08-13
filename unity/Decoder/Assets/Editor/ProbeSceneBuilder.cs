@@ -960,10 +960,12 @@ namespace Decoder.EditorTools
             //
             // 在查清之前，编辑器截图这条路径仍然走完整后处理（CaptureHarness 会显式调用），
             // 所以画面自检和对外展示看到的成像是完整的；可玩场景暂时不挂，保证游戏能跑。
-            StationPostProcess post = null;
-            if (!_playableRig)
+            var post = go.AddComponent<StationPostProcess>();
+            if (_playableRig)
             {
-                post = go.AddComponent<StationPostProcess>();
+                // 可玩场景要让着色器进包才能在运行时生效。
+                post.runtimeShader = AssetDatabase.LoadAssetAtPath<Shader>(
+                    "Assets/Shaders/StationPost.shader");
             }
             // 截图机位关掉颗粒动画，否则同一场景每次截出来都不一样，画面比对就没有基准了。
             if (post != null)

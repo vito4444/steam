@@ -71,6 +71,9 @@ namespace Decoder.Rendering
         /// </summary>
         [System.NonSerialized] public Shader editorShader;
 
+        [Tooltip("运行时使用的着色器。序列化引用会让它被打进构建包")]
+        public Shader runtimeShader;
+
         private Material _material;
         private bool _shaderMissingLogged;
         private static readonly int VignetteId = Shader.PropertyToID("_Vignette");
@@ -91,7 +94,9 @@ namespace Decoder.Rendering
             {
                 if (_material == null)
                 {
-                    var resolved = editorShader != null ? editorShader : Shader.Find(ShaderName);
+                    var resolved = editorShader != null ? editorShader
+                        : runtimeShader != null ? runtimeShader
+                        : Shader.Find(ShaderName);
                     if (resolved == null || !resolved.isSupported)
                     {
                         if (!_shaderMissingLogged)
