@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-7cc3bf4+dirty",
+  "version": "0.1.0-b9f131f+dirty",
   "unity": "6000.5.8f1",
   "platform": "LinuxPlayer",
   "graphics_device": "llvmpipe (LLVM 20.1.2, 256 bits)",
@@ -9,14 +9,14 @@
     {
       "name": "booth_idle",
       "image": "booth_idle.png",
-      "frame_ms": 40.57,
-      "fps": 24.6,
+      "frame_ms": 39.33,
+      "fps": 25.4,
       "visible_renderers": 206,
       "triangles": 3764,
       "active_lights": 9,
       "shadow_casting_lights": 2,
       "mono_heap_mb": 1.8,
-      "total_reserved_mb": 129.1
+      "total_reserved_mb": 145.1
     }
   ],
   "error_count": 0,

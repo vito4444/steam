@@ -67,16 +67,29 @@ namespace Monster.EditorTools
             PlayerSettings.SetApiCompatibilityLevel(named, ApiCompatibilityLevel.NET_Unity_4_8);
             PlayerSettings.productName = ProductName;
             PlayerSettings.companyName = "Project MONSTER";
-            PlayerSettings.bundleVersion = BuildVersion();
             PlayerSettings.runInBackground = true;
             PlayerSettings.defaultScreenWidth = 1920;
             PlayerSettings.defaultScreenHeight = 1080;
             PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
 
+            // Scenes, materials and textures are generated from code and deliberately not
+            // committed, because regenerating them rewrites every fileID and buries real
+            // changes under thousands of lines of churn. A clean clone therefore has no
+            // scene until one is generated, so the build generates it rather than failing.
+            // The build settings can still list a scene whose file is gone, which is exactly
+            // the state a clean clone is in, so existence on disk is what is checked rather
+            // than the entry being present.
             var scenes = EnabledScenes();
-            if (scenes.Length == 0)
+            if (scenes.Length == 0 || scenes.Any(path => !File.Exists(path)))
             {
-                error = "no scenes are enabled in the build settings";
+                Debug.Log("[MonsterBuild] generated scenes are missing from disk, regenerating");
+                NightShiftSceneBuilder.Build();
+                scenes = EnabledScenes();
+            }
+
+            if (scenes.Length == 0 || scenes.Any(path => !File.Exists(path)))
+            {
+                error = "no usable scenes after regeneration";
                 Debug.LogError($"[MonsterBuild] {error}");
                 return false;
             }
@@ -86,7 +99,7 @@ namespace Monster.EditorTools
             var outputPath = Path.Combine(outputDir, ProductName + ExtensionFor(target));
 
             Debug.Log($"[MonsterBuild] building {target} -> {outputPath}\n" +
-                      $"  version : {PlayerSettings.bundleVersion}\n" +
+                      $"  version : {BuildVersion()}\n" +
                       $"  backend : Mono2x\n" +
                       $"  scenes  : {string.Join(", ", scenes.Select(Path.GetFileNameWithoutExtension))}");
 
@@ -99,9 +112,25 @@ namespace Monster.EditorTools
                 options = BuildOptions.None,
             };
 
+            // The version is stamped for the duration of the build and then put back.
+            // Leaving it in ProjectSettings would make every build dirty the working tree
+            // with a one-line change that carries no information.
+            var previousVersion = PlayerSettings.bundleVersion;
+            PlayerSettings.bundleVersion = BuildVersion();
+
             var stopwatch = Stopwatch.StartNew();
-            var report = BuildPipeline.BuildPlayer(options);
-            stopwatch.Stop();
+            BuildReport report;
+            try
+            {
+                report = BuildPipeline.BuildPlayer(options);
+            }
+            finally
+            {
+                stopwatch.Stop();
+                PlayerSettings.bundleVersion = previousVersion;
+                AssetDatabase.SaveAssets();
+            }
+
             var summary = report.summary;
 
             if (summary.result != BuildResult.Succeeded)

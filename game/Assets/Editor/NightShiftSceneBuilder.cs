@@ -488,12 +488,12 @@ namespace Monster.EditorTools
             lamp.localPosition = origin;
 
             Cylinder("Base", lamp, new Vector3(0f, 0.014f, 0f), new Vector3(0.160f, 0.014f, 0.160f), lampMat);
-            Cylinder("Stem", lamp, new Vector3(0.055f, 0.210f, 0.015f), new Vector3(0.024f, 0.205f, 0.024f), lampMat,
-                new Vector3(-4f, 0f, -15f));
-            Cylinder("Shade", lamp, new Vector3(0.165f, 0.415f, 0.045f), new Vector3(0.220f, 0.085f, 0.220f), lampMat,
-                new Vector3(30f, 0f, 26f));
-            Cylinder("Bulb", lamp, new Vector3(0.170f, 0.372f, 0.048f), new Vector3(0.145f, 0.007f, 0.145f), lampInner,
-                new Vector3(30f, 0f, 26f));
+            NoShadowCast(Cylinder("Stem", lamp, new Vector3(0.055f, 0.210f, 0.015f),
+                new Vector3(0.024f, 0.205f, 0.024f), lampMat, new Vector3(-4f, 0f, -15f)));
+            NoShadowCast(Cylinder("Shade", lamp, new Vector3(0.165f, 0.415f, 0.045f),
+                new Vector3(0.220f, 0.085f, 0.220f), lampMat, new Vector3(30f, 0f, 26f)));
+            NoShadowCast(Cylinder("Bulb", lamp, new Vector3(0.170f, 0.372f, 0.048f),
+                new Vector3(0.145f, 0.007f, 0.145f), lampInner, new Vector3(30f, 0f, 26f)));
 
             // The key light, aimed explicitly at the paperwork rather than at an angle
             // guessed in Euler degrees. This is the pool of warm light the whole shot is
@@ -706,6 +706,23 @@ namespace Monster.EditorTools
         }
 
         // ---------------------------------------------------------------------- helpers --
+
+        /// <summary>Takes a light fixture's own housing out of the shadow pass.
+        ///
+        /// This is not cosmetic. The desk lamp's spot light sits inside its shade, so the
+        /// moment additional-light shadows are active the shade occludes the cone and the
+        /// desk falls dark. That is precisely the regression the screenshot check caught
+        /// after the render pipeline asset was regenerated from scratch.</summary>
+        private static GameObject NoShadowCast(GameObject go)
+        {
+            var renderer = go.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+
+            return go;
+        }
 
         private static GameObject Box(string name, Transform parent, Vector3 position, Vector3 size,
             Material material, Vector3? euler = null) =>

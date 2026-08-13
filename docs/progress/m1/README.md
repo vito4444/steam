@@ -39,7 +39,7 @@ actually made of rather than doing a meaningless pixel diff between a painting a
 | Contrast (luma standard deviation) | 0.1536 | 0.1133 | The build is **36% more contrasty** — bright paper against near-black, where the concept keeps everything closer together. |
 | Warm/cool balance (mean R − mean B) | 0.1096 | 0.0673 | The build is **warmer**. The concept has more cool desaturated presence sitting under the amber. |
 | Light pool centroid (x, y) | (0.354, 0.641) | (0.418, 0.639) | Vertically almost exact; horizontally the build's light pool sits **6% of frame width to the left** of the target. |
-| Value distribution distance | 1.871 | — | Down from 2.180 at the first render. |
+| Value distribution distance | 1.872 | — | Down from 2.180 at the first render. |
 
 **Interpretation.** The composition and the lighting *design* now match: single warm key from
 the upper left, green secondary from the monitor bank, a lifted fog backdrop with a silhouette
@@ -124,6 +124,48 @@ Ordered by how much each one costs us. Nothing here is hidden or deferred silent
 | 11 | **The render is validated only on a software rasteriser.** Post-processing, shadow filtering and anti-aliasing will not look identical on a real GPU. | Known limitation | Cannot be resolved on this machine. Needs a Windows box for final visual sign-off. |
 
 ---
+
+## The regression check earned its keep immediately
+
+Worth recording, because it is the first evidence that the self-check is doing something
+real rather than producing screenshots nobody reads.
+
+After the generated assets were untracked from git and regenerated from a clean state, the
+diff against the committed reference came back at **12.72/255 mean luminance difference**,
+concentrated in the lower-left of the frame — with **no source change** that should have
+affected the lighting.
+
+The cause: the desk lamp's spot light sits inside its own shade geometry. The URP asset had
+been carried over from an earlier run of the setup code with additional-light shadows
+inactive; recreating it from scratch turned them on, and the shade immediately began
+occluding its own light cone. The scene looked subtly worse and nothing in the source
+explained why.
+
+Two fixes, both in the commit:
+
+1. The lamp fixture's meshes are excluded from shadow casting, which is what a lighting
+   artist does with a light housing. Shadows on the key light stay enabled, because the
+   shadows it throws from the desk props are wanted.
+2. `MonsterSetup.ConfigureRenderPipeline` now deletes and recreates the URP asset every
+   time instead of reusing an existing one. Reusing it meant the effective render
+   configuration depended on which settings previous versions of that method happened to
+   write, so a clean clone and a working tree could render differently from identical
+   source. That class of bug is now gone.
+
+After the fix the difference against the reference is **0.0075/255** — visually identical.
+
+Two further measurements were taken while investigating, and both change how the check
+should be read:
+
+- **The capture is bit-exact.** Two consecutive runs of an identical build produced a mean
+  absolute difference of **0.000000** with zero pixels above threshold. The harness fixes
+  the frame rate and warmup frame count, so even the film grain lands on the same frame.
+  Any non-zero regression result is therefore a real change. An earlier version of the
+  comparison tool blurred the frames first on the assumption that grain would add noise;
+  that was wrong and would have hidden small regressions, so it was removed.
+- **The check has discriminating power.** Mutation-tested by setting the desk lamp's
+  intensity to zero, rebuilding, and re-running: mean difference went from 0.0054 to 0.0445
+  and changed pixels from 21% to 49%. The lamp was then restored and the numbers came back.
 
 ## Verification
 

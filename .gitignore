@@ -53,3 +53,16 @@ secrets/
 *.log
 .DS_Store
 Thumbs.db
+
+# --------------------------------------------------- Generated Unity assets --
+# Scenes, materials, textures and pipeline assets are all generated from code by
+# Monster.EditorTools.NightShiftSceneBuilder and MonsterSetup. Committing them
+# would rewrite every fileID on each regeneration and bury real changes under
+# thousands of lines of churn. The build regenerates them when they are absent.
+game/Assets/Scenes/
+game/Assets/Materials/
+game/Assets/Textures/
+game/Assets/Settings/
+
+# Written by the performance test framework package at import time.
+game/Assets/Resources/PerformanceTestRun*.json*

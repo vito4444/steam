@@ -25,19 +25,20 @@ namespace Monster.EditorTools
         {
             EnsureFolder(SettingsFolder);
 
-            var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererAssetPath);
-            if (rendererData == null)
-            {
-                rendererData = ScriptableObject.CreateInstance<UniversalRendererData>();
-                AssetDatabase.CreateAsset(rendererData, RendererAssetPath);
-            }
+            // Always recreated rather than reused. Reusing an existing asset means the
+            // effective configuration depends on which settings previous versions of this
+            // method happened to write, so a clean clone and a working tree can render
+            // differently from identical source. That actually happened: additional-light
+            // shadows were inactive on a carried-over asset and became active on a freshly
+            // created one, which changed the lighting without any source change.
+            AssetDatabase.DeleteAsset(PipelineAssetPath);
+            AssetDatabase.DeleteAsset(RendererAssetPath);
 
-            var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelineAssetPath);
-            if (pipeline == null)
-            {
-                pipeline = UniversalRenderPipelineAsset.Create(rendererData);
-                AssetDatabase.CreateAsset(pipeline, PipelineAssetPath);
-            }
+            var rendererData = ScriptableObject.CreateInstance<UniversalRendererData>();
+            AssetDatabase.CreateAsset(rendererData, RendererAssetPath);
+
+            var pipeline = UniversalRenderPipelineAsset.Create(rendererData);
+            AssetDatabase.CreateAsset(pipeline, PipelineAssetPath);
 
             // These are the settings a software rasteriser can actually keep up with.
             // HDR stays on because bloom on the CRT screens and taillights is doing real

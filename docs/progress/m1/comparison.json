@@ -1,13 +1,13 @@
 {
   "current": "docs/progress/m1/selfcheck_booth_idle.png",
   "regression": {
-    "mean_abs_difference": 0.16428,
+    "mean_abs_difference": 0.16426,
     "max_abs_difference": 0.99608,
     "changed_pixel_fraction": 0.99753,
     "heatmap": "diff_vs_previous.png"
   },
   "art_direction": {
-    "value_distribution_distance": 1.8713,
+    "value_distribution_distance": 1.8722,
     "mean_luma": {
       "render": 0.175,
       "concept": 0.1147
@@ -19,8 +19,8 @@
     "mean_rgb": {
       "render": [
         0.2255,
-        0.1658,
-        0.1158
+        0.1659,
+        0.1159
       ],
       "concept": [
         0.1357,
@@ -47,7 +47,7 @@
         [
           0.2448,
           0.1756,
-          0.1227
+          0.1229
         ]
       ],
       "concept": [

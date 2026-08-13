@@ -40,11 +40,20 @@ def luminance(rgb: np.ndarray) -> np.ndarray:
 
 
 def regression_diff(current: Path, previous: Path, out_dir: Path) -> dict:
-    """Pixel-level comparison against the previous run of the same checkpoint."""
-    a = load_rgb(current)
-    b = load_rgb(previous, size=Image.open(current).size)
+    """Pixel-level comparison against the previous run of the same checkpoint.
 
-    delta = np.abs(a - b)
+    The raw frames are compared with no denoising, because the capture is bit-exact:
+    two consecutive runs of an identical build were measured at a mean absolute
+    difference of 0.000000 with zero pixels above the threshold. The self-check fixes
+    the frame rate and the warmup frame count, so even the film grain lands identically.
+
+    That matters. It means any non-zero result here is a real change, and blurring the
+    frames first -- which an earlier version of this tool did, on the assumption that
+    grain would add noise -- would only hide small regressions.
+    """
+    size = Image.open(current).size
+
+    delta = np.abs(load_rgb(current) - load_rgb(previous, size=size))
     per_pixel = delta.max(axis=2)
 
     # 2/255 is below what a viewer can see but above encoder noise, so it is a
