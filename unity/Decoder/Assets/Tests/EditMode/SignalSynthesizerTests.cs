@@ -307,6 +307,82 @@ namespace Decoder.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => synth.Render(buffer, 32));
         }
 
+        // ---- 接收状态与音频解耦 ----
+
+        [Test]
+        public void EvaluateReception_WorksWithoutRenderingAnyAudio()
+        {
+            // 这条守的是一个无障碍需求：信号强度表和调谐指示是听觉线索的视觉等价物。
+            // 如果它们只在音频渲染时才更新，玩家一静音仪表就死了，
+            // 听障玩家更是完全没法玩。云端音频设备起不来时也会撞上同一个问题。
+            var synth = Silent();
+            synth.TunedKHz = 7000f;
+            synth.AddStation(new SignalSynthesizer.Station("M08", 7000f, "TTTT", 10f, 0.9f));
+
+            var station = synth.EvaluateReception();
+
+            Assert.IsNotNull(station);
+            Assert.AreEqual("M08", station.Callsign);
+            Assert.AreEqual(0.9f, synth.CurrentSignalLevel, 1e-4f);
+            Assert.AreEqual(0f, synth.CurrentDetuneKHz, 1e-4f);
+        }
+
+        [Test]
+        public void EvaluateReception_ReportsDetuneDirection()
+        {
+            var synth = Silent();
+            synth.AddStation(new SignalSynthesizer.Station("M08", 7000f, "T", 10f));
+
+            synth.TunedKHz = 6999.5f;
+            synth.EvaluateReception();
+            Assert.Greater(synth.CurrentDetuneKHz, 0f, "电台在调谐点上方时失配量应为正");
+
+            synth.TunedKHz = 7000.5f;
+            synth.EvaluateReception();
+            Assert.Less(synth.CurrentDetuneKHz, 0f, "电台在调谐点下方时失配量应为负");
+        }
+
+        [Test]
+        public void EvaluateReception_ClearsStateWhenNothingIsInBand()
+        {
+            var synth = Silent();
+            synth.AddStation(new SignalSynthesizer.Station("M08", 7000f, "T", 10f));
+
+            synth.TunedKHz = 7100f;
+            Assert.IsNull(synth.EvaluateReception());
+            Assert.AreEqual(0f, synth.CurrentSignalLevel);
+            Assert.AreEqual(0f, synth.CurrentDetuneKHz);
+        }
+
+        [Test]
+        public void EvaluateReception_PicksStrongestStationInBand()
+        {
+            var synth = Silent();
+            synth.TunedKHz = 7000f;
+            synth.AddStation(new SignalSynthesizer.Station("WEAK", 7000.2f, "T", 10f, 0.3f));
+            synth.AddStation(new SignalSynthesizer.Station("STRONG", 7000.4f, "T", 10f, 1f));
+
+            Assert.AreEqual("STRONG", synth.EvaluateReception().Callsign);
+        }
+
+        [Test]
+        public void EvaluateReception_AgreesWithWhatRenderingProduces()
+        {
+            // 两条路径必须给出同一个答案，否则仪表显示的和耳朵听到的会对不上。
+            var synth = Silent();
+            synth.TunedKHz = 7000.3f;
+            synth.AddStation(new SignalSynthesizer.Station("A", 7000f, "TTTT", 8f, 0.85f));
+
+            var evaluated = synth.EvaluateReception();
+            var levelBeforeRender = synth.CurrentSignalLevel;
+
+            var buffer = new float[1024];
+            synth.Render(buffer, buffer.Length);
+
+            Assert.AreSame(evaluated, synth.CurrentStation);
+            Assert.AreEqual(levelBeforeRender, synth.CurrentSignalLevel, 1e-6f);
+        }
+
         // ---- 电台时序 ----
 
         [Test]

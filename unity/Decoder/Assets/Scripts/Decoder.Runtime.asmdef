@@ -1,7 +1,9 @@
 {
     "name": "Decoder.Runtime",
     "rootNamespace": "Decoder",
-    "references": [],
+    "references": [
+        "UnityEngine.UI"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

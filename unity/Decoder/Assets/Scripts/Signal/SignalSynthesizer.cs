@@ -59,6 +59,51 @@ namespace Decoder.Signal
 
         public IReadOnlyList<Station> Stations => _stations;
 
+        /// <summary>
+        /// 当前带内最强信号的接收强度，0 表示什么都没收到。供信号强度表和调谐指示器读取。
+        ///
+        /// 这个值由 EvaluateReception 更新，而不是渲染的副产品。两者分开是必须的：
+        /// 玩家可能把音量关到零，音频设备也可能初始化失败，
+        /// 但信号强度表和调谐方向指示必须照常工作——它们是听觉线索的视觉等价物，
+        /// 听障玩家只靠它们就要能玩下去。
+        /// </summary>
+        public float CurrentSignalLevel { get; private set; }
+
+        /// <summary>当前最强信号的失配量，正表示电台在调谐点上方。</summary>
+        public float CurrentDetuneKHz { get; private set; }
+
+        /// <summary>当前收到的电台，没有则为 null。</summary>
+        public Station CurrentStation { get; private set; }
+
+        /// <summary>
+        /// 计算当前调谐点上收到了什么。纯计算，不产生音频，可以在主线程按帧调用。
+        /// 返回带内最强的电台，同时更新对外暴露的接收状态。
+        /// </summary>
+        public Station EvaluateReception()
+        {
+            Station best = null;
+            var bestLevel = 0f;
+
+            for (var s = 0; s < _stations.Count; s++)
+            {
+                var station = _stations[s];
+                // 按实际到达功率比较，而不是只看带通响应。
+                // 只看响应的话，一个几乎调准的弱台会压过一个稍微偏一点的强台，
+                // 而真实接收机里听到的永远是功率最大的那一路。
+                var level = BandpassResponse(station.FrequencyKHz - TunedKHz) * station.Strength;
+                if (level > bestLevel)
+                {
+                    bestLevel = level;
+                    best = station;
+                }
+            }
+
+            CurrentStation = best;
+            CurrentSignalLevel = bestLevel;
+            CurrentDetuneKHz = best == null ? 0f : best.FrequencyKHz - TunedKHz;
+            return best;
+        }
+
         public void AddStation(Station station)
         {
             if (station == null)
@@ -140,18 +185,10 @@ namespace Decoder.Signal
 
                 // 只混入带内最强的那一路。真实接收机在同一时刻也是被最强信号主导，
                 // 而且这样能避免多台同时可闻时听感糊成一团。
-                Station best = null;
-                var bestResponse = 0f;
-                for (var s = 0; s < _stations.Count; s++)
-                {
-                    var station = _stations[s];
-                    var response = BandpassResponse(station.FrequencyKHz - TunedKHz);
-                    if (response > bestResponse)
-                    {
-                        bestResponse = response;
-                        best = station;
-                    }
-                }
+                var best = EvaluateReception();
+                var bestResponse = best == null
+                    ? 0f
+                    : BandpassResponse(best.FrequencyKHz - TunedKHz);
 
                 if (best != null)
                 {

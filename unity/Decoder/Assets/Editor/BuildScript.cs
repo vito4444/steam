@@ -20,14 +20,35 @@ namespace Decoder.EditorTools
             Build(BuildTarget.StandaloneWindows64, "Decoder.exe");
         }
 
+        /// <summary>
+        /// 先生成可玩场景再构建，全程在同一个编辑器进程内完成。
+        ///
+        /// 必须连着做：分两次进程跑会让场景引用的材质处于"已写盘但未导入"的状态，
+        /// 构建出的 level0 会损坏，而构建过程不报任何错，只有运行时才崩。
+        /// </summary>
+        public static void BuildStationWindows64()
+        {
+            var scene = ProbeSceneBuilder.GenerateScene(playable: true,
+                ProbeSceneBuilder.StationScenePath);
+            Build(BuildTarget.StandaloneWindows64, "Decoder.exe", new[] { scene });
+        }
+
+        public static void BuildStationLinux64()
+        {
+            var scene = ProbeSceneBuilder.GenerateScene(playable: true,
+                ProbeSceneBuilder.StationScenePath);
+            Build(BuildTarget.StandaloneLinux64, "Decoder", new[] { scene });
+        }
+
         public static void BuildLinux64()
         {
             Build(BuildTarget.StandaloneLinux64, "Decoder");
         }
 
-        private static void Build(BuildTarget target, string executableName)
+        private static void Build(BuildTarget target, string executableName,
+            string[] explicitScenes = null)
         {
-            var scenes = ResolveScenes();
+            var scenes = explicitScenes ?? ResolveScenes();
             if (scenes.Length == 0)
             {
                 Fail("没有可构建的场景。请在 Build Settings 中启用场景，或通过 -buildScenes 指定。");

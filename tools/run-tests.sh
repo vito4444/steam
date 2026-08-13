@@ -11,6 +11,10 @@ LOG="${LOG_DIR}/tests-${PLATFORM}.log"
 RESULTS="${ARTIFACTS}/reports/test-results-${PLATFORM}.xml"
 mkdir -p "$(dirname "${RESULTS}")"
 
+# 必须先删掉上一次的结果。否则编译失败时 Unity 不会写新文件，
+# 脚本会读到上一轮的旧结果，把失败报成全绿——那比没有测试还危险。
+rm -f "${RESULTS}"
+
 echo "运行 ${PLATFORM} 测试"
 set +e
 run_unity_headless \

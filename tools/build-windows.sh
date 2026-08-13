@@ -8,6 +8,11 @@ set -euo pipefail
 source "$(dirname "$0")/unity-env.sh"
 
 OUT_DIR="${1:-${ARTIFACTS}/build/StandaloneWindows64}"
+# 默认构建可玩工位场景。传 probe 则构建纯美术探针场景。
+TARGET_METHOD="Decoder.EditorTools.BuildScript.BuildStationWindows64"
+if [[ "${2:-station}" == "probe" ]]; then
+    TARGET_METHOD="Decoder.EditorTools.BuildScript.BuildWindows64"
+fi
 LOG="${LOG_DIR}/build-windows.log"
 
 echo "构建 Windows x64 -> ${OUT_DIR}"
@@ -20,7 +25,7 @@ run_unity_headless \
     -batchmode -quit \
     -projectPath "${PROJECT_PATH}" \
     -buildTarget Win64 \
-    -executeMethod Decoder.EditorTools.BuildScript.BuildWindows64 \
+    -executeMethod "${TARGET_METHOD}" \
     -buildOutput "${OUT_DIR}" \
     -logFile "${LOG}"
 STATUS=$?

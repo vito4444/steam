@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Decoder.Capture;
+using Decoder.Gameplay;
+using Decoder.Interaction;
+using Decoder.Signal;
+using Decoder.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -21,7 +25,11 @@ namespace Decoder.EditorTools
     public static class ProbeSceneBuilder
     {
         private const string ScenePath = "Assets/Scenes/ArtProbe.unity";
+        private const string PlayableScenePath = "Assets/Scenes/Station.unity";
         private const string ConfigPath = "Assets/Config/lighting-probe.json";
+
+        /// <summary>生成可玩场景时，主调频旋钮用哪一个。</summary>
+        private const string TuningKnobName = "Knob_1_3";
 
         [Serializable]
         private class LightCfg
@@ -101,28 +109,25 @@ namespace Decoder.EditorTools
 
         public static void Build()
         {
+            Generate(playable: false, ScenePath, "PROBE_SCENE_BUILT");
+        }
+
+        /// <summary>
+        /// 生成可玩场景。几何、材质、光照与探针场景完全一致，
+        /// 额外挂上接收机、交互控件、玩家视角和界面。
+        /// 共用同一套生成代码，美术调整会同时反映到两个场景上。
+        /// </summary>
+        public static void BuildPlayable()
+        {
+            Generate(playable: true, PlayableScenePath, "STATION_SCENE_BUILT");
+        }
+
+        private static void Generate(bool playable, string scenePath, string successMarker)
+        {
             try
             {
-                Random.InitState(20260813);
-                LoadConfig();
-
-                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                CreateMaterials();
-
-                BuildLightingEnvironment();
-                BuildRoomShell();
-                BuildInstrumentWall();
-                BuildDesk();
-                BuildWindowWall();
-                BuildArchiveWall();
-                BuildLights();
-                BuildCameras();
-
-                Directory.CreateDirectory(Path.GetDirectoryName(ScenePath)!);
-                EditorSceneManager.SaveScene(scene, ScenePath);
-                AssetDatabase.SaveAssets();
-
-                Log($"PROBE_SCENE_BUILT {ScenePath}");
+                GenerateScene(playable, scenePath);
+                Log($"{successMarker} {scenePath}");
                 EditorApplication.Exit(0);
             }
             catch (Exception e)
@@ -131,6 +136,117 @@ namespace Decoder.EditorTools
                 Console.Error.WriteLine($"[ProbeSceneBuilder] 生成失败: {e}");
                 EditorApplication.Exit(1);
             }
+        }
+
+        /// <summary>
+        /// 生成并保存场景，不退出编辑器。
+        ///
+        /// 单独暴露出来是为了让"生成场景"和"构建播放器"能在同一个编辑器进程里连着做。
+        /// 分成两次进程跑会踩到资源导入状态不同步的坑：场景里的材质引用指向
+        /// 上一进程刚写盘、本进程还没导入完的资源，构建出来的 level0 会损坏，
+        /// 而构建过程本身一句警告都不会给，只有运行时才崩。
+        /// </summary>
+        public static string GenerateScene(bool playable, string scenePath)
+        {
+            Random.InitState(20260813);
+            LoadConfig();
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            CreateMaterials();
+
+            BuildLightingEnvironment();
+            BuildRoomShell();
+            BuildInstrumentWall();
+            BuildDesk();
+            BuildWindowWall();
+            BuildArchiveWall();
+            BuildLights();
+            BuildCameras();
+
+            if (playable)
+            {
+                BuildPlayableRig();
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(scenePath)!);
+            EditorSceneManager.SaveScene(scene, scenePath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+            return scenePath;
+        }
+
+        public const string StationScenePath = PlayableScenePath;
+        public const string ProbeScenePath = ScenePath;
+
+        /// <summary>把静态布景接成可玩的工位。</summary>
+        private static void BuildPlayableRig()
+        {
+            var systems = new GameObject("Systems").transform;
+
+            var receiverGo = new GameObject("RadioReceiver",
+                typeof(AudioSource), typeof(RadioReceiver));
+            receiverGo.transform.SetParent(systems, false);
+            var receiver = receiverGo.GetComponent<RadioReceiver>();
+
+            var hudGo = new GameObject("StationHud", typeof(StationHud));
+            hudGo.transform.SetParent(systems, false);
+            var hud = hudGo.GetComponent<StationHud>();
+            hud.receiver = receiver;
+
+            // 自动演练驱动。默认不启动，加 -playtest 参数才会跑，
+            // 这样它既能用于自动化验证，又不会打扰真正的玩家。
+            var driverGo = new GameObject("PlaytestDriver", typeof(PlaytestDriver));
+            driverGo.transform.SetParent(systems, false);
+            var driver = driverGo.GetComponent<PlaytestDriver>();
+            driver.receiver = receiver;
+            driver.hud = hud;
+
+            // 主调频旋钮：恢复被布景流程删掉的碰撞体，并放大成便于点中的尺寸。
+            var knob = GameObject.Find(TuningKnobName);
+            if (knob == null)
+            {
+                throw new InvalidOperationException(
+                    $"未找到用作调频旋钮的物件 {TuningKnobName}，仪表墙布局可能改过了");
+            }
+
+            knob.name = "TuningKnob";
+            var collider = knob.AddComponent<CapsuleCollider>();
+            collider.direction = 1;
+            collider.radius = 1.6f;
+            collider.height = 4f;
+
+            var tuner = knob.AddComponent<TuningKnob>();
+            tuner.receiver = receiver;
+            tuner.hoverLabel = "主调谐";
+            // 旋钮模型是躺倒的圆柱，绕自身 Y 轴转才是面向玩家的转动。
+            tuner.rotationAxis = Vector3.up;
+
+            // 电源拨杆
+            var powerSwitch = GameObject.Find("ToggleBase_0_0");
+            if (powerSwitch != null)
+            {
+                powerSwitch.name = "PowerSwitch";
+                var switchCollider = powerSwitch.AddComponent<BoxCollider>();
+                switchCollider.size = new Vector3(2.6f, 2.6f, 6f);
+                var toggle = powerSwitch.AddComponent<PowerSwitch>();
+                toggle.hoverLabel = "电源";
+                toggle.receiver = receiver;
+                toggle.rotationAxis = Vector3.right;
+            }
+
+            // 玩家视角接管主机位
+            var mainShot = GameObject.Find("probe_front");
+            if (mainShot == null)
+            {
+                throw new InvalidOperationException("未找到主机位 probe_front");
+            }
+
+            mainShot.name = "PlayerCamera";
+            mainShot.AddComponent<StationInteractor>();
+            mainShot.AddComponent<AudioListener>();
+
+            // 其余机位在可玩场景里只作为截图用，保持关闭。
+            Log("可玩场景已接线：接收机、调频旋钮、电源拨杆、玩家视角、界面");
         }
 
         // ---------- 材质 ----------
