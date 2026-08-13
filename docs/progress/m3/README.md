@@ -167,6 +167,62 @@ without making it unreadable.
 
 ---
 
+## Saving, and the clock
+
+Two more things went in after the three gaps closed, because each was the thing
+standing between a system and its point.
+
+### A campaign can be put down and picked up
+
+A thirty-night campaign that cannot be resumed makes the length theoretical.
+
+The save holds the seed and the verdicts and nothing else. Who turned up, what
+the manual said, which notices are queued and when they land — all of it is
+derived by replaying, because all of it is already deterministic from the seed.
+Serialising the notices themselves would tie every save to the exact wording of
+the post, so editing one line of a district circular would invalidate every save
+in existence. A full thirty nights is under 24 kB of small integers.
+
+Quitting five vehicles into a shift keeps those five. A save whose verdicts no
+longer line up with the queues its seed produces is refused rather than replayed,
+because it would silently resume a different game; one this build cannot read at
+all is renamed rather than deleted.
+
+The test worth naming is
+`ConsequencesQueuedBeforeTheSaveStillArriveAfterIt`. Consequences are queued by
+one night and delivered several later, so a save restoring only visible state
+would resume into a campaign with no future in it — the player would walk away
+from every mistake they had already made. It was checked by mutation: clearing
+the pending queue on restore turns it red at exactly the night the deduction was
+due, and reverting turns it green.
+
+### A clock, so that asking costs something
+
+Moving the pause and the layered voice off the monitors was supposed to make
+checking them a decision. It did not, quite. With nothing to spend, the four
+intercom keys were four keys you press on every vehicle because there is no
+reason not to.
+
+A night is eight hours. A vehicle takes eighteen minutes and a question takes
+nine. The squeeze tightens across the campaign rather than being uniform:
+
+| | queue | minutes left after clearing it | questions that buys |
+|---|---|---|---|
+| night 1 | 15 | 210 | 23 |
+| night 30 | 26 | 12 | 1 |
+
+Clearing the queue is always possible if you ask nothing, so the clock is a
+budget rather than a punishment — a test asserts that for all thirty nights.
+
+That puts a price on a question. Nine minutes is half a vehicle is three credits;
+an error costs nine credits four nights later. Asking is worth it whenever it is
+more than about a third likely to change the answer. That is the decision the
+interrogation was built to create, and it did not exist until the clock did.
+
+Two of the eight new tests state the curve as arithmetic rather than as a
+sentence, because it is a claim that will quietly stop being true the first time
+anyone edits the quota curve.
+
 ## Bugs this milestone surfaced
 
 Five, all of which had been shipping silently.
@@ -202,8 +258,8 @@ instead, which does differ by seed.
 
 ## Tests
 
-48 → 67. The nineteen new ones cover the interrogation (8) and the campaign and
-its consequences (11).
+48 → 84. The thirty-six new ones cover the interrogation (8), the campaign and
+its consequences (11), saving and resuming (9) and the clock (8).
 
 Three of them exist specifically to protect the design pillar, because it is easy
 to break by accident:
@@ -231,25 +287,30 @@ withheld, 0 errors logged.
 | frame time | 57 ms (18 fps) on Mesa llvmpipe, no GPU |
 | renderers | 229 |
 | triangles | 3,978 |
-| edit-mode tests | 67 passing |
+| edit-mode tests | 84 passing |
 | self-check errors | 0 |
+| self-check run | 6 nights, 96 vehicles, 54 credits withheld, save resumed |
 
 ## What is still missing
 
 Reassessed from M2's list.
 
-1. **Audio has never been heard.** Synthesised, structurally tested, and now
-   wired to the intercom as well — but this machine has no audio device. *Medium.*
-2. **No save/load.** A thirty-night campaign cannot be resumed, which makes the
-   campaign length theoretical. This is now the largest gap. *High.*
-3. **Interaction is untested by a human.** Look, hover, lean-in and the new
-   leafing are exercised only by the scripted self-check. *Medium.*
+1. **Interaction is untested by a human.** Look, hover, lean-in and the new
+   leafing are exercised only by the scripted self-check. Nothing here has ever
+   been played. This is now the largest gap and it cannot be closed on this
+   machine. *High.*
+2. **Audio has never been heard.** Synthesised, structurally tested, and now
+   wired to the intercom as well — but this machine has no audio device.
+   *Medium.*
+3. **No shift-end screen and no campaign end.** Night thirty finishes and the
+   thirty-first simply does not start. *Medium.*
 4. **Props still have no surface detail** beyond the grunge-mapped large
    surfaces. *Medium.*
-5. **The monitors are flat quads.** No curved glass, no barrel distortion. *Low.*
-6. **Legacy input, not the Input System.** No rebinding. *Low.*
-7. **Validated only on a software rasteriser.** Post-processing, shadow filtering
+5. **The manual cannot be leafed through.** The leafing interaction went in for
+   the post; the binder still shows only the criteria in force, so a player
+   cannot check what a superseded revision said. *Medium.*
+6. **The monitors are flat quads.** No curved glass, no barrel distortion. *Low.*
+7. **Legacy input, not the Input System.** No rebinding. *Low.*
+8. **Validated only on a software rasteriser.** Post-processing, shadow filtering
    and anti-aliasing will differ on a real GPU, and the grade above was tuned
    against llvmpipe output. *Known limitation.*
-8. **No questioning consequences.** Asking costs time but the time is not yet
-   scarce enough to hurt: there is no clock pressure inside a shift. *Medium.*
