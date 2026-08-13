@@ -76,10 +76,13 @@ namespace Worker.Game
             // so screenshots can show the world without any interface over it.
             if (!HasFlag("--no-hud")) root.AddComponent<GameHud>();
 
+            // The camera has to exist before the view components wake, because the
+            // isometric view installs the post-processing stack onto Camera.main during
+            // its own Awake. Creating it afterwards silently skipped the whole stack.
+            var camera = EnsureCamera();
+
             root.SetActive(true);
             Object.DontDestroyOnLoad(root);
-
-            var camera = EnsureCamera();
             if (isometric)
             {
                 var isoRig = camera.GetComponent<IsometricCameraRig>();

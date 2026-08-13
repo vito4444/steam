@@ -58,6 +58,12 @@ namespace Worker.Game
         private Material _workerMaterial;
         private Material _workerTiredMaterial;
         private Material _accentMaterial;
+        private Material _metalMaterial;
+        private Material _darkMetalMaterial;
+        private Material _glassMaterial;
+        private Material _hazardMaterial;
+        private Material _helmetMaterial;
+        private IsometricBuildingBuilder _builder;
 
         private sealed class WorkerRig
         {
@@ -144,6 +150,26 @@ namespace Worker.Game
             return material;
         }
 
+        /// <summary>
+        /// A darker shade of a building's own hue, cached per kind and depth.
+        ///
+        /// Roof and trim pieces have to be darker than the body without being black.
+        /// The first pass used the near-black edge colour for these, which turned every
+        /// canopy into a hole in the image under a light that was working correctly.
+        /// </summary>
+        private Material ShadeFor(BuildingKind kind, int darkenPercent)
+        {
+            int key = (int)kind * 1000 + darkenPercent;
+            if (_shadeMaterials.TryGetValue(key, out var existing)) return existing;
+
+            var baseColor = Palette.ForBuilding(kind);
+            var shade = CreateLit(
+                darkenPercent <= 0 ? baseColor.ToUnity() : baseColor.Darken(darkenPercent).ToUnity());
+
+            _shadeMaterials[key] = shade;
+            return shade;
+        }
+
         private Material MaterialFor(ItemId item)
         {
             if (_itemMaterials.TryGetValue(item, out var existing)) return existing;
@@ -170,11 +196,34 @@ namespace Worker.Game
             // only had to sit below the buildings in value; here it also has to receive
             // the key light and show the shadows cast onto it, and a near-black floor
             // shows neither.
-            _floorMaterial = CreateLit(Palette.FloorA.Lighten(38).ToUnity());
-            _floorLineMaterial = CreateLit(Palette.FloorLine.Lighten(30).ToUnity());
+            // Warm concrete rather than the palette's blue-grey. The flat renderer needed
+            // a cold dark floor to sit under flat sprites; lit geometry standing on it
+            // needs a surface that reflects the warm key, or the whole interior reads
+            // colder than the grass outside it.
+            _floorMaterial = CreateLit(new Color(0.42f, 0.41f, 0.39f));
+            _floorLineMaterial = CreateLit(new Color(0.50f, 0.48f, 0.45f));
             _workerMaterial = CreateLit(Palette.WorkerBody.ToUnity(), smoothness: 0.2f);
             _workerTiredMaterial = CreateLit(Palette.WorkerTired.ToUnity(), smoothness: 0.2f);
             _accentMaterial = CreateLit(Palette.BuildingEdge.ToUnity(), smoothness: 0.05f);
+
+            // A small shared set of surface treatments. Machines are mostly their own
+            // hue, but bare metal, dark castings, lit glass and hazard paint appear on
+            // several of them and reading as the same material each time is what makes
+            // the factory look like one designed object rather than a kit of parts.
+            _metalMaterial = CreateLit(new Color(0.60f, 0.63f, 0.69f), smoothness: 0.45f, metallic: 0.45f);
+            _darkMetalMaterial = CreateLit(new Color(0.26f, 0.28f, 0.33f), smoothness: 0.42f, metallic: 0.55f);
+            _glassMaterial = CreateLit(new Color(1f, 0.90f, 0.66f), smoothness: 0.85f);
+            if (_glassMaterial != null && _glassMaterial.HasProperty("_EmissionColor"))
+            {
+                _glassMaterial.EnableKeyword("_EMISSION");
+                _glassMaterial.SetColor("_EmissionColor", new Color(1f, 0.78f, 0.42f) * 1.6f);
+            }
+            _hazardMaterial = CreateLit(new Color(0.92f, 0.72f, 0.18f), smoothness: 0.3f);
+            _helmetMaterial = CreateLit(new Color(0.95f, 0.62f, 0.16f), smoothness: 0.4f);
+
+            _builder = new IsometricBuildingBuilder(ShadeFor, _metalMaterial, _darkMetalMaterial,
+                _glassMaterial, _hazardMaterial);
+            _builder.SetCrateMaterialLookup(MaterialFor);
 
             var holder = new GameObject("IsometricView");
             holder.transform.SetParent(transform, false);
@@ -182,6 +231,8 @@ namespace Worker.Game
 
             BuildGround();
             BuildLighting();
+            BuildDressing();
+            PostProcessingRig.Install(Camera.main, _root);
         }
 
         private void BuildGround()
@@ -190,7 +241,7 @@ namespace Worker.Game
 
             // A single slab for the yard, with the factory floor sitting slightly proud
             // of it. The lip catches the key light and reads as a raised concrete pad.
-            var yard = CreateBox("Yard", _root, CreateLit(Palette.Yard.Lighten(14).ToUnity()));
+            var yard = CreateBox("Yard", _root, CreateLit(new Color(0.30f, 0.29f, 0.28f)));
             yard.localScale = new Vector3(map.Width + 8f, 0.4f, map.Height + 8f);
             yard.localPosition = new Vector3(map.Width * 0.5f, -0.2f, map.Height * 0.5f);
 
@@ -222,6 +273,22 @@ namespace Worker.Game
             }
         }
 
+        private void BuildDressing()
+        {
+            var dressing = new IsometricSceneDressing(
+                _root,
+                concrete: CreateLit(new Color(0.34f, 0.35f, 0.38f)),
+                paint: CreateLit(new Color(0.80f, 0.82f, 0.84f), smoothness: 0.05f),
+                hazard: _hazardMaterial,
+                timber: CreateLit(new Color(0.62f, 0.45f, 0.28f), smoothness: 0.1f),
+                drum: CreateLit(new Color(0.32f, 0.46f, 0.40f), smoothness: 0.35f, metallic: 0.3f),
+                grass: CreateLit(new Color(0.26f, 0.34f, 0.24f)),
+                foliage: CreateLit(new Color(0.22f, 0.36f, 0.24f)),
+                trunk: CreateLit(new Color(0.28f, 0.22f, 0.17f)));
+
+            dressing.Build(_world);
+        }
+
         /// <summary>
         /// One warm key light casting shadows, plus cool ambient fill. The warm/cool
         /// split is what stops low-poly geometry looking like untextured grey boxes.
@@ -244,9 +311,9 @@ namespace Worker.Game
             // single directional light, ambient is the only thing keeping shadowed faces
             // from going to solid black, and solid black reads as a hole in the image.
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.55f, 0.61f, 0.74f);
-            RenderSettings.ambientEquatorColor = new Color(0.40f, 0.44f, 0.53f);
-            RenderSettings.ambientGroundColor = new Color(0.24f, 0.25f, 0.30f);
+            RenderSettings.ambientSkyColor = new Color(0.56f, 0.59f, 0.66f);
+            RenderSettings.ambientEquatorColor = new Color(0.44f, 0.45f, 0.48f);
+            RenderSettings.ambientGroundColor = new Color(0.30f, 0.28f, 0.26f);
             RenderSettings.ambientIntensity = 1f;
         }
 
@@ -254,7 +321,7 @@ namespace Worker.Game
         {
             light.type = LightType.Directional;
             light.color = new Color(1f, 0.95f, 0.86f);
-            light.intensity = 2.3f;
+            light.intensity = 2.55f;
             light.transform.rotation = Quaternion.Euler(52f, -38f, 0f);
 
             light.shadows = LightShadows.Soft;
@@ -312,132 +379,65 @@ namespace Worker.Game
             var holder = new GameObject(building.Kind + "#" + building.Id);
             holder.transform.SetParent(_root, false);
             holder.transform.position = new Vector3(
-                building.Origin.X + building.Width * 0.5f, 0f,
+                building.Origin.X + building.Width * 0.5f, 0.2f,
                 building.Origin.Y + building.Height * 0.5f);
-
-            float height = HeightOf(building.Kind);
-            var material = MaterialFor(building.Kind);
 
             if (building.IsConveyor)
             {
-                BuildConveyor(holder.transform, building, height);
+                BuildConveyor(holder.transform, building, HeightOf(building.Kind));
                 return holder.transform;
             }
 
-            // Dark plinth under every machine. It reads as a mounting plate and, more
-            // usefully, separates the object from the floor colour beneath it.
-            var plinth = CreateBox("Plinth", holder.transform, _accentMaterial);
-            plinth.localScale = new Vector3(building.Width - 0.06f, 0.12f, building.Height - 0.06f);
-            plinth.localPosition = new Vector3(0f, 0.26f, 0f);
-
-            var body = CreateBox("Body", holder.transform, material);
-            body.localScale = new Vector3(building.Width - 0.24f, height, building.Height - 0.24f);
-            body.localPosition = new Vector3(0f, 0.2f + height * 0.5f + 0.12f, 0f);
-
-            // A smaller block on top breaks the silhouette so two neighbouring machines
-            // of the same footprint do not read as one long slab.
-            AddRoofDetail(holder.transform, building, height, material);
-
+            // Belts rotate; everything else is authored facing the camera so the machine
+            // details stay legible from this fixed angle.
+            _builder.Build(holder.transform, building);
             return holder.transform;
-        }
-
-        private Material ShadeFor(BuildingKind kind, int darkenPercent)
-        {
-            int key = (int)kind * 1000 + darkenPercent;
-            if (_shadeMaterials.TryGetValue(key, out var existing)) return existing;
-
-            var shade = CreateLit(Palette.ForBuilding(kind).Darken(darkenPercent).ToUnity());
-            _shadeMaterials[key] = shade;
-            return shade;
-        }
-
-        private void AddRoofDetail(Transform parent, BuildingInstance building, float height, Material material)
-        {
-            float top = 0.32f + height;
-
-            // Roof pieces are a darker shade of the building's own hue, never the near
-            // black edge colour: a canopy that covers the whole top face in edge colour
-            // turns the roof into a hole, which is exactly how the first pass looked.
-            var roofShade = ShadeFor(building.Kind, 28);
-            var trimShade = ShadeFor(building.Kind, 48);
-
-            switch (building.Kind)
-            {
-                case BuildingKind.Sawbench:
-                case BuildingKind.Lathe:
-                {
-                    var drum = CreateCylinder("Drum", parent, material);
-                    drum.localScale = new Vector3(0.55f, 0.16f, 0.55f);
-                    drum.localPosition = new Vector3(0f, top + 0.14f, 0f);
-
-                    var stack = CreateBox("Stack", parent, trimShade);
-                    stack.localScale = new Vector3(0.18f, 0.5f, 0.18f);
-                    stack.localPosition = new Vector3(building.Width * 0.28f, top + 0.25f, -building.Height * 0.28f);
-                    break;
-                }
-
-                case BuildingKind.AssemblyBench:
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        float dx = (i % 2 == 0 ? -1f : 1f) * building.Width * 0.22f;
-                        float dz = (i < 2 ? -1f : 1f) * building.Height * 0.22f;
-                        var post = CreateBox("Post", parent, trimShade);
-                        post.localScale = new Vector3(0.16f, 0.36f, 0.16f);
-                        post.localPosition = new Vector3(dx, top + 0.18f, dz);
-                    }
-                    break;
-                }
-
-                case BuildingKind.Intake:
-                case BuildingKind.Shipping:
-                {
-                    var canopy = CreateBox("Canopy", parent, roofShade);
-                    canopy.localScale = new Vector3(building.Width - 0.1f, 0.1f, building.Height - 0.1f);
-                    canopy.localPosition = new Vector3(0f, top + 0.06f, 0f);
-                    break;
-                }
-
-                case BuildingKind.Storage:
-                {
-                    // Two shelf boards, so a rack reads as shelving rather than a block.
-                    for (int i = 0; i < 2; i++)
-                    {
-                        var board = CreateBox("Shelf", parent, trimShade);
-                        board.localScale = new Vector3(0.86f, 0.05f, 0.86f);
-                        board.localPosition = new Vector3(0f, 0.45f + i * 0.3f, 0f);
-                    }
-                    break;
-                }
-
-                case BuildingKind.BreakRoom:
-                {
-                    var roof = CreateBox("Roof", parent, roofShade);
-                    roof.localScale = new Vector3(building.Width + 0.05f, 0.12f, building.Height + 0.05f);
-                    roof.localPosition = new Vector3(0f, top + 0.06f, 0f);
-                    break;
-                }
-            }
         }
 
         private void BuildConveyor(Transform parent, BuildingInstance building, float height)
         {
-            var bed = CreateBox("Bed", parent, CreateLit(Palette.ConveyorBed.ToUnity(), smoothness: 0.3f, metallic: 0.35f));
-            bed.localScale = new Vector3(0.94f, height, 0.94f);
-            bed.localPosition = new Vector3(0f, 0.2f + height * 0.5f, 0f);
-
-            var railMaterial = CreateLit(Palette.ConveyorRail.ToUnity(), smoothness: 0.45f, metallic: 0.5f);
             bool horizontal = building.Facing == Direction.East || building.Facing == Direction.West;
 
+            // Legs first: a belt that stands on something reads as machinery, and the
+            // gap underneath is where the ambient occlusion does its work.
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var leg = CreateBox("Leg", parent, _darkMetalMaterial);
+                leg.localScale = new Vector3(0.1f, height, 0.1f);
+                leg.localPosition = horizontal
+                    ? new Vector3(side * 0.34f, height * 0.5f, 0f)
+                    : new Vector3(0f, height * 0.5f, side * 0.34f);
+            }
+
+            var bed = CreateBox("Bed", parent, CreateLit(Palette.ConveyorBed.Darken(12).ToUnity(), smoothness: 0.18f, metallic: 0.1f));
+            bed.localScale = horizontal
+                ? new Vector3(1.0f, 0.08f, 0.66f)
+                : new Vector3(0.66f, 0.08f, 1.0f);
+            bed.localPosition = new Vector3(0f, height + 0.04f, 0f);
+
+            var railMaterial = CreateLit(Palette.ConveyorRail.Darken(18).ToUnity(), smoothness: 0.3f, metallic: 0.25f);
             for (int side = -1; side <= 1; side += 2)
             {
                 var rail = CreateBox("Rail", parent, railMaterial);
                 rail.localScale = horizontal
-                    ? new Vector3(0.98f, 0.1f, 0.1f)
-                    : new Vector3(0.1f, 0.1f, 0.98f);
+                    ? new Vector3(1.0f, 0.09f, 0.07f)
+                    : new Vector3(0.07f, 0.09f, 1.0f);
                 rail.localPosition = horizontal
-                    ? new Vector3(0f, 0.2f + height + 0.03f, side * 0.44f)
-                    : new Vector3(side * 0.44f, 0.2f + height + 0.03f, 0f);
+                    ? new Vector3(0f, height + 0.1f, side * 0.31f)
+                    : new Vector3(side * 0.31f, height + 0.1f, 0f);
+            }
+
+            // End rollers, which also visually join one tile of belt to the next.
+            for (int end = -1; end <= 1; end += 2)
+            {
+                var roller = CreateCylinder("Roller", parent, _metalMaterial);
+                roller.localScale = new Vector3(0.16f, 0.32f, 0.16f);
+                roller.localPosition = horizontal
+                    ? new Vector3(end * 0.47f, height + 0.05f, 0f)
+                    : new Vector3(0f, height + 0.05f, end * 0.47f);
+                roller.localRotation = horizontal
+                    ? Quaternion.Euler(90f, 0f, 0f)
+                    : Quaternion.Euler(0f, 0f, 90f);
             }
         }
 
@@ -498,17 +498,37 @@ namespace Worker.Game
             var holder = new GameObject("Worker " + worker.Name);
             holder.transform.SetParent(_root, false);
 
+            // Proportions matter more than polygon count at this size. A narrow body, a
+            // clearly separated head and a hard hat give a silhouette that stays human
+            // at roughly twenty pixels tall, which is all a worker ever occupies here.
             var body = CreateCapsule("Body", holder.transform, _workerMaterial);
-            body.localScale = new Vector3(0.34f, 0.26f, 0.34f);
-            body.localPosition = new Vector3(0f, 0.3f, 0f);
+            body.localScale = new Vector3(0.3f, 0.22f, 0.3f);
+            body.localPosition = new Vector3(0f, 0.26f, 0f);
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var arm = CreateCapsule("Arm", holder.transform, _workerMaterial);
+                arm.localScale = new Vector3(0.11f, 0.13f, 0.11f);
+                arm.localPosition = new Vector3(side * 0.17f, 0.3f, 0.02f);
+            }
 
             var head = CreateSphere("Head", holder.transform, _workerMaterial);
-            head.localScale = new Vector3(0.28f, 0.28f, 0.28f);
-            head.localPosition = new Vector3(0f, 0.66f, 0f);
+            head.localScale = new Vector3(0.25f, 0.25f, 0.25f);
+            head.localPosition = new Vector3(0f, 0.58f, 0f);
+
+            // The hat is the brightest thing on the figure and reads before anything
+            // else, which is what makes people findable in a busy factory.
+            var helmet = CreateSphere("Helmet", holder.transform, _helmetMaterial);
+            helmet.localScale = new Vector3(0.28f, 0.17f, 0.28f);
+            helmet.localPosition = new Vector3(0f, 0.65f, 0f);
+
+            var brim = CreateCylinder("Brim", holder.transform, _helmetMaterial);
+            brim.localScale = new Vector3(0.3f, 0.015f, 0.3f);
+            brim.localPosition = new Vector3(0f, 0.63f, 0.02f);
 
             var carried = CreateBox("Carried", holder.transform, MaterialFor(ItemId.Log));
-            carried.localScale = new Vector3(0.26f, 0.26f, 0.26f);
-            carried.localPosition = new Vector3(0.26f, 0.62f, 0f);
+            carried.localScale = new Vector3(0.24f, 0.24f, 0.24f);
+            carried.localPosition = new Vector3(0f, 0.52f, 0.26f);
             carried.gameObject.SetActive(false);
 
             return new WorkerRig

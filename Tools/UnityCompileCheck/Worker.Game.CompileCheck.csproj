@@ -9,8 +9,11 @@
     DLLs directly catches syntax errors, wrong API signatures and bad using directives,
     which is most of what an Editor compile would have told us.
 
-    It does not replace an Editor compile: it says nothing about asmdef wiring, package
-    resolution, serialization or anything that only exists at import time.
+    It does not replace an Editor compile, and one gap is worth naming because it has
+    already cost a build: this project references every URP assembly at once, whereas
+    Unity honours the reference list in each asmdef. Code that uses a type from an
+    assembly the asmdef does not list compiles here and fails in the Editor. When adding
+    a using directive for a package namespace, check the matching asmdef.
 
     Point UNITY_MANAGED_DIR and UNITY_PACKAGE_ASSEMBLIES at a Unity installation:
 

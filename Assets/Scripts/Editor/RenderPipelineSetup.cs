@@ -45,6 +45,7 @@ namespace Worker.Editor
             }
 
             ConfigureForIsometric(pipeline);
+            EnsureAmbientOcclusion(rendererData);
 
             EditorUtility.SetDirty(pipeline);
             EditorUtility.SetDirty(rendererData);
@@ -59,6 +60,57 @@ namespace Worker.Editor
             AssetDatabase.Refresh();
 
             Debug.Log("[worker] 3D pipeline installed as the default");
+        }
+
+        /// <summary>
+        /// Adds screen space ambient occlusion to the renderer.
+        ///
+        /// A single directional light leaves every inside corner as flat as every open
+        /// face, which is most of why untextured geometry reads as plastic. Contact
+        /// darkening where a machine meets the floor, or where a roof meets a wall, is
+        /// what makes the objects look like they are actually touching each other.
+        /// </summary>
+        private static void EnsureAmbientOcclusion(UniversalRendererData rendererData)
+        {
+            foreach (var feature in rendererData.rendererFeatures)
+            {
+                if (feature is ScreenSpaceAmbientOcclusion) return;
+            }
+
+            var ssao = ScriptableObject.CreateInstance<ScreenSpaceAmbientOcclusion>();
+            ssao.name = "ScreenSpaceAmbientOcclusion";
+
+            var settingsField = typeof(ScreenSpaceAmbientOcclusion)
+                .GetField("m_Settings", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (settingsField != null)
+            {
+                var settings = settingsField.GetValue(ssao);
+                var type = settings.GetType();
+                SetField(settings, type, "Intensity", 1.6f);
+                SetField(settings, type, "Radius", 0.35f);
+                SetField(settings, type, "Falloff", 60f);
+                SetField(settings, type, "SampleCount", 8);
+                settingsField.SetValue(ssao, settings);
+            }
+
+            AssetDatabase.AddObjectToAsset(ssao, rendererData);
+            rendererData.rendererFeatures.Add(ssao);
+
+            var serialized = new SerializedObject(rendererData);
+            serialized.Update();
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            EditorUtility.SetDirty(rendererData);
+            Debug.Log("[worker] added screen space ambient occlusion");
+        }
+
+        private static void SetField(object target, System.Type type, string name, object value)
+        {
+            var field = type.GetField(name,
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
+                | System.Reflection.BindingFlags.Instance);
+            field?.SetValue(target, value);
         }
 
         /// <summary>
