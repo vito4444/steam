@@ -78,7 +78,9 @@ tools/                环境搭建与自动化自检脚本
 
 ---
 
-## 开发环境重建
+## 工具
+
+### 开发环境重建
 
 ```bash
 export UNITY_EMAIL="你的 Unity 账号"
@@ -86,4 +88,26 @@ export UNITY_PASSWORD="你的密码"
 bash tools/setup-unity.sh
 ```
 
-脚本会装系统依赖、下载 Unity Linux 编辑器、装 Windows 构建模块、激活许可证。凭据只从环境变量读取，不入库。
+装系统依赖、下载 Unity Linux 编辑器、装 Windows 构建模块、激活许可证、验证软件渲染。凭据只从环境变量读取，不入库。
+
+### 视觉差距量化
+
+这是「截图看自己和目标的差距」的实现。
+
+```bash
+# 与概念图对比，看美术方向差多远
+python3 tools/visual_diff.py 当前截图.png concept-art/concept-B-overclock.png --out selfcheck/0001
+
+# 与上一版截图对比，检测视觉回归
+python3 tools/visual_diff.py 新截图.png 旧截图.png --out selfcheck/0001 --regression
+```
+
+产出并排对比图（底部带主色板条）、逐像素差异热力图、六项量化指标（亮度、对比度、饱和度、暗部占比、边缘密度、视觉重心）和差距报告。
+
+工具已实测：同图自比对全部差值为 0、SSIM 为 1.0；拿 Unity 软渲染的灰调测试场景对比方案 B 的高饱和概念图时，正确报出 4 项超阈值差距（亮度偏高 0.146、饱和度偏低 0.504、暗部占比偏低 0.637、细节量偏低 0.426）。
+
+**指标只负责发现问题，定位原因必须看图。** 用法和差距清单的写法见[技术可行性文档第五、六节](docs/03-tech-feasibility.md#五自动化自检流水线设计)。
+
+### Unity 能力探针
+
+`tools/unity-probe/ProbeBuild.cs` 放进 Unity 工程的 `Assets/Editor/`，可以从命令行验证程序化建场景、软件渲染截图、Windows/Linux 交叉编译三项能力。用法见文件头注释。
