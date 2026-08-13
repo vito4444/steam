@@ -39,17 +39,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(UnityManagedDir)' != ''">
+    <!--
+      Reference every engine module rather than an explicit list. Inside Unity an
+      asmdef gets them all implicitly, so an explicit list here does not fail the same
+      way the real compile does: it rejects code Unity would happily accept, which
+      makes the check actively misleading.
+    -->
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.*Module.dll" Private="false" />
     <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.dll" Private="false" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.CoreModule.dll" Private="false" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.IMGUIModule.dll" Private="false" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll')" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.InputLegacyModule.dll" Private="false" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.PhysicsModule.dll" Private="false" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.Physics2DModule.dll" Private="false" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.UIElementsModule.dll" Private="false" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteMaskModule.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteMaskModule.dll')" />
-    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteShapeModule.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteShapeModule.dll')" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UnityPackageAssemblies)' != ''">

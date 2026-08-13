@@ -6,15 +6,21 @@ statement: every iteration has to produce a per-axis gap list that someone can a
 
 ## How the comparison is produced
 
-`Tools/selftest.sh` simulates both factory scenarios headlessly and writes numbered
-screenshots to `Artifacts/selftest/<tag>/<scenario>/shots/`. Those frames are compared
-against the reference works below on seven fixed axes. The seven axes never change
-between reviews; only the scores and the gap list do.
+Two harnesses produce frames, and both are compared against the reference works below
+on the same seven fixed axes. The axes never change between reviews; only the scores
+and the gap list do.
 
-The preview renderer draws from the same `Worker.Core.Palette` as the Unity renderer,
-so a preview frame is a valid stand-in when judging composition, density, value
-separation and readability. It is **not** a stand-in for anything involving shaders,
-lighting, particles or animation, and it says nothing about GPU performance.
+`Tools/selftest.sh` simulates both scenarios with the headless CPU rasteriser and
+writes numbered screenshots to `Artifacts/selftest/<tag>/<scenario>/shots/`. It needs
+nothing but the .NET SDK, so it is what gets used while iterating. Because it draws
+from the same `Worker.Core.Palette` as the Unity renderer, its frames are a valid
+stand-in when judging composition, density, value separation and readability. They are
+**not** a stand-in for shaders, lighting, particles or animation.
+
+`Tools/unity-selftest.sh` builds the actual Unity player, runs it under Xvfb with
+software rendering and captures what the shipping renderer produces. Slower and needs a
+licensed Editor, but it is the only source of truth for anything the preview renderer
+cannot model. Neither harness says anything about GPU performance.
 
 ## Reference works
 
@@ -54,9 +60,18 @@ game should look like any of them.
 
 ## Current state
 
-Baseline frames: [`baseline/automated-day2.png`](baseline/automated-day2.png) and
-[`baseline/starter-day2.png`](baseline/starter-day2.png), captured from the headless
-preview renderer at day 2 of each scenario.
+Baseline frames from the preview renderer at day 2:
+[`baseline/automated-day2.png`](baseline/automated-day2.png) and
+[`baseline/starter-day2.png`](baseline/starter-day2.png).
+
+Baseline frame from the real Unity player:
+[`baseline/unity-automated-day1.png`](baseline/unity-automated-day1.png), captured at
+tick 3160 of the automated scenario under llvmpipe software rendering.
+
+The two renderers agree on layout, palette and belt direction. Where they differ today:
+the Unity player draws workers as small figures rather than dots and has no worker
+names, no path overlay and no side panel, because those are preview-only debug aids
+that the shipping UI has not replaced yet.
 
 | Axis | State | Gap |
 | --- | --- | --- |

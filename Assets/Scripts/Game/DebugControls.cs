@@ -14,14 +14,25 @@ namespace Worker.Game
     public sealed class DebugControls : MonoBehaviour
     {
         private SimRunner _runner;
-
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
         private GUIStyle _style;
-#endif
+
+        /// <summary>
+        /// Set by --hud on the command line. The readout is not gated on a development
+        /// build, because the self-test captures release players: a development build
+        /// shows Unity's own console over the game on the first warning, and a machine
+        /// with no audio device warns during engine startup.
+        /// </summary>
+        private bool _showHud;
 
         private void Awake()
         {
             _runner = GetComponent<SimRunner>();
+
+            var args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--hud") _showHud = true;
+            }
         }
 
         private void Update()
@@ -47,9 +58,10 @@ namespace Worker.Game
             }
         }
 
-#if DEVELOPMENT_BUILD || UNITY_EDITOR
         private void OnGUI()
         {
+            if (!_showHud) return;
+
             var world = _runner.World;
             if (world == null) return;
 
@@ -82,6 +94,5 @@ namespace Worker.Game
 
             GUILayout.EndArea();
         }
-#endif
     }
 }

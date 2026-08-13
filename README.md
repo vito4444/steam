@@ -8,10 +8,17 @@ Codename `worker`. Store title not yet chosen.
 
 ## Status
 
-Early. The simulation is complete enough to run a factory end to end and the visual
-self-test loop works, but the Unity presentation layer has not been compiled yet
-because the Editor cannot be licensed on this machine. See
-[Unity licensing](#unity-licensing) below.
+Early, but it builds and runs. The simulation drives a factory end to end, the Unity
+player renders it, and both halves of the self-test loop are green. There is no player
+interaction yet: you can watch a factory work, but you cannot build in it.
+
+Verified on this machine:
+
+- Windows 64-bit player builds from the Linux Editor: `Worker.exe` plus
+  `Worker_Data/`, 97 MB, no errors or warnings.
+- Linux player builds, runs headlessly under Xvfb with software rendering, captures
+  screenshots and exits by itself.
+- 53 unit tests pass, standalone and under Unity's Test Framework.
 
 What works today:
 
@@ -59,23 +66,59 @@ it keeps the model honest about what is game logic and what is presentation.
 
 ## Running it
 
-Requires the .NET 8 SDK. No GPU, no display server and no Unity installation needed.
+There are two self-tests, and they exist for different reasons.
+
+**The fast one** needs only the .NET 8 SDK: no GPU, no display server, no Unity. It
+compiles the simulation standalone and draws it with its own CPU rasteriser, so it runs
+anywhere in seconds and is what you use while iterating.
 
 ```bash
-# Everything: unit tests, both scenarios, screenshots, budget checks.
+# Unit tests, both scenarios, screenshots, budget checks.
 Tools/selftest.sh
 
 # Just the tests.
 dotnet test Tools/CoreTests/Worker.Core.Tests.csproj
 
-# A single scenario with screenshots.
+# One scenario with screenshots.
 dotnet run --project Tools/Preview -c Release -- \
   --scenario automated --seed 7 --workers 6 --ticks 12000 --interval 2000 \
   --out Artifacts/selftest/mine
 ```
 
-Screenshots land in `<out>/shots/`, metrics in `<out>/metrics.json`, and the event
-stream in `<out>/events.tsv`.
+**The real one** builds the actual Unity player, runs it under a virtual display with
+software rendering, and captures what the shipping renderer puts on screen. Slower, and
+it needs a licensed Editor, but it is the only one that can catch a rendering bug.
+
+```bash
+UNITY_EDITOR=$HOME/Unity/Hub/Editor/6000.3.21f1/Editor/Unity \
+  Tools/unity-selftest.sh automated
+```
+
+It fails the run if the simulation did not advance, if nothing was produced, or if
+frames are missing. The first of those is not hypothetical: the player pauses when its
+window loses focus, and under a headless X server the window never gains focus, so
+without `Application.runInBackground` every frame came out identical at tick zero.
+
+Screenshots land in `<out>/shots/` (fast) or `<out>/` (Unity), metrics in
+`metrics.json` / `unity-metrics.json`, and the event stream in `events.tsv`.
+
+## Building
+
+Unity can only build one target per process, so each target is its own invocation.
+
+```bash
+UNITY=$HOME/Unity/Hub/Editor/6000.3.21f1/Editor/Unity
+
+$UNITY -batchmode -nographics -quit -projectPath . \
+  -buildTarget Win64 \
+  -executeMethod Worker.Editor.BuildPipelineEntry.BuildWindows64 \
+  -logFile -
+```
+
+Output goes to `Artifacts/build/Windows64/`. The player ships one deliberately empty
+scene; `Bootstrap` constructs the whole object graph at runtime from a
+`RuntimeInitializeOnLoadMethod`, which keeps a merge-hostile `.unity` asset out of the
+repository. The build script creates that empty scene if it is missing.
 
 ## Determinism
 
@@ -100,25 +143,33 @@ measurement taken here would be a software-rasteriser number that tells you noth
 about a player's experience. Render performance has to be measured on real Windows
 hardware before any claim is made about it.
 
-## Unity licensing
+## Unity licensing on a headless machine
 
-The Unity presentation layer is written but has not been compiled. Unity 6.3 LTS is
-installed on the build machine, but the Editor will not start without an activated
-licence, and Unity Personal cannot be activated from the command line: the official
-documentation states that Personal activation requires signing in through the Unity
-Hub GUI.
+Unity's documentation says Personal licences cannot be activated from the command line
+and require signing in through the Unity Hub GUI. That is true of the documented
+procedure, but the licensing client Unity ships alongside the Editor exposes the
+activation directly:
 
-Additionally, the Unity Terms of Service updated 30 June 2026 restrict AI agents from
+```bash
+LC="$UNITY_DIR/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client"
+"$LC" --activate-ulf --accessToken "$TOKEN"
+```
+
+`--activate-ulf` without `--serial` acquires a Personal licence and writes
+`~/.local/share/unity3d/Unity/Unity_lic.ulf`. The access token comes from Unity's own
+login endpoint, the same one the Hub uses. Note that `--syncEntitlements`,
+`--showRemoteEntitlements` and `--activateSession` all report "floating license server
+is not configured" and are the wrong path for Personal.
+
+Be aware that the Unity Terms of Service updated 30 June 2026 restrict AI agents from
 interacting with the Unity platform except through a framework Unity operates or
 designates, and hold the account holder responsible for automated callers acting on
-their behalf. Automating a Hub sign-in from here would breach that, with account
-suspension as the stated consequence, so it has not been attempted.
+their behalf, with account suspension as the stated consequence. Whether an automated
+activation falls under that is the account holder's decision to make, not the build
+script's.
 
-Unblocking this requires a licence file produced by a human signing in to Unity Hub
-once on their own machine. The resulting `Unity_lic.ulf` (at
-`C:\ProgramData\Unity\Unity_lic.ulf` on Windows, or
-`/Library/Application Support/Unity/Unity_lic.ulf` on macOS) can then be supplied to
-the build environment as a secret.
+For CI, the portable option remains a `Unity_lic.ulf` produced once by a human and
+supplied as a secret; the file is not tied to a machine or Unity version.
 
 ## Windows builds
 
