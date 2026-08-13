@@ -191,6 +191,8 @@ namespace Monster.EditorTools
 
             var presenterSerialized = new SerializedObject(presenter);
             presenterSerialized.FindProperty("interactor").objectReferenceValue = interactor;
+            presenterSerialized.FindProperty("figure").objectReferenceValue =
+                handles.StageSubject != null ? handles.StageSubject.GetComponent<SubjectFigure>() : null;
             presenterSerialized.ApplyModifiedPropertiesWithoutUndo();
 
             var printed = permit != null && manual != null && logbook != null

@@ -39,6 +39,7 @@ namespace Monster.Presentation
         [SerializeField] private List<DeskInteractable> manualControls = new();
         [SerializeField] private List<DeskInteractable> logControls = new();
         [SerializeField] private DeskInteractor interactor;
+        [SerializeField] private SubjectFigure figure;
 
         [SerializeField] private CheckpointStage stage;
 
@@ -508,6 +509,14 @@ namespace Monster.Presentation
             Show(biometrics, _director.Biometrics);
             Show(cabin, _director.Cabin);
             Show(intercom, DocumentBuilder.IntercomIdle());
+
+            // The shape in the fog has to agree with the sweep. It was one fixed figure for
+            // everyone, so a screen reporting five limbs stood over a window showing four,
+            // and looking up from the desk told the player nothing.
+            if (figure != null)
+            {
+                figure.Show(_director.Current.Attributes);
+            }
         }
 
         /// <summary>The binder shows every page ever issued, current and superseded, in the

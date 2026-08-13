@@ -3,6 +3,7 @@ using System.IO;
 using Monster.SelfCheck;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using Monster.Presentation;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -878,13 +879,30 @@ namespace Monster.EditorTools
             _subjectRoot = subject;
             subject.SetPositionAndRotation(new Vector3(0.52f, 0f, 4.95f), Quaternion.Euler(0f, 184f, 0f));
             Box("Legs", subject, new Vector3(0f, 0.46f, 0f), new Vector3(0.28f, 0.92f, 0.21f), figure);
-            Box("Torso", subject, new Vector3(0f, 1.31f, 0f), new Vector3(0.44f, 0.80f, 0.25f), figure);
-            Box("Neck", subject, new Vector3(0f, 1.82f, 0f), new Vector3(0.09f, 0.24f, 0.09f), figure);
-            Box("Head", subject, new Vector3(0f, 2.06f, 0f), new Vector3(0.18f, 0.25f, 0.19f), figure);
-            Box("Arm_L", subject, new Vector3(-0.29f, 1.10f, 0.02f), new Vector3(0.10f, 1.24f, 0.12f), figure,
-                new Vector3(0f, 0f, 3f));
-            Box("Arm_R", subject, new Vector3(0.29f, 1.10f, 0.02f), new Vector3(0.10f, 1.24f, 0.12f), figure,
-                new Vector3(0f, 0f, -3f));
+            var torso = Box("Torso", subject, new Vector3(0f, 1.31f, 0f),
+                new Vector3(0.44f, 0.80f, 0.25f), figure).transform;
+            var neck = Box("Neck", subject, new Vector3(0f, 1.82f, 0f),
+                new Vector3(0.09f, 0.24f, 0.09f), figure).transform;
+            var head = Box("Head", subject, new Vector3(0f, 2.06f, 0f),
+                new Vector3(0.18f, 0.25f, 0.19f), figure).transform;
+            var armL = Box("Arm_L", subject, new Vector3(-0.29f, 1.10f, 0.02f),
+                new Vector3(0.10f, 1.24f, 0.12f), figure, new Vector3(0f, 0f, 3f)).transform;
+            var armR = Box("Arm_R", subject, new Vector3(0.29f, 1.10f, 0.02f),
+                new Vector3(0.10f, 1.24f, 0.12f), figure, new Vector3(0f, 0f, -3f)).transform;
+
+            // Two more, off unless the sweep says there are more than four limbs. Set behind
+            // the shoulders and canted, so what the fog gives up is an outline that does not
+            // resolve rather than a clearly drawn extra arm.
+            var spareA = Box("Arm_Spare_A", subject, new Vector3(-0.20f, 1.16f, -0.13f),
+                new Vector3(0.09f, 1.06f, 0.10f), figure, new Vector3(6f, 0f, 17f)).transform;
+            var spareB = Box("Arm_Spare_B", subject, new Vector3(0.21f, 1.20f, -0.14f),
+                new Vector3(0.09f, 0.98f, 0.10f), figure, new Vector3(-5f, 0f, -21f)).transform;
+            spareA.gameObject.SetActive(false);
+            spareB.gameObject.SetActive(false);
+
+            var figureParts = subject.gameObject.AddComponent<SubjectFigure>();
+            figureParts.Configure(torso, neck, head,
+                new[] { armL, armR }, new[] { spareA, spareB });
 
             // The vehicle it stepped out of, reduced to two taillights and a dark mass.
             var vehicle = new GameObject("Vehicle").transform;

@@ -574,6 +574,36 @@ namespace Monster.SelfCheck
             yield return new WaitForSecondsRealtime(0.4f);
             yield return CaptureTo(Camera.main, Path.Combine(_outputDirectory, "consequence.png"));
 
+            // The window, with something in it that has more arms than it should. Found by
+            // looking rather than by a hardcoded index, so it keeps working when the
+            // generator changes.
+            var manyLimbed = false;
+
+            for (var night = 0; night < 6 && !manyLimbed; night++)
+            {
+                presenter.BeginShift(night);
+
+                for (var i = 0; i < presenter.Director.QueueLength && !manyLimbed; i++)
+                {
+                    presenter.ShowSubject(i);
+                    manyLimbed = presenter.Director.Current.Attributes.VisibleLimbCount > 4;
+                }
+            }
+
+            if (!manyLimbed)
+            {
+                _logLines.Add("Error: no subject in the first six nights had more than four limbs, " +
+                              "so C-13 is a criterion the player can never see fire");
+            }
+            else if (boothCamera != null)
+            {
+                boothCamera.ResetToHome();
+                boothCamera.SnapLookAt(new Vector3(0.52f, 1.5f, 4.95f));
+
+                yield return new WaitForSecondsRealtime(0.4f);
+                yield return CaptureTo(Camera.main, Path.Combine(_outputDirectory, "the_window.png"));
+            }
+
             // The last night, so the letter that closes a run gets photographed like
             // everything else. Skipped to rather than played, because thirty nights is five
             // hundred vehicles and the ending does not depend on the ones in between.
