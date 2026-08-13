@@ -47,6 +47,46 @@ namespace Decoder.Tests
             return receiver;
         }
 
+        [Test]
+        public void SuggestedStepIsFineEnoughToResolveTheShortestElement()
+        {
+            // 解码器只看每次调用时的瞬时键控状态，所以调用间隔必须短于最短的元素。
+            // 建议步长自称能保证这一点，这里确认它确实短于一个点。
+            foreach (var wpm in new[] { 9f, 12f, 15f, 18f, 24f })
+            {
+                var receiver = new MorseReceiver(wpm);
+                Assert.That(receiver.SuggestedStepSeconds,
+                    Is.LessThan(MorseCode.UnitSeconds(wpm)),
+                    $"{wpm} 字每分时建议步长比一个点还长，采样会直接漏掉点");
+            }
+        }
+
+        [Test]
+        public void SuggestedStepStillDecodesFastSendingCorrectly()
+        {
+            // 界面层按这个步长把两次刷新之间的时间切开逐段喂，所以按它喂必须能解对。
+            // 这条守的是那套分段补齐的意义：帧率再低，转写带也不该出错。
+            const float wpm = 18f;
+            var step = new MorseReceiver(wpm).SuggestedStepSeconds;
+            var receiver = PlayThrough("0554", wpm, (float)step);
+            Assert.That(receiver.Transcript, Is.EqualTo("0554"));
+        }
+
+        [Test]
+        public void SamplingOncePerSlowFrameGarblesTheTranscript()
+        {
+            // 这条是反证：如果按帧喂就够了，上面那套分段补齐就是多余的。
+            //
+            // 无 GPU 环境下这个场景只有每秒几帧，18 字每分时一个单位 67 毫秒，
+            // 一帧的间隔足够跨过整串划。结果不是"少几个字"而是一行看着像模像样的
+            // 错字，听障玩家没有任何办法察觉它是错的——所以必须让它错得出来，
+            // 这样有人哪天把分段补齐删掉，测试会红。
+            const float wpm = 18f;
+            var garbled = PlayThrough("0554", wpm, 0.2f);
+            Assert.That(garbled.Transcript, Is.Not.EqualTo("0554"),
+                "按低帧率的间隔采样竟然也解对了，说明这个用例没有真的模拟出漏采");
+        }
+
         [TestCase("SOS", 12f)]
         [TestCase("CQ", 12f)]
         [TestCase("PARIS", 15f)]

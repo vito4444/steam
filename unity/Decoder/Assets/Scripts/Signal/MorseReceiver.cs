@@ -87,6 +87,18 @@ namespace Decoder.Signal
         /// 按当前时刻的键控状态推进解码。每帧调用一次即可，
         /// 帧率不需要很高：判定依据是电平变化之间的时长，不是采样次数。
         /// </summary>
+        /// <summary>
+        /// 喂数据的最大步长。
+        ///
+        /// 这个解码器只看每次调用时的瞬时键控状态，所以调用间隔必须小于最短的元素。
+        /// 18 字每分时一个单位只有 67 毫秒，按帧喂的话帧率掉到每秒十几帧就已经
+        /// 采不到一个点了：一整串划会被读成几个孤立的字符，转写带上出来的是一行
+        /// 看着像模像样的错字，而听障玩家没有任何办法察觉它是错的。
+        ///
+        /// 调用方拿这个步长把两次调用之间的时间切开逐段喂，帧率就不再影响解码结果。
+        /// </summary>
+        public double SuggestedStepSeconds => System.Math.Max(0.004, _unitSeconds * 0.5);
+
         public void Advance(double timeSeconds, bool keyDown)
         {
             if (!_started)

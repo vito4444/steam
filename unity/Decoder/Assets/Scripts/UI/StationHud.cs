@@ -56,6 +56,9 @@ namespace Decoder.UI
         private Text _noteText;
 
         private MorseReceiver _morse;
+
+        /// <summary>转写带已经推进到的时刻。见 AdvanceMorseReceiver 里的分段补齐。</summary>
+        private double _morseClock;
         private CopyAssist _assist = CopyAssist.Characters;
         private string _lastStationCallsign;
 
@@ -261,6 +264,7 @@ namespace Decoder.UI
             {
                 _lastStationCallsign = callsign;
                 _morse.Reset();
+                _morseClock = 0d;
                 if (station != null)
                 {
                     _morse.SetSpeed(station.WordsPerMinute);
@@ -283,7 +287,35 @@ namespace Decoder.UI
             // 信号太弱时不喂数据。这一点很重要：辅助工具不该比玩家的耳朵更灵，
             // 否则玩家会发现盯着转写带比调准频率更省事，搜频这一层玩法就废了。
             var readable = station != null && receiver.SignalLevel > 0.45f;
-            _morse.Advance(synth.ElapsedSeconds, readable && station.IsKeyDown(synth.ElapsedSeconds));
+
+            // 按帧采样会漏掉短元素。18 字每分时一个电码单位只有 67 毫秒，
+            // 帧率掉到 15 帧每秒就已经采不到一个点了，掉到几帧每秒时一整串划
+            // 会被读成几个孤立的字符——转写带上出来的是一行看着像模像样的错字，
+            // 而听障玩家没有任何办法察觉它是错的。
+            //
+            // 所以推进的步长要跟着电码速度走，不跟着帧率走：把上一帧到这一帧的
+            // 时间切成不超过半个单位的小段逐段喂。帧率正常时这就是一次调用。
+            var now = synth.ElapsedSeconds;
+            if (station == null)
+            {
+                _morse.Advance(now, false);
+                _morseClock = now;
+            }
+            else
+            {
+                var unit = _morse.SuggestedStepSeconds;
+                if (_morseClock <= 0d || now - _morseClock > 5d)
+                {
+                    _morseClock = now - unit;
+                }
+
+                while (_morseClock < now)
+                {
+                    var next = System.Math.Min(now, _morseClock + unit);
+                    _morse.Advance(next, readable && station.IsKeyDown(next));
+                    _morseClock = next;
+                }
+            }
 
             if (_liveCopyText != null)
             {
