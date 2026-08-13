@@ -33,15 +33,18 @@ namespace Decoder.UI
 
         [Header("磷光")]
         [Tooltip("余辉半衰期。太短像素点，太长糊成一片")]
-        public float persistenceHalfLife = 0.28f;
+        public float persistenceHalfLife = 0.45f;
 
         public Color traceColor = new Color(0.45f, 1f, 0.55f, 1f);
 
         [Tooltip("迹线宽度，单位是纹理列。屏幕在画面里很小，单列的线会被采样丢掉")]
-        [Range(1, 9)] public int traceWidth = 5;
-        public Color gridColor = new Color(0.06f, 0.22f, 0.10f, 1f);
-        public Color axisColor = new Color(0.10f, 0.34f, 0.16f, 1f);
-        public Color backgroundColor = new Color(0.008f, 0.035f, 0.015f, 1f);
+        [Range(1, 15)] public int traceWidth = 9;
+        // 真实示波器的屏幕底色几乎全黑，迹线是很细的一条。照搬到游戏里的结果是
+        // 这块屏幕在画面上只有两个像素宽的亮线，截图十有八九抓在余辉衰减的暗区，
+        // 而听障玩家要靠它读点划。底光和刻度都往上提，让屏幕先是"亮着的"。
+        public Color gridColor = new Color(0.10f, 0.34f, 0.16f, 1f);
+        public Color axisColor = new Color(0.16f, 0.52f, 0.24f, 1f);
+        public Color backgroundColor = new Color(0.02f, 0.11f, 0.045f, 1f);
 
         [Header("噪声")]
         [Tooltip("无信号时基线的抖动幅度，占屏高比例")]
