@@ -45,8 +45,12 @@ namespace Worker.Core
         /// <summary>Morale gained per tick while resting.</summary>
         public const int MoraleGainPerRestTick = 3;
 
-        /// <summary>Default factory dimensions.</summary>
-        public const int DefaultMapWidth = 48;
-        public const int DefaultMapHeight = 32;
+        /// <summary>
+        /// Default factory dimensions. Deliberately small: the whole shop floor has to
+        /// fit one screen at a tile size where a 2x2 bench still reads clearly, and a
+        /// tight plot is what forces the layout decisions this genre is about.
+        /// </summary>
+        public const int DefaultMapWidth = 26;
+        public const int DefaultMapHeight = 16;
     }
 }

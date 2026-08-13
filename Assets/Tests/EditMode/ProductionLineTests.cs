@@ -185,6 +185,16 @@ namespace Worker.Core.Tests
                 total += InventoryPlankValue(world.Buildings[i].Input);
                 total += InventoryPlankValue(world.Buildings[i].Output);
 
+                // Items riding a belt are still in the factory.
+                var conveyor = world.Buildings[i].Conveyor;
+                if (conveyor != null)
+                {
+                    for (int slot = 0; slot < ConveyorState.Capacity; slot++)
+                    {
+                        total += PlankValue(conveyor.ItemAt(slot));
+                    }
+                }
+
                 // Work in progress: inputs are consumed the moment a craft starts.
                 var building = world.Buildings[i];
                 if (building.WorkProgress > 0)
@@ -296,6 +306,13 @@ namespace Worker.Core.Tests
             {
                 total += world.Buildings[i].Input.CountOf(item);
                 total += world.Buildings[i].Output.CountOf(item);
+
+                var conveyor = world.Buildings[i].Conveyor;
+                if (conveyor == null) continue;
+                for (int slot = 0; slot < ConveyorState.Capacity; slot++)
+                {
+                    if (conveyor.ItemAt(slot) == item) total++;
+                }
             }
             for (int i = 0; i < world.Workers.Count; i++)
             {

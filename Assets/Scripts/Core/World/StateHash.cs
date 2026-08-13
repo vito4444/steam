@@ -33,6 +33,15 @@ namespace Worker.Core
                 Mix(ref hash, (ulong)building.OperatorWorkerId);
                 MixInventory(ref hash, building.Input);
                 MixInventory(ref hash, building.Output);
+
+                if (building.Conveyor != null)
+                {
+                    for (int slot = 0; slot < ConveyorState.Capacity; slot++)
+                    {
+                        Mix(ref hash, (ulong)building.Conveyor.ItemAt(slot));
+                        Mix(ref hash, (ulong)(long)building.Conveyor.ProgressAt(slot));
+                    }
+                }
             }
 
             var workers = world.Workers;

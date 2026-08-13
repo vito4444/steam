@@ -21,6 +21,12 @@ namespace Worker.Core
 
         private readonly Dictionary<int, BuildingInstance> _buildingsById = new Dictionary<int, BuildingInstance>();
         private readonly List<BuildingInstance> _buildings = new List<BuildingInstance>();
+
+        /// <summary>Belts, cached in insertion order so conveyor updates stay deterministic.</summary>
+        private readonly List<BuildingInstance> _conveyors = new List<BuildingInstance>();
+
+        /// <summary>Buildings that can emit onto a belt, cached for the same reason.</summary>
+        private readonly List<BuildingInstance> _emitters = new List<BuildingInstance>();
         private readonly List<WorkerUnit> _workers = new List<WorkerUnit>();
         private readonly List<Order> _orders = new List<Order>();
         private readonly List<SupplyContract> _contracts = new List<SupplyContract>();
@@ -79,6 +85,7 @@ namespace Worker.Core
             var building = new BuildingInstance(_nextBuildingId++, kind, origin, facing);
             _buildingsById[building.Id] = building;
             _buildings.Add(building);
+            IndexBuilding(building);
             Map.Occupy(building);
 
             // Stations default to their first available recipe so a freshly placed
@@ -123,9 +130,21 @@ namespace Worker.Core
 
             Map.Vacate(building);
             _buildings.Remove(building);
+            _conveyors.Remove(building);
+            _emitters.Remove(building);
             _buildingsById.Remove(id);
             Raise(SimEvent.BuildingRemoved(Tick, id));
             return true;
+        }
+
+        private void IndexBuilding(BuildingInstance building)
+        {
+            if (building.IsConveyor) _conveyors.Add(building);
+
+            // Intakes and stations push their output onto a belt automatically. Storage
+            // deliberately does not: shelves are a buffer the player controls, and a
+            // self-emptying shelf would make layout planning impossible.
+            if (building.Kind == BuildingKind.Intake || building.Def.IsStation) _emitters.Add(building);
         }
 
         public List<BuildingInstance> BuildingsOfKind(BuildingKind kind)
@@ -272,6 +291,96 @@ namespace Worker.Core
             return null;
         }
 
+        // ---------------------------------------------------------------- conveyors
+
+        /// <summary>
+        /// Moves belt contents one tick.
+        ///
+        /// Order matters: hand-offs are resolved before advancement so an item that
+        /// leaves a belt frees its slot in the same tick, and belts are always walked in
+        /// insertion order so the result is reproducible.
+        /// </summary>
+        private void UpdateConveyors()
+        {
+            for (int i = 0; i < _conveyors.Count; i++)
+            {
+                var belt = _conveyors[i];
+                var item = belt.Conveyor.PeekOutput();
+                if (item == ItemId.None) continue;
+
+                var target = BuildingAt(belt.ConveyorTarget);
+                if (target == null) continue;
+
+                if (target.IsConveyor)
+                {
+                    // Never push back into the belt that feeds us; that would be a loop
+                    // of two tiles handing the same item back and forth.
+                    if (target.ConveyorTarget == belt.Origin) continue;
+                    if (!target.Conveyor.CanAccept) continue;
+
+                    target.Conveyor.TryAccept(item);
+                    belt.Conveyor.TakeOutput();
+                    continue;
+                }
+
+                var destination = target.Def.InputSlots > 0 ? target.Input : target.Output;
+                if (destination.TryAdd(item, 1) == 1) belt.Conveyor.TakeOutput();
+            }
+
+            for (int i = 0; i < _conveyors.Count; i++)
+            {
+                _conveyors[i].Conveyor.Advance();
+            }
+
+            EmitOntoConveyors();
+        }
+
+        /// <summary>
+        /// Lets stations and intakes drop their output onto an adjacent belt. This is the
+        /// mechanism that turns a belt into saved labour: anything a belt carries is a
+        /// trip no worker has to walk.
+        /// </summary>
+        private void EmitOntoConveyors()
+        {
+            for (int i = 0; i < _emitters.Count; i++)
+            {
+                var source = _emitters[i];
+                if (source.IsConveyor) continue;
+                if (source.Output.IsEmpty) continue;
+
+                int slot = source.Output.FirstOccupiedSlot();
+                if (slot < 0) continue;
+
+                var stack = source.Output[slot];
+                var belt = FindOutgoingBelt(source);
+                if (belt == null) continue;
+
+                if (!belt.Conveyor.TryAccept(stack.Item)) continue;
+                source.Output.TryRemove(stack.Item, 1);
+            }
+        }
+
+        /// <summary>
+        /// First belt adjacent to <paramref name="source"/> that leads away from it and
+        /// has room. Adjacency is scanned in the building's stable tile order.
+        /// </summary>
+        private BuildingInstance FindOutgoingBelt(BuildingInstance source)
+        {
+            var tiles = source.AdjacentTiles();
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                var candidate = BuildingAt(tiles[i]);
+                if (candidate == null || !candidate.IsConveyor) continue;
+                if (!candidate.Conveyor.CanAccept) continue;
+
+                // A belt pointing back into this building would just return the item.
+                if (source.Covers(candidate.ConveyorTarget)) continue;
+
+                return candidate;
+            }
+            return null;
+        }
+
         // --------------------------------------------------------------------- tick
 
         public void Step()
@@ -286,6 +395,7 @@ namespace Worker.Core
             }
 
             _workerSystem.Update();
+            UpdateConveyors();
             UpdateShipping();
 
             if (Tick % SimConfig.TicksPerDay == 0)
@@ -384,6 +494,7 @@ namespace Worker.Core
         {
             _buildingsById[building.Id] = building;
             _buildings.Add(building);
+            IndexBuilding(building);
             Map.Occupy(building);
         }
 

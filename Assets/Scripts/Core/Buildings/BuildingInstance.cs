@@ -26,6 +26,9 @@ namespace Worker.Core
         /// <summary>Worker currently assigned to operate this station, or 0.</summary>
         public int OperatorWorkerId;
 
+        /// <summary>Belt contents. Non-null only for <see cref="BuildingKind.Conveyor"/>.</summary>
+        public readonly ConveyorState Conveyor;
+
         public BuildingInstance(int id, BuildingKind kind, GridPos origin, Direction facing)
         {
             var def = BuildingData.Get(kind);
@@ -36,7 +39,13 @@ namespace Worker.Core
             Input = new Inventory(Math.Max(1, def.InputSlots));
             Output = new Inventory(Math.Max(1, def.OutputSlots));
             ActiveRecipe = RecipeId.None;
+            if (kind == BuildingKind.Conveyor) Conveyor = new ConveyorState();
         }
+
+        public bool IsConveyor => Conveyor != null;
+
+        /// <summary>Tile this belt feeds into.</summary>
+        public GridPos ConveyorTarget => Origin.Step(Facing);
 
         public BuildingDef Def => BuildingData.Get(Kind);
 
