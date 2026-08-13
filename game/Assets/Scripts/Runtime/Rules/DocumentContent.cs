@@ -28,19 +28,24 @@ namespace Monster.Rules
     public sealed class DocumentContent
     {
         public DocumentContent(string title, IReadOnlyList<DocumentField> fields, string footer = null,
-            PortraitCode? portrait = null, int labelWidth = 10)
+            PortraitCode? portrait = null, int labelWidth = 10, PortraitCode? comparison = null)
         {
             Title = title;
             Fields = fields;
             Footer = footer;
             Portrait = portrait;
             LabelWidth = labelWidth;
+            Comparison = comparison;
         }
 
         public string Title { get; }
         public IReadOnlyList<DocumentField> Fields { get; }
         public string Footer { get; }
         public PortraitCode? Portrait { get; }
+
+        /// <summary>A second face printed beside the first, for surfaces whose whole job is
+        /// letting two be compared without looking away from one to see the other.</summary>
+        public PortraitCode? Comparison { get; }
 
         /// <summary>How far the label column is padded. Paper has room for ten characters;
         /// a CRT does not, and cramming a document layout onto a screen is what made the
@@ -113,8 +118,14 @@ namespace Monster.Rules
                 },
                 null, null, ScreenLabelWidth);
 
-        /// <summary>The rear cabin feed. Shows the bearer as observed and their reflection,
-        /// which is where a photograph mismatch and an inconsistent reflection are caught.</summary>
+        /// <summary>The rear cabin feed. Shows the bearer as observed, beside the photograph
+        /// the district has on file, which is where a photograph mismatch is caught.
+        ///
+        /// Both faces are here rather than one here and one on the permit, because the permit
+        /// lies flat on the desk: reading it meant leaning in, and leaning in put this screen
+        /// out of frame. The permit still carries the photograph -- it is a document, it has
+        /// to -- but the comparison can be made without holding sixteen cells in your head
+        /// while you turn round.</summary>
         public static DocumentContent CabinFeed(in SubjectAttributes subject) =>
             new(
                 "CABIN 02",
@@ -122,11 +133,11 @@ namespace Monster.Rules
                 {
                     new DocumentField("SUBJ", "PRESENT"),
                     new DocumentField("CARGO", subject.CargoDeclarationMatchesScan ? "MATCHED" : "DIVERGENT"),
-                    new DocumentField("MASS", subject.CargoDeclarationMatchesScan ? "NOMINAL" : "OVER"),
                 },
                 null,
-                PortraitCode.AsObserved(subject),
-                ScreenLabelWidth);
+                PortraitCode.FromSubject(subject),
+                ScreenLabelWidth,
+                PortraitCode.AsObserved(subject));
 
         /// <summary>The intercom before anything has been asked.</summary>
         public static DocumentContent IntercomIdle() =>

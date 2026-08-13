@@ -38,7 +38,9 @@ namespace Monster.Presentation
             SetText(title, content.Title);
             SetText(body, BuildBody(content));
             SetText(footer, content.Footer);
-            SetText(portrait, content.Portrait?.ToBlockRows());
+            SetText(portrait, content.Comparison.HasValue && content.Portrait.HasValue
+                ? PortraitCode.SideBySide(content.Portrait.Value, content.Comparison.Value)
+                : content.Portrait?.ToBlockRows());
         }
 
         public void Clear()

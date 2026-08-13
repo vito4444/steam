@@ -217,7 +217,10 @@ namespace Monster.Tests
                 var subject = director.Current.Attributes;
                 StringAssert.Contains(subject.Name.ToUpperInvariant(), director.Permit.ToPrintedPage());
                 StringAssert.Contains($"{subject.BlinkRatePerMinute}/MIN", director.Biometrics.ToPrintedPage());
-                Assert.AreEqual(PortraitCode.AsObserved(subject), director.Cabin.Portrait);
+                Assert.AreEqual(PortraitCode.FromSubject(subject), director.Cabin.Portrait,
+                    "the cabin feed is showing a different bearer's file photograph");
+                Assert.AreEqual(PortraitCode.AsObserved(subject), director.Cabin.Comparison,
+                    "the cabin feed is showing a different bearer's face");
                 director.Decide(Verdict.Pass);
             }
         }

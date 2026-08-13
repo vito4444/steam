@@ -236,6 +236,40 @@ namespace Monster.Rules
             return builder.ToString();
         }
 
+        /// <summary>Two faces on one screen, captioned.
+        ///
+        /// They used to be in two places: the photograph on the permit lying on the desk, and
+        /// the face on a monitor above it. Reading either meant leaning in, and leaning in
+        /// put the other one out of frame, so deciding whether a photograph matched a face
+        /// meant memorising sixteen cells and turning your head. That is a memory test, and
+        /// the game never meant to set one -- the difficulty is supposed to be in noticing
+        /// that two cells have swapped, which is hard enough side by side.</summary>
+        public static string SideBySide(PortraitCode onFile, PortraitCode observed,
+            string leftCaption = "ON FILE", string rightCaption = "OBSERVED")
+        {
+            const int width = Size * 2;
+            const string gap = "  ";
+
+            var builder = new StringBuilder();
+            builder.Append((leftCaption ?? string.Empty).PadRight(width)).Append(gap)
+                .Append(rightCaption ?? string.Empty).Append('\n');
+
+            var left = onFile.ToBlockRows().Split('\n');
+            var right = observed.ToBlockRows().Split('\n');
+
+            for (var y = 0; y < Size; y++)
+            {
+                builder.Append(left[y]).Append(gap).Append(right[y]);
+
+                if (y < Size - 1)
+                {
+                    builder.Append('\n');
+                }
+            }
+
+            return builder.ToString();
+        }
+
         public override string ToString() => Convert.ToString(_bits, 2).PadLeft(16, '0');
     }
 }

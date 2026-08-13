@@ -194,5 +194,108 @@ namespace Monster.Tests
                 Assert.AreEqual(8, row.Length, "each cell is drawn as two characters so the grid reads square");
             }
         }
+
+        /// <summary>Pulls a real bearer out of the generator rather than hand-building one,
+        /// so these tests break if the generator stops producing the case.</summary>
+        private static SubjectAttributes FindSubject(bool photoMatches)
+        {
+            var generator = new SubjectGenerator();
+
+            for (var i = 0; i < 4000; i++)
+            {
+                var subject = generator.Generate(CampaignSeed, i % 30, i).Attributes;
+                if (subject.PhotoMatchesFace == photoMatches)
+                {
+                    return subject;
+                }
+            }
+
+            throw new AssertionException(
+                $"the generator never produced a bearer with PhotoMatchesFace = {photoMatches}");
+        }
+
+        /// <summary>The comparison the whole tell depends on. Both faces have to be on the
+        /// one screen, and they have to differ exactly when the photograph does not match --
+        /// a screen that shows two identical grids for a mismatched bearer is worse than no
+        /// screen, because the player will trust it.</summary>
+        [Test]
+        public void TheCabinFeedShowsBothFacesAtOnce()
+        {
+            var matching = FindSubject(photoMatches: true);
+            var mismatched = FindSubject(photoMatches: false);
+
+            foreach (var subject in new[] { matching, mismatched })
+            {
+                var feed = DocumentBuilder.CabinFeed(subject);
+                Assert.IsTrue(feed.Portrait.HasValue, "no file photograph on the cabin feed");
+                Assert.IsTrue(feed.Comparison.HasValue, "no observed face on the cabin feed");
+            }
+
+            Assert.AreEqual(DocumentBuilder.CabinFeed(matching).Portrait,
+                DocumentBuilder.CabinFeed(matching).Comparison,
+                "a bearer whose photograph matches is shown two different faces");
+
+            Assert.AreNotEqual(DocumentBuilder.CabinFeed(mismatched).Portrait,
+                DocumentBuilder.CabinFeed(mismatched).Comparison,
+                "a bearer whose photograph does not match is shown two identical faces");
+        }
+
+        /// <summary>The permit keeps its photograph. It is a document; a transit permit
+        /// without a picture on it is not one, and the screen is a convenience rather than
+        /// the authority.</summary>
+        [Test]
+        public void ThePermitStillCarriesTheFilePhotograph()
+        {
+            var subject = FindSubject(photoMatches: false);
+
+            Assert.AreEqual(DocumentBuilder.TransitPermit(subject).Portrait,
+                DocumentBuilder.CabinFeed(subject).Portrait,
+                "the permit and the screen disagree about what the district has on file");
+        }
+
+        [Test]
+        public void BothFacesArePrintedOnTheSameLines()
+        {
+            var subject = FindSubject(photoMatches: false);
+            var block = PortraitCode.SideBySide(
+                DocumentBuilder.CabinFeed(subject).Portrait.Value,
+                DocumentBuilder.CabinFeed(subject).Comparison.Value);
+
+            var lines = block.Split('\n');
+
+            Assert.AreEqual(PortraitCode.Size + 1, lines.Length, "the pair is not one caption and four rows");
+            StringAssert.Contains("ON FILE", lines[0]);
+            StringAssert.Contains("OBSERVED", lines[0]);
+
+            for (var y = 1; y < lines.Length; y++)
+            {
+                Assert.AreEqual(lines[1].Length, lines[y].Length,
+                    "the two grids do not line up, so cells cannot be compared by eye");
+            }
+        }
+
+
+        /// <summary>MASS was NOMINAL exactly when CARGO was MATCHED -- the same boolean twice
+        /// under two names. A screen that says one thing twice teaches the player to skim it,
+        /// and it cost a line the paired portraits needed.</summary>
+        [Test]
+        public void NoScreenPrintsTheSameFactTwice()
+        {
+            var subject = FindSubject(photoMatches: true);
+
+            foreach (var content in new[]
+                     {
+                         DocumentBuilder.CabinFeed(subject),
+                         DocumentBuilder.BiometricReadout(subject),
+                     })
+            {
+                var values = content.Fields.Select(f => f.Value).ToList();
+                var derived = values.Where(v => v is "MATCHED" or "NOMINAL" or "DIVERGENT" or "OVER").ToList();
+
+                Assert.LessOrEqual(derived.Count, 1,
+                    $"{content.Title} prints the cargo scan result {derived.Count} times");
+            }
+        }
+
     }
 }

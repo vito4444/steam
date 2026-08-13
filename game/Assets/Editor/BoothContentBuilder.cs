@@ -126,7 +126,8 @@ namespace Monster.EditorTools
             var intercom = BuildScreenSurface(handles.ScreenAnchors[0], font, "Intercom",
                 withFooter: true, bodyMillimetres: 29f);
             var biometrics = BuildScreenSurface(handles.ScreenAnchors[1], font, "Biometrics");
-            var cabin = BuildScreenSurface(handles.ScreenAnchors[2], font, "Cabin", withPortrait: true);
+            var cabin = BuildScreenSurface(handles.ScreenAnchors[2], font, "Cabin",
+                withPortrait: true, portraitPair: true);
 
             var presenter = new GameObject("Booth").AddComponent<BoothPresenter>();
             presenter.Bind(permit, biometrics, cabin, intercom, manual, logbook, mail);
@@ -274,22 +275,41 @@ namespace Monster.EditorTools
         }
 
         private static PrintedSurface BuildScreenSurface(Transform anchor, TMP_FontAsset font, string name,
-            bool withPortrait = false, bool withFooter = false, float bodyMillimetres = 38f)
+            bool withPortrait = false, bool withFooter = false, float bodyMillimetres = 38f,
+            bool portraitPair = false)
         {
             var surface = anchor.gameObject.AddComponent<PrintedSurface>();
             surface.name = name;
 
             var title = TextFromTop(anchor, "Title", font, Mm(24f), PhosphorColour,
                 0.500f, 0.024f, 0.124f, -0.008f, TextAlignmentOptions.TopLeft, FontStyles.Bold);
-            var body = TextFromTop(anchor, "Body", font, Mm(bodyMillimetres), PhosphorColour,
-                withPortrait ? 0.320f : 0.500f, 0.200f, 0.090f,
-                withPortrait ? -0.092f : -0.008f, TextAlignmentOptions.TopLeft);
+
+            // A pair of faces is eighteen characters across where a single one is eight, so
+            // it cannot sit in the column beside the fields -- it overflowed its rect and
+            // printed straight through them, leaving PRESONTFILE across the middle of the
+            // screen. The pair goes under the fields instead, full width.
+            var body = TextFromTop(anchor, "Body", font,
+                Mm(portraitPair ? 30f : bodyMillimetres), PhosphorColour,
+                withPortrait && !portraitPair ? 0.320f : 0.500f,
+                portraitPair ? 0.062f : 0.200f, 0.090f,
+                withPortrait && !portraitPair ? -0.092f : -0.008f, TextAlignmentOptions.TopLeft);
 
             TextMeshPro portrait = null;
             if (withPortrait)
             {
-                portrait = TextFromTop(anchor, "Portrait", font, Mm(42f), PhosphorColour,
-                    0.190f, 0.180f, 0.090f, 0.158f, TextAlignmentOptions.Top);
+                portrait = portraitPair
+                    ? TextFromTop(anchor, "Portrait", font, Mm(26f), PhosphorColour,
+                        0.500f, 0.116f, 0.014f, -0.008f, TextAlignmentOptions.TopLeft)
+                    : TextFromTop(anchor, "Portrait", font, Mm(42f), PhosphorColour,
+                        0.190f, 0.180f, 0.090f, 0.158f, TextAlignmentOptions.Top);
+            }
+
+            if (portrait != null && portraitPair)
+            {
+                // Tightened so five lines of caption and grid clear the bottom of the tube
+                // without the cells having to shrink to the point of being unreadable from
+                // the seat, which is the only place they are ever read from.
+                portrait.lineSpacing = -12f;
             }
 
             TextMeshPro footer = null;
