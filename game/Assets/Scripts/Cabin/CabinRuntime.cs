@@ -73,6 +73,12 @@ namespace Maner.Cabin
                       $"控件数={Builder.Visuals.Count}");
 
             BuildAmbientAudio();
+
+            // 舱内的实体信息装置：CRT、电报纸带、任务卡、电话。
+            // 它们要在班次与通话就绪之后再建，因为首帧就要显示第一条指令。
+            var fixtures = gameObject.AddComponent<CabinFixtures>();
+            fixtures.Build(this, Builder);
+
             PushAllVisuals(true);
             BindPlayerAndHud();
         }

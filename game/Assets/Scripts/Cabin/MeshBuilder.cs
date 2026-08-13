@@ -73,7 +73,11 @@ namespace Maner.Cabin
         /// <summary>
         /// 单面矩形，UV 完整覆盖 0..1。面板正面用它，好让丝印贴图一比一贴上去。
         /// </summary>
-        public void AddFace(Vector3 center, float width, float height, Quaternion rotation = default)
+        /// <param name="mirrorU">
+        /// 水平翻转 UV。面板一律带 180 度偏航，它们的局部 +X 在世界里指向玩家视角的左边，
+        /// 贴上去的图会左右反。在 UV 层面翻一次比让每一处绘制代码各自镜像干净得多。
+        /// </param>
+        public void AddFace(Vector3 center, float width, float height, Quaternion rotation = default, bool mirrorU = false)
         {
             if (rotation == default)
             {
@@ -95,10 +99,12 @@ namespace Maner.Cabin
                 normals.Add(normal);
             }
 
-            uvs.Add(new Vector2(0f, 0f));
-            uvs.Add(new Vector2(1f, 0f));
-            uvs.Add(new Vector2(1f, 1f));
-            uvs.Add(new Vector2(0f, 1f));
+            float u0 = mirrorU ? 1f : 0f;
+            float u1 = mirrorU ? 0f : 1f;
+            uvs.Add(new Vector2(u0, 0f));
+            uvs.Add(new Vector2(u1, 0f));
+            uvs.Add(new Vector2(u1, 1f));
+            uvs.Add(new Vector2(u0, 1f));
 
             triangles.Add(baseIndex);
             triangles.Add(baseIndex + 1);

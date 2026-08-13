@@ -89,8 +89,8 @@ namespace Maner.Cabin
             DrawHLine(buffer, 0, TextureWidth, Mathf.RoundToInt(TextureHeight * (1f - 0.285f)), 2, lineColor);
 
             // 面板标题印在左上角。
-            BitmapFont.Draw(buffer, TextureWidth, TextureHeight, PanelTitle[panel], 18, 14, 3, inkDim, 1, true);
-            BitmapFont.Draw(buffer, TextureWidth, TextureHeight, $"TYPE SHU-{(int)panel + 61}   1974", 18, 44, 2, inkDim, 1, true);
+            BitmapFont.Draw(buffer, TextureWidth, TextureHeight, PanelTitle[panel], 18, 14, 3, inkDim);
+            BitmapFont.Draw(buffer, TextureWidth, TextureHeight, $"TYPE SHU-{(int)panel + 61}   1974", 18, 44, 2, inkDim);
 
             foreach (var def in ConsoleLayout.OnPanel(panel))
             {
@@ -106,7 +106,7 @@ namespace Maner.Cabin
 
                 int scale = def.Size > 0.16f ? 2 : 1;
                 int labelY = cy + halfSize + 6;
-                BitmapFont.DrawCentered(buffer, TextureWidth, TextureHeight, label, cx, labelY, scale, inkLight, 1, true);
+                BitmapFont.DrawCentered(buffer, TextureWidth, TextureHeight, label, cx, labelY, scale, inkLight);
 
                 // 连续控件周围印一圈 0..10 刻度，让玩家能读出开度。
                 if (def.IsContinuous)
@@ -117,8 +117,8 @@ namespace Maner.Cabin
                 // 拨杆两端印上位置标记。
                 if (def.Kind == ControlKind.ToggleLever && def.Detents == 2)
                 {
-                    BitmapFont.DrawCentered(buffer, TextureWidth, TextureHeight, "I", cx, cy - halfSize - 20, 1, inkDim, 1, true);
-                    BitmapFont.DrawCentered(buffer, TextureWidth, TextureHeight, "O", cx, cy + halfSize + 2, 1, inkDim, 1, true);
+                    BitmapFont.DrawCentered(buffer, TextureWidth, TextureHeight, "I", cx, cy - halfSize - 20, 1, inkDim);
+                    BitmapFont.DrawCentered(buffer, TextureWidth, TextureHeight, "O", cx, cy + halfSize + 2, 1, inkDim);
                 }
             }
 

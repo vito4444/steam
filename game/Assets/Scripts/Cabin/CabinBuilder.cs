@@ -216,7 +216,7 @@ namespace Maner.Cabin
 
             // 面板正面单独一片 UV 0..1 的平面，用来承载运行时生成的丝印贴图。
             var faceBuilder = new MeshBuilder();
-            faceBuilder.AddFace(new Vector3(w * 0.5f, h * 0.5f, 0.020f), w, h);
+            faceBuilder.AddFace(new Vector3(w * 0.5f, h * 0.5f, 0.020f), w, h, default, true);
             bool panelDebug = false;
             foreach (var a in System.Environment.GetCommandLineArgs())
             {
@@ -236,6 +236,11 @@ namespace Maner.Cabin
             desk.AddBox(new Vector3(w * 0.5f, -0.10f, 0.20f), new Vector3(w + 0.06f, 0.05f, 0.44f));
             desk.AddBox(new Vector3(w * 0.5f, -0.52f, -0.02f), new Vector3(w + 0.02f, 0.80f, 0.30f));
             desk.AddBox(new Vector3(w * 0.5f, -0.94f, 0.02f), new Vector3(w + 0.06f, 0.06f, 0.34f));
+
+            // 面板上方的仪表架。真实控制室里显示器与电报机都架在盘面之上，
+            // 操作员低头读表、抬头读屏，两层信息各有各的位置。
+            desk.AddBox(new Vector3(w * 0.5f, h + 0.24f, -0.13f), new Vector3(w + 0.05f, 0.48f, 0.30f));
+            desk.AddBox(new Vector3(w * 0.5f, h + 0.50f, -0.02f), new Vector3(w + 0.09f, 0.05f, 0.34f));
             Spawn($"Desk_{id}", panelRoot.transform, desk.ToMesh($"Panel_{id}_Desk"), Materials.FrameSteel);
 
             return panelRoot.transform;

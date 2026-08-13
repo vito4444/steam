@@ -13,10 +13,14 @@ Steam 发行要求项目中所有资产的权利清晰可证。本文件登记�
 
 | 资产 | 类型 | 来源 | 许可 | 引入日期 |
 | --- | --- | --- | --- | --- |
-| （暂无） | | | | |
+| `Assets/Resources/Fonts/DroidSansFallback.ttf` | 字体 | Debian 包 `fonts-droid-fallback`，上游 https://android.googlesource.com/platform/frameworks/base/ | Apache License 2.0（许可全文见同目录 `DroidSansFallback-LICENSE.txt`） | 2026-08-13 |
+| `Assets/Resources/Voice/*.ogg` | 语音 | 由 `tools/generate_voice.sh` 用 espeak-ng 合成后经 ffmpeg 处理 | 自制，无第三方权利 | 2026-08-13 |
 
-当前工程内的全部几何体、材质与场景均由 `Assets/Editor/ManerBootstrap.cs` 中的代码程序化生成，
-不含任何第三方资产。
+字体是唯一的第三方二进制资产。它必须随游戏打包，因为发行版不能指望玩家机器上
+装了中文字体；实测在 Player 里也拿不到系统字体。
+
+除此之外，工程内的全部几何体、材质、贴图、音效与场景均由代码在运行时生成，
+不含任何建模、绘图或录音资产。
 
 ## 文档用图
 
