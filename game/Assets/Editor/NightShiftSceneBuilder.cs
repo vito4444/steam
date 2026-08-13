@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using Monster.SelfCheck;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -28,6 +29,7 @@ namespace Monster.EditorTools
         private const string ScenesFolder = "Assets/Scenes";
         private const string ScenePath = ScenesFolder + "/NightShift_Booth.unity";
         private const string MaterialsFolder = "Assets/Materials";
+        private const string TexturesFolder = "Assets/Textures";
 
         // Interior shell.
         private const float RoomMinX = -1.70f;
@@ -40,14 +42,18 @@ namespace Monster.EditorTools
         // Desk.
         private const float DeskTopY = 0.76f;
         private const float DeskThickness = 0.07f;
-        private const float DeskMinZ = 0.62f;
+        private const float DeskMinZ = -0.16f;
         private const float DeskMaxZ = 1.62f;
 
         // Window aperture in the +Z wall.
-        private const float WindowMinX = -1.15f;
-        private const float WindowMaxX = 1.15f;
-        private const float WindowMinY = 1.20f;
-        private const float WindowMaxY = 1.85f;
+        private const float WindowMinX = -1.42f;
+        private const float WindowMaxX = 1.42f;
+        private const float WindowMinY = 1.26f;
+        private const float WindowMaxY = 2.08f;
+
+        /// <summary>Shared by the fog, the camera's clear colour and the far backdrop, so
+        /// that the horizon has no visible seam.</summary>
+        private static readonly Color FogColor = new(0.150f, 0.160f, 0.188f);
 
         private static readonly Dictionary<string, Material> Materials = new();
 
@@ -97,19 +103,23 @@ namespace Monster.EditorTools
 
             // Fog is the atmosphere and it is nearly free. Exponential-squared keeps the
             // booth interior almost clear while burying the road beyond ten metres.
+            // The fog is also the backdrop the subject is read against. A silhouette is
+            // only a silhouette if what is behind it is brighter than it is, so the fog is
+            // deliberately lifted well above the figure's albedo. The first pass had it at
+            // 0.105 and the subject vanished into the night.
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.055f, 0.060f, 0.072f);
-            RenderSettings.fogDensity = 0.10f;
+            RenderSettings.fogColor = FogColor;
+            RenderSettings.fogDensity = 0.098f;
 
             RenderSettings.skybox = null;
 
-            // A very dim cold key from above stands in for moonlight through cloud. It is
-            // the only shadow-casting light outside; everything else is practical.
+            // A dim cold key from above stands in for moonlight through cloud. It is the
+            // only shadow-casting light outside; everything else is practical.
             var moon = new GameObject("Moonlight").AddComponent<Light>();
             moon.type = LightType.Directional;
             moon.color = new Color(0.55f, 0.66f, 0.90f);
-            moon.intensity = 0.16f;
+            moon.intensity = 0.38f;
             moon.shadows = LightShadows.Hard;
             moon.shadowStrength = 0.75f;
             moon.transform.rotation = Quaternion.Euler(38f, 200f, 0f);
@@ -119,8 +129,15 @@ namespace Monster.EditorTools
 
         private static void BuildShell(Transform parent)
         {
-            var concrete = Mat("Concrete", new Color(0.235f, 0.232f, 0.215f), 0.06f);
-            var concreteDark = Mat("ConcreteDark", new Color(0.125f, 0.128f, 0.130f), 0.04f);
+            // The first grunge pass used heavy vertical streaking and it read as wood grain
+            // rather than as a dirty concrete wall. Higher frequency, lower contrast and
+            // much less streaking gives blotchy damp staining instead.
+            var wallGrunge = Grunge("Grunge_Wall", 512, 11.0f, 1.15f, 0.16f, 7301);
+            var floorGrunge = Grunge("Grunge_Floor", 512, 9.0f, 1.30f, 0.0f, 5512);
+
+            var concrete = Mat("Concrete", new Color(0.300f, 0.294f, 0.272f), 0.06f, 0f, null, wallGrunge, 1.4f);
+            var concreteDark = Mat("ConcreteDark", new Color(0.160f, 0.163f, 0.166f), 0.04f, 0f, null,
+                floorGrunge, 2.6f);
 
             var width = RoomMaxX - RoomMinX;
             var depth = RoomMaxZ - RoomMinZ;
@@ -169,6 +186,13 @@ namespace Monster.EditorTools
             Box("Frame_Mullion", parent, new Vector3(0f, (WindowMinY + WindowMaxY) * 0.5f, frameZ),
                 new Vector3(0.03f, WindowMaxY - WindowMinY, frameDepth), steel);
 
+            // Grimy glass. One transparent quad, and it does more for "you are inside
+            // looking out" than any amount of extra geometry outside would.
+            var glass = TransparentMat("WindowGlass", new Color(0.52f, 0.55f, 0.58f, 0.16f), 0.88f,
+                Grunge("Grunge_Glass", 512, 6.0f, 1.9f, 0.65f, 3390), 1f);
+            Box("Glass", parent, new Vector3(0f, (WindowMinY + WindowMaxY) * 0.5f, RoomMaxZ + 0.02f),
+                new Vector3(WindowMaxX - WindowMinX, WindowMaxY - WindowMinY, 0.008f), glass);
+
             // Pipework along the ceiling. Cheap, and it fills the upper third of the frame
             // which would otherwise be an empty grey band.
             var pipe = Mat("Pipe", new Color(0.19f, 0.17f, 0.14f), 0.30f, 0.5f);
@@ -184,7 +208,9 @@ namespace Monster.EditorTools
 
         private static void BuildDesk(Transform parent)
         {
-            var deskMat = Mat("DeskSteel", new Color(0.175f, 0.172f, 0.165f), 0.34f, 0.55f);
+            var deskGrunge = Grunge("Grunge_Desk", 512, 7.0f, 1.40f, 0.20f, 9184);
+            var deskMat = Mat("DeskSteel", new Color(0.215f, 0.210f, 0.200f), 0.34f, 0.55f, null,
+                deskGrunge, 2.2f);
             var deskWidth = RoomMaxX - RoomMinX;
             var deskDepth = DeskMaxZ - DeskMinZ;
             var deskZ = (DeskMinZ + DeskMaxZ) * 0.5f;
@@ -203,11 +229,20 @@ namespace Monster.EditorTools
 
         private static void BuildDeskEquipment(Transform parent)
         {
-            var crtShell = Mat("CRTShell", new Color(0.255f, 0.245f, 0.205f), 0.22f);
-            var crtScreen = Mat("CRTScreen", new Color(0.015f, 0.030f, 0.020f), 0.55f, 0f,
-                new Color(0.075f, 0.520f, 0.185f) * 1.7f);
+            var crtShell = Mat("CRTShell", new Color(0.215f, 0.205f, 0.170f), 0.22f);
+
+            // Screen emission is deliberately low. The first render had these at 1.7 and
+            // the green flooded the entire frame, drowning the desk lamp that is supposed
+            // to be the key light. The CRTs are a secondary source, not the subject.
+            var crtScreen = Mat("CRTScreen", new Color(0.010f, 0.020f, 0.014f), 0.50f, 0f,
+                new Color(0.036f, 0.180f, 0.076f));
+            var crtFeedBright = Mat("CRTFeedBright", new Color(0.010f, 0.020f, 0.014f), 0.50f, 0f,
+                new Color(0.070f, 0.320f, 0.132f));
+            var crtFeedDim = Mat("CRTFeedDim", new Color(0.010f, 0.020f, 0.014f), 0.50f, 0f,
+                new Color(0.020f, 0.105f, 0.045f));
             var brass = Mat("Brass", new Color(0.62f, 0.47f, 0.19f), 0.66f, 0.85f);
-            var paper = Mat("Paper", new Color(0.760f, 0.735f, 0.640f), 0.05f);
+            var paper = Mat("Paper", new Color(0.660f, 0.636f, 0.552f), 0.05f, 0f, null,
+                Grunge("Grunge_Paper", 256, 3.0f, 0.55f, 0.0f, 2231), 1f);
             var darkPlastic = Mat("DarkPlastic", new Color(0.055f, 0.055f, 0.062f), 0.28f);
             var enamel = Mat("Enamel", new Color(0.700f, 0.690f, 0.650f), 0.52f);
             var wood = Mat("Wood", new Color(0.220f, 0.135f, 0.075f), 0.18f);
@@ -215,13 +250,14 @@ namespace Monster.EditorTools
             var monitors = new GameObject("Monitors").transform;
             monitors.SetParent(parent, false);
 
-            // Three CRTs across the back of the desk, the outer two angled inward so the
-            // player can read all three without turning their head.
+            // A tight arc of three wide, shallow monitors rather than three deep boxes.
+            // The concept art reads as one continuous band of screens across the desk, and
+            // the chunky separated CRTs of the previous pass did not.
             var placements = new[]
             {
-                (x: -0.80f, yaw: 17f),
-                (x: 0.00f, yaw: 0f),
-                (x: 0.80f, yaw: -17f),
+                (x: -0.62f, yaw: 21f),
+                (x: 0.02f, yaw: 0f),
+                (x: 0.66f, yaw: -21f),
             };
 
             for (var i = 0; i < placements.Length; i++)
@@ -231,129 +267,260 @@ namespace Monster.EditorTools
                 pivot.SetParent(monitors, false);
                 pivot.SetPositionAndRotation(new Vector3(x, DeskTopY, 1.40f), Quaternion.Euler(0f, yaw, 0f));
 
-                Box("Shell", pivot, new Vector3(0f, 0.175f, 0f), new Vector3(0.40f, 0.35f, 0.38f), crtShell);
-                Box("Hood", pivot, new Vector3(0f, 0.345f, -0.10f), new Vector3(0.42f, 0.03f, 0.20f), crtShell);
-                Box("Screen", pivot, new Vector3(0f, 0.185f, -0.196f), new Vector3(0.320f, 0.250f, 0.012f), crtScreen);
+                Box("Shell", pivot, new Vector3(0f, 0.165f, 0f), new Vector3(0.56f, 0.33f, 0.26f), crtShell);
+                Box("Hood", pivot, new Vector3(0f, 0.327f, -0.07f), new Vector3(0.58f, 0.026f, 0.15f), crtShell);
+                Box("Bezel", pivot, new Vector3(0f, 0.170f, -0.132f), new Vector3(0.500f, 0.252f, 0.010f), darkPlastic);
+                Box("Screen", pivot, new Vector3(0f, 0.170f, -0.140f), new Vector3(0.450f, 0.205f, 0.008f), crtScreen);
 
-                // Scanlines, faked with three darker bars over the screen. Effectively free
-                // and it stops the screen reading as a flat green rectangle.
-                for (var line = 0; line < 3; line++)
-                {
-                    Box($"Scanline_{line}", pivot,
-                        new Vector3(0f, 0.120f + line * 0.065f, -0.203f),
-                        new Vector3(0.320f, 0.010f, 0.004f), darkPlastic);
-                }
+                // A crude camera feed rather than a flat green rectangle: a horizon band,
+                // the road surface below it, and one shape that could be a vehicle. At this
+                // size the eye reads "there is an image on that screen", which is all it
+                // needs to do, and it costs three quads.
+                BuildFeedImage(pivot, i, crtFeedBright, crtFeedDim, darkPlastic);
 
                 var glow = new GameObject("Glow").AddComponent<Light>();
                 glow.transform.SetParent(pivot, false);
-                glow.transform.localPosition = new Vector3(0f, 0.19f, -0.32f);
+                glow.transform.localPosition = new Vector3(0f, 0.17f, -0.26f);
                 glow.type = LightType.Point;
-                glow.color = new Color(0.30f, 0.95f, 0.42f);
-                glow.intensity = 0.55f;
-                glow.range = 1.25f;
+                glow.color = new Color(0.34f, 0.92f, 0.46f);
+                glow.intensity = 0.13f;
+                glow.range = 0.85f;
                 glow.shadows = LightShadows.None;
             }
 
-            // Paperwork, deliberately scattered rather than aligned.
+            var ink = Mat("Ink", new Color(0.085f, 0.080f, 0.075f), 0.05f);
+
+            // The form under the lamp, centre foreground. In the concept art this is the
+            // brightest object in the frame and the thing the eye lands on first, so it is
+            // ruled with printed lines rather than left as a blank rectangle.
             var forms = new GameObject("Paperwork").transform;
             forms.SetParent(parent, false);
-            var sheets = new[]
+            var mainForm = new GameObject("Form_Main").transform;
+            mainForm.SetParent(forms, false);
+            mainForm.SetPositionAndRotation(new Vector3(0.06f, DeskTopY + 0.004f, 0.52f),
+                Quaternion.Euler(0f, -6f, 0f));
+            Box("Sheet", mainForm, Vector3.zero, new Vector3(0.300f, 0.003f, 0.400f), paper);
+            Box("Header", mainForm, new Vector3(0f, 0.003f, 0.165f), new Vector3(0.270f, 0.002f, 0.022f), ink);
+            for (var line = 0; line < 9; line++)
             {
-                (pos: new Vector3(0.10f, DeskTopY + 0.002f, 0.86f), yaw: -7f),
-                (pos: new Vector3(0.16f, DeskTopY + 0.005f, 0.90f), yaw: 4f),
-                (pos: new Vector3(-0.06f, DeskTopY + 0.008f, 0.84f), yaw: 12f),
-            };
-            for (var i = 0; i < sheets.Length; i++)
-            {
-                Box($"Form_{i}", forms, sheets[i].pos, new Vector3(0.210f, 0.003f, 0.297f), paper,
-                    new Vector3(0f, sheets[i].yaw, 0f));
+                Box($"Rule_{line}", mainForm, new Vector3(0f, 0.003f, 0.115f - line * 0.034f),
+                    new Vector3(0.264f, 0.002f, 0.0035f), ink);
             }
+
+            Box("Form_Stack_A", forms, new Vector3(-0.34f, DeskTopY + 0.003f, 0.70f),
+                new Vector3(0.230f, 0.006f, 0.320f), paper, new Vector3(0f, 14f, 0f));
+            Box("Form_Stack_B", forms, new Vector3(-0.30f, DeskTopY + 0.010f, 0.73f),
+                new Vector3(0.225f, 0.005f, 0.315f), paper, new Vector3(0f, 6f, 0f));
+
+            Cylinder("Pencil", forms, new Vector3(0.28f, DeskTopY + 0.008f, 0.42f),
+                new Vector3(0.011f, 0.088f, 0.011f), Mat("Pencil", new Color(0.42f, 0.30f, 0.07f), 0.30f),
+                new Vector3(90f, 24f, 0f));
 
             // The manual: a ring binder lying open, which is the object the whole game is
             // actually about.
             var binder = new GameObject("Manual").transform;
             binder.SetParent(parent, false);
-            binder.SetPositionAndRotation(new Vector3(0.98f, DeskTopY, 0.82f), Quaternion.Euler(0f, -14f, 0f));
-            Box("Cover", binder, new Vector3(0f, 0.012f, 0f), new Vector3(0.250f, 0.024f, 0.320f), darkPlastic);
-            Box("Pages", binder, new Vector3(0f, 0.028f, 0f), new Vector3(0.235f, 0.014f, 0.305f), paper);
+            binder.SetPositionAndRotation(new Vector3(0.86f, DeskTopY, 0.88f), Quaternion.Euler(0f, -22f, 0f));
+            Box("Cover", binder, new Vector3(0f, 0.012f, 0f), new Vector3(0.290f, 0.024f, 0.360f), darkPlastic);
+            Box("Pages", binder, new Vector3(0f, 0.029f, 0f), new Vector3(0.272f, 0.016f, 0.344f), paper);
+            for (var line = 0; line < 5; line++)
+            {
+                Box($"Text_{line}", binder, new Vector3(0f, 0.038f, 0.120f - line * 0.056f),
+                    new Vector3(0.230f, 0.002f, 0.006f), ink);
+            }
 
-            // Classification panel: the switches that decide whether a subject passes.
+            // Classification panel: the dial and switches that decide whether a subject
+            // passes. Moved to the centre, directly under the monitors, where the concept
+            // art puts it.
             var panel = new GameObject("ClassificationPanel").transform;
             panel.SetParent(parent, false);
-            panel.SetPositionAndRotation(new Vector3(-0.74f, DeskTopY + 0.035f, 0.90f),
-                Quaternion.Euler(-24f, 0f, 0f));
-            Box("Plate", panel, Vector3.zero, new Vector3(0.360f, 0.030f, 0.170f), darkPlastic);
+            panel.SetPositionAndRotation(new Vector3(-0.10f, DeskTopY + 0.030f, 1.02f),
+                Quaternion.Euler(-20f, 0f, 0f));
+            Box("Plate", panel, Vector3.zero, new Vector3(0.560f, 0.028f, 0.210f), darkPlastic);
+            Cylinder("DialFace", panel, new Vector3(-0.135f, 0.020f, 0f), new Vector3(0.150f, 0.006f, 0.150f), brass);
+            Cylinder("DialHub", panel, new Vector3(-0.135f, 0.032f, 0f), new Vector3(0.048f, 0.014f, 0.048f), darkPlastic);
             for (var i = 0; i < 4; i++)
             {
-                Cylinder($"Switch_{i}", panel, new Vector3(-0.126f + i * 0.084f, 0.030f, 0.014f),
-                    new Vector3(0.030f, 0.026f, 0.030f), brass);
+                Cylinder($"Switch_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.030f, 0.010f),
+                    new Vector3(0.032f, 0.028f, 0.032f), brass);
+                Box($"Label_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.016f, -0.070f),
+                    new Vector3(0.052f, 0.003f, 0.024f), paper);
             }
 
             // Stamp and ink pad.
-            Box("InkPad", parent, new Vector3(-0.36f, DeskTopY + 0.010f, 0.74f),
-                new Vector3(0.105f, 0.020f, 0.080f), darkPlastic);
-            Box("Stamp_Head", parent, new Vector3(-0.20f, DeskTopY + 0.024f, 0.74f),
-                new Vector3(0.062f, 0.048f, 0.062f), wood);
-            Cylinder("Stamp_Handle", parent, new Vector3(-0.20f, DeskTopY + 0.072f, 0.74f),
-                new Vector3(0.028f, 0.026f, 0.028f), wood);
+            Box("InkPad", parent, new Vector3(0.62f, DeskTopY + 0.010f, 0.24f),
+                new Vector3(0.115f, 0.020f, 0.090f), darkPlastic);
+            Box("Stamp_Head", parent, new Vector3(0.78f, DeskTopY + 0.026f, 0.26f),
+                new Vector3(0.068f, 0.052f, 0.068f), wood);
+            Cylinder("Stamp_Handle", parent, new Vector3(0.78f, DeskTopY + 0.078f, 0.26f),
+                new Vector3(0.030f, 0.028f, 0.030f), wood);
 
-            // Telephone.
+            // Telephone, front left. It is a large silhouette in the concept art and it
+            // anchors the bottom-left corner of the composition, which was empty before.
             var phone = new GameObject("Telephone").transform;
             phone.SetParent(parent, false);
-            phone.SetPositionAndRotation(new Vector3(1.30f, DeskTopY, 1.14f), Quaternion.Euler(0f, -28f, 0f));
-            Box("Base", phone, new Vector3(0f, 0.035f, 0f), new Vector3(0.200f, 0.070f, 0.240f), darkPlastic);
-            Box("Handset", phone, new Vector3(0f, 0.095f, 0.010f), new Vector3(0.215f, 0.055f, 0.075f), darkPlastic);
-            Cylinder("Dial", phone, new Vector3(0f, 0.072f, -0.070f), new Vector3(0.105f, 0.004f, 0.105f), brass);
+            phone.SetPositionAndRotation(new Vector3(-0.94f, DeskTopY, 0.24f), Quaternion.Euler(0f, 26f, 0f));
+            Box("Base", phone, new Vector3(0f, 0.040f, 0f), new Vector3(0.250f, 0.080f, 0.290f), darkPlastic);
+            Cylinder("Dial", phone, new Vector3(0f, 0.083f, -0.070f), new Vector3(0.135f, 0.005f, 0.135f), brass);
+            Box("Cradle_L", phone, new Vector3(-0.088f, 0.098f, 0.075f), new Vector3(0.055f, 0.038f, 0.070f), darkPlastic);
+            Box("Cradle_R", phone, new Vector3(0.088f, 0.098f, 0.075f), new Vector3(0.055f, 0.038f, 0.070f), darkPlastic);
+            Box("Handset", phone, new Vector3(0f, 0.128f, 0.075f), new Vector3(0.265f, 0.062f, 0.082f), darkPlastic);
 
             // Coffee. Present in the concept art and it is the object that says a person
             // has been sitting here for hours.
-            Cylinder("Mug", parent, new Vector3(0.56f, DeskTopY + 0.048f, 0.72f),
-                new Vector3(0.082f, 0.048f, 0.082f), enamel);
-            Cylinder("Mug_Coffee", parent, new Vector3(0.56f, DeskTopY + 0.088f, 0.72f),
-                new Vector3(0.070f, 0.004f, 0.070f),
+            Cylinder("Mug", parent, new Vector3(1.14f, DeskTopY + 0.052f, 0.22f),
+                new Vector3(0.096f, 0.052f, 0.096f), enamel);
+            Cylinder("Mug_Coffee", parent, new Vector3(1.14f, DeskTopY + 0.096f, 0.22f),
+                new Vector3(0.082f, 0.004f, 0.082f),
                 Mat("Coffee", new Color(0.055f, 0.030f, 0.018f), 0.72f));
+            Box("Mug_Handle", parent, new Vector3(1.205f, DeskTopY + 0.052f, 0.22f),
+                new Vector3(0.036f, 0.048f, 0.014f), enamel);
+
+            BuildWallNotes(parent, Mat("PaperWall", new Color(0.430f, 0.412f, 0.352f), 0.05f, 0f, null,
+                Grunge("Grunge_Note", 256, 4.0f, 0.70f, 0.0f, 6612), 1f), ink);
+        }
+
+        /// <summary>Notices, amendments and torn-off scraps pinned to the walls around the
+        /// window. Bare walls read as an unfinished blockout; this is the cheapest way to
+        /// say that somebody has worked in this room for a long time, and it doubles as
+        /// diegetic space for the manual amendments the game is built around.</summary>
+        private static void BuildWallNotes(Transform parent, Material paper, Material ink)
+        {
+            var notes = new GameObject("WallNotes").transform;
+            notes.SetParent(parent, false);
+
+            var random = new System.Random(88);
+
+            void Note(Vector3 position, Vector2 size, Vector3 euler, int rules)
+            {
+                var note = new GameObject("Note").transform;
+                note.SetParent(notes, false);
+                note.SetPositionAndRotation(position, Quaternion.Euler(euler));
+                Box("Sheet", note, Vector3.zero, new Vector3(size.x, size.y, 0.002f), paper);
+                for (var i = 0; i < rules; i++)
+                {
+                    Box($"Rule_{i}", note,
+                        new Vector3(0f, size.y * 0.34f - i * (size.y * 0.68f / Mathf.Max(1, rules - 1)), -0.0016f),
+                        new Vector3(size.x * 0.78f, 0.0035f, 0.002f), ink);
+                }
+            }
+
+            // On the front wall, flanking the window.
+            Note(new Vector3(-1.56f, 1.60f, RoomMaxZ - 0.005f), new Vector2(0.135f, 0.185f),
+                new Vector3(0f, 0f, -3f), 5);
+            Note(new Vector3(1.56f, 1.68f, RoomMaxZ - 0.005f), new Vector2(0.125f, 0.170f),
+                new Vector3(0f, 0f, 4f), 4);
+            Note(new Vector3(1.54f, 1.36f, RoomMaxZ - 0.005f), new Vector2(0.105f, 0.085f),
+                new Vector3(0f, 0f, -6f), 2);
+
+            // On the side walls, angled away from the camera.
+            for (var i = 0; i < 4; i++)
+            {
+                var y = 1.32f + (float)random.NextDouble() * 0.62f;
+                var z = 0.75f + i * 0.24f;
+                Note(new Vector3(RoomMinX + 0.008f, y, z), new Vector2(0.145f, 0.19f),
+                    new Vector3(0f, 90f, (float)random.NextDouble() * 8f - 4f), 4);
+            }
+
+            for (var i = 0; i < 3; i++)
+            {
+                var y = 1.40f + (float)random.NextDouble() * 0.52f;
+                var z = 0.85f + i * 0.28f;
+                Note(new Vector3(RoomMaxX - 0.008f, y, z), new Vector2(0.135f, 0.175f),
+                    new Vector3(0f, -90f, (float)random.NextDouble() * 8f - 4f), 3);
+            }
+        }
+
+        /// <summary>Fakes a grainy CCTV image on a CRT face out of a handful of flat
+        /// quads. Each screen shows a different framing so the three do not read as
+        /// copies of each other.</summary>
+        private static void BuildFeedImage(Transform pivot, int index, Material bright, Material dim,
+            Material dark)
+        {
+            const float z = -0.146f;
+            var feed = new GameObject("Feed").transform;
+            feed.SetParent(pivot, false);
+            feed.localPosition = new Vector3(0f, 0.170f, 0f);
+
+            switch (index)
+            {
+                case 0: // Approach road: horizon high, headlights in the distance.
+                    Box("Sky", feed, new Vector3(0f, 0.052f, z), new Vector3(0.450f, 0.100f, 0.004f), dim);
+                    Box("Road", feed, new Vector3(0f, -0.062f, z), new Vector3(0.450f, 0.080f, 0.004f), bright);
+                    Box("Headlight", feed, new Vector3(-0.055f, 0.010f, z - 0.002f),
+                        new Vector3(0.030f, 0.016f, 0.004f), bright);
+                    break;
+                case 1: // Under-vehicle: a dark chassis mass with a bright gap under it.
+                    Box("Chassis", feed, new Vector3(0f, 0.034f, z), new Vector3(0.400f, 0.110f, 0.004f), dark);
+                    Box("Gap", feed, new Vector3(0f, -0.054f, z), new Vector3(0.450f, 0.062f, 0.004f), bright);
+                    Box("Axle", feed, new Vector3(0.090f, -0.012f, z - 0.002f),
+                        new Vector3(0.170f, 0.018f, 0.004f), dim);
+                    break;
+                default: // Rear cabin: a seated occupant, off centre.
+                    Box("Cabin", feed, new Vector3(0f, 0f, z), new Vector3(0.450f, 0.205f, 0.004f), dim);
+                    Box("Occupant", feed, new Vector3(0.080f, -0.024f, z - 0.002f),
+                        new Vector3(0.085f, 0.125f, 0.004f), dark);
+                    Box("Head", feed, new Vector3(0.080f, 0.062f, z - 0.002f),
+                        new Vector3(0.048f, 0.048f, 0.004f), dark);
+                    break;
+            }
+
+            // Scanlines last so they sit over the image.
+            for (var line = 0; line < 7; line++)
+            {
+                Box($"Scanline_{line}", feed, new Vector3(0f, -0.088f + line * 0.035f, z - 0.004f),
+                    new Vector3(0.450f, 0.006f, 0.003f), dark);
+            }
         }
 
         private static void BuildLamp(Transform parent)
         {
-            var lampMat = Mat("LampEnamel", new Color(0.330f, 0.095f, 0.065f), 0.45f, 0.2f);
+            var lampMat = Mat("LampEnamel", new Color(0.400f, 0.120f, 0.080f), 0.45f, 0.2f);
             var lampInner = Mat("LampInner", new Color(0.02f, 0.02f, 0.02f), 0.1f, 0f,
                 new Color(1.00f, 0.72f, 0.38f) * 2.6f);
 
+            // Far enough in from the wall to stay in frame, and tall enough that the shade
+            // clears the CRTs. The first pass put it at the very edge of the view where it
+            // read as an orange smear rather than as the source of the light.
+            var origin = new Vector3(-1.30f, DeskTopY, 1.06f);
             var lamp = new GameObject("DeskLamp").transform;
             lamp.SetParent(parent, false);
-            lamp.localPosition = new Vector3(-1.30f, DeskTopY, 0.95f);
+            lamp.localPosition = origin;
 
-            Cylinder("Base", lamp, new Vector3(0f, 0.012f, 0f), new Vector3(0.150f, 0.012f, 0.150f), lampMat);
-            Cylinder("Stem", lamp, new Vector3(0.02f, 0.155f, 0.02f), new Vector3(0.022f, 0.150f, 0.022f), lampMat,
-                new Vector3(-12f, 0f, -8f));
-            Cylinder("Shade", lamp, new Vector3(0.10f, 0.330f, 0.10f), new Vector3(0.190f, 0.075f, 0.190f), lampMat,
-                new Vector3(28f, 0f, 22f));
-            Cylinder("Bulb", lamp, new Vector3(0.10f, 0.290f, 0.10f), new Vector3(0.120f, 0.008f, 0.120f), lampInner,
-                new Vector3(28f, 0f, 22f));
+            Cylinder("Base", lamp, new Vector3(0f, 0.014f, 0f), new Vector3(0.160f, 0.014f, 0.160f), lampMat);
+            Cylinder("Stem", lamp, new Vector3(0.055f, 0.210f, 0.015f), new Vector3(0.024f, 0.205f, 0.024f), lampMat,
+                new Vector3(-4f, 0f, -15f));
+            Cylinder("Shade", lamp, new Vector3(0.165f, 0.415f, 0.045f), new Vector3(0.220f, 0.085f, 0.220f), lampMat,
+                new Vector3(30f, 0f, 26f));
+            Cylinder("Bulb", lamp, new Vector3(0.170f, 0.372f, 0.048f), new Vector3(0.145f, 0.007f, 0.145f), lampInner,
+                new Vector3(30f, 0f, 26f));
 
-            // The key light. Everything else in the booth is fill.
+            // The key light, aimed explicitly at the paperwork rather than at an angle
+            // guessed in Euler degrees. This is the pool of warm light the whole shot is
+            // built around, and the first pass missed the desk entirely.
+            var keyPosition = origin + new Vector3(0.170f, 0.360f, 0.048f);
+            var keyTarget = new Vector3(0.02f, DeskTopY, 0.62f);
             var light = new GameObject("Key").AddComponent<Light>();
-            light.transform.SetParent(lamp, false);
-            light.transform.localPosition = new Vector3(0.10f, 0.285f, 0.10f);
-            light.transform.rotation = Quaternion.Euler(58f, 34f, 0f);
+            light.transform.SetParent(lamp, true);
+            light.transform.SetPositionAndRotation(keyPosition,
+                Quaternion.LookRotation(keyTarget - keyPosition, Vector3.up));
             light.type = LightType.Spot;
-            light.color = new Color(1.00f, 0.755f, 0.480f);
-            light.intensity = 9.5f;
-            light.range = 4.2f;
-            light.spotAngle = 96f;
-            light.innerSpotAngle = 34f;
+            light.color = new Color(1.00f, 0.735f, 0.455f);
+            light.intensity = 15f;
+            light.range = 4.5f;
+            light.spotAngle = 104f;
+            light.innerSpotAngle = 26f;
             light.shadows = LightShadows.Hard;
-            light.shadowStrength = 0.85f;
+            light.shadowStrength = 0.80f;
 
-            // A weak unshadowed bounce so the walls behind the lamp are not pure black.
+            // A weak unshadowed bounce so the wall behind the lamp is not pure black.
             var bounce = new GameObject("Bounce").AddComponent<Light>();
             bounce.transform.SetParent(lamp, false);
-            bounce.transform.localPosition = new Vector3(0.05f, 0.18f, 0.05f);
+            bounce.transform.localPosition = new Vector3(0.10f, 0.24f, 0.05f);
             bounce.type = LightType.Point;
-            bounce.color = new Color(1.00f, 0.70f, 0.42f);
-            bounce.intensity = 1.1f;
-            bounce.range = 2.6f;
+            bounce.color = new Color(1.00f, 0.66f, 0.38f);
+            bounce.intensity = 1.6f;
+            bounce.range = 2.9f;
             bounce.shadows = LightShadows.None;
         }
 
@@ -361,15 +528,67 @@ namespace Monster.EditorTools
 
         private static void BuildOutside(Transform parent)
         {
-            var asphalt = Mat("Asphalt", new Color(0.058f, 0.058f, 0.062f), 0.22f);
+            var asphaltGrunge = Grunge("Grunge_Asphalt", 512, 11.0f, 1.25f, 0.0f, 4407);
+            var asphalt = Mat("Asphalt", new Color(0.075f, 0.075f, 0.080f), 0.22f, 0f, null,
+                asphaltGrunge, 9f);
             var paint = Mat("RoadPaint", new Color(0.44f, 0.42f, 0.36f), 0.10f);
             var barrierRed = Mat("BarrierRed", new Color(0.400f, 0.070f, 0.055f), 0.20f);
             var barrierWhite = Mat("BarrierWhite", new Color(0.560f, 0.545f, 0.505f), 0.20f);
-            var figure = Mat("Figure", new Color(0.014f, 0.014f, 0.018f), 0.08f);
+            var figure = Mat("Figure", new Color(0.010f, 0.010f, 0.013f), 0.08f);
             var tail = Mat("Taillight", new Color(0.08f, 0.005f, 0.005f), 0.4f, 0f,
-                new Color(1.00f, 0.09f, 0.06f) * 5.0f);
+                new Color(1.00f, 0.09f, 0.06f) * 7.0f);
 
             Box("Road", parent, new Vector3(0f, -0.20f, 16f), new Vector3(24f, 0.4f, 34f), asphalt);
+
+            // A wall of unlit fog-coloured geometry far down the road. Without it the sky
+            // above the road is the camera's clear colour, the fog has nothing to blend
+            // into, and anything standing in front of it reads as black on black.
+            var haze = Mat("Haze", new Color(0.02f, 0.02f, 0.025f), 0.0f, 0f, FogColor * 1.35f);
+            Box("Backdrop", parent, new Vector3(0f, 8f, 30f), new Vector3(60f, 22f, 0.4f), haze);
+
+            // A treeline and two utility poles, deep enough in the fog that they are just
+            // darker patches. Without them the view through the window is a flat grey
+            // rectangle and the whole shot loses its depth.
+            var treeline = Mat("Treeline", new Color(0.020f, 0.024f, 0.026f), 0.05f);
+            var random = new System.Random(41);
+            for (var i = 0; i < 14; i++)
+            {
+                var x = -14f + i * 2.1f + (float)random.NextDouble() * 1.1f;
+                var height = 3.4f + (float)random.NextDouble() * 3.6f;
+                var z = 17f + (float)random.NextDouble() * 6f;
+                Box($"Tree_{i}", parent, new Vector3(x, height * 0.5f, z),
+                    new Vector3(0.9f + (float)random.NextDouble() * 0.7f, height, 0.9f), treeline);
+            }
+
+            var floodPole = new GameObject("CheckpointFlood").transform;
+            floodPole.SetParent(parent, false);
+            floodPole.localPosition = new Vector3(-2.55f, 0f, 4.10f);
+            Box("Mast", floodPole, new Vector3(0f, 1.90f, 0f), new Vector3(0.11f, 3.80f, 0.11f),
+                Mat("FloodMast", new Color(0.13f, 0.13f, 0.12f), 0.30f, 0.6f));
+            Box("Head", floodPole, new Vector3(0.28f, 3.72f, 0f), new Vector3(0.44f, 0.20f, 0.30f),
+                Mat("FloodHead", new Color(0.16f, 0.15f, 0.12f), 0.35f, 0.5f));
+            Box("Lens", floodPole, new Vector3(0.44f, 3.66f, 0f), new Vector3(0.10f, 0.16f, 0.26f),
+                Mat("FloodLens", new Color(0.05f, 0.05f, 0.04f), 0.6f, 0f,
+                    new Color(1.00f, 0.86f, 0.62f) * 2.2f));
+
+            var flood = new GameObject("FloodLight").AddComponent<Light>();
+            flood.transform.SetParent(floodPole, true);
+            var floodPosition = floodPole.position + new Vector3(0.46f, 3.64f, 0f);
+            flood.transform.SetPositionAndRotation(floodPosition,
+                Quaternion.LookRotation(new Vector3(0.7f, 0.2f, 6.2f) - floodPosition, Vector3.up));
+            flood.type = LightType.Spot;
+            flood.color = new Color(1.00f, 0.88f, 0.68f);
+            flood.intensity = 26f;
+            flood.range = 16f;
+            flood.spotAngle = 78f;
+            flood.innerSpotAngle = 18f;
+            flood.shadows = LightShadows.None;
+
+            foreach (var (x, z) in new[] { (-3.9f, 11.5f), (4.4f, 19.0f) })
+            {
+                Box($"Pole_{x:F1}", parent, new Vector3(x, 3.1f, z), new Vector3(0.16f, 6.2f, 0.16f), treeline);
+                Box($"PoleArm_{x:F1}", parent, new Vector3(x, 5.7f, z), new Vector3(1.5f, 0.10f, 0.10f), treeline);
+            }
             for (var i = 0; i < 7; i++)
             {
                 Box($"RoadLine_{i}", parent, new Vector3(-0.55f, 0.002f, 6.5f + i * 3.2f),
@@ -379,14 +598,16 @@ namespace Monster.EditorTools
             // Barrier arm across the road, striped.
             var barrier = new GameObject("Barrier").transform;
             barrier.SetParent(parent, false);
-            barrier.localPosition = new Vector3(0f, 0f, 4.30f);
-            Cylinder("Post", barrier, new Vector3(-2.05f, 0.50f, 0f), new Vector3(0.14f, 0.50f, 0.14f),
+            // Raised and pushed back from the first pass, where the window sill hid the
+            // whole arm and only the housing showed.
+            barrier.localPosition = new Vector3(0f, 0f, 4.60f);
+            Cylinder("Post", barrier, new Vector3(-2.05f, 0.62f, 0f), new Vector3(0.14f, 0.62f, 0.14f),
                 Mat("BarrierPost", new Color(0.16f, 0.16f, 0.15f), 0.30f, 0.6f));
-            Box("Housing", barrier, new Vector3(-2.05f, 1.02f, 0f), new Vector3(0.26f, 0.22f, 0.24f),
+            Box("Housing", barrier, new Vector3(-2.05f, 1.28f, 0f), new Vector3(0.26f, 0.26f, 0.24f),
                 Mat("BarrierHousing", new Color(0.34f, 0.30f, 0.10f), 0.35f, 0.4f));
             for (var i = 0; i < 8; i++)
             {
-                Box($"Arm_{i}", barrier, new Vector3(-1.62f + i * 0.62f, 0.98f, 0f),
+                Box($"Arm_{i}", barrier, new Vector3(-1.62f + i * 0.62f, 1.22f, 0f),
                     new Vector3(0.62f, 0.09f, 0.09f), i % 2 == 0 ? barrierWhite : barrierRed);
             }
 
@@ -395,20 +616,20 @@ namespace Monster.EditorTools
             // long, the head sits high, and it does not move.
             var subject = new GameObject("Subject").transform;
             subject.SetParent(parent, false);
-            subject.SetPositionAndRotation(new Vector3(0.62f, 0f, 6.15f), Quaternion.Euler(0f, 184f, 0f));
-            Box("Legs", subject, new Vector3(0f, 0.44f, 0f), new Vector3(0.30f, 0.88f, 0.22f), figure);
-            Box("Torso", subject, new Vector3(0f, 1.24f, 0f), new Vector3(0.46f, 0.76f, 0.26f), figure);
-            Box("Neck", subject, new Vector3(0f, 1.72f, 0f), new Vector3(0.10f, 0.22f, 0.10f), figure);
-            Box("Head", subject, new Vector3(0f, 1.95f, 0f), new Vector3(0.19f, 0.25f, 0.20f), figure);
-            Box("Arm_L", subject, new Vector3(-0.30f, 1.06f, 0.02f), new Vector3(0.11f, 1.10f, 0.13f), figure,
-                new Vector3(0f, 0f, 4f));
-            Box("Arm_R", subject, new Vector3(0.30f, 1.06f, 0.02f), new Vector3(0.11f, 1.10f, 0.13f), figure,
-                new Vector3(0f, 0f, -4f));
+            subject.SetPositionAndRotation(new Vector3(0.52f, 0f, 4.95f), Quaternion.Euler(0f, 184f, 0f));
+            Box("Legs", subject, new Vector3(0f, 0.46f, 0f), new Vector3(0.28f, 0.92f, 0.21f), figure);
+            Box("Torso", subject, new Vector3(0f, 1.31f, 0f), new Vector3(0.44f, 0.80f, 0.25f), figure);
+            Box("Neck", subject, new Vector3(0f, 1.82f, 0f), new Vector3(0.09f, 0.24f, 0.09f), figure);
+            Box("Head", subject, new Vector3(0f, 2.06f, 0f), new Vector3(0.18f, 0.25f, 0.19f), figure);
+            Box("Arm_L", subject, new Vector3(-0.29f, 1.10f, 0.02f), new Vector3(0.10f, 1.24f, 0.12f), figure,
+                new Vector3(0f, 0f, 3f));
+            Box("Arm_R", subject, new Vector3(0.29f, 1.10f, 0.02f), new Vector3(0.10f, 1.24f, 0.12f), figure,
+                new Vector3(0f, 0f, -3f));
 
             // The vehicle it stepped out of, reduced to two taillights and a dark mass.
             var vehicle = new GameObject("Vehicle").transform;
             vehicle.SetParent(parent, false);
-            vehicle.localPosition = new Vector3(-0.30f, 0f, 9.40f);
+            vehicle.localPosition = new Vector3(-0.34f, 0f, 8.20f);
             Box("Body", vehicle, new Vector3(0f, 0.85f, 0f), new Vector3(2.05f, 1.55f, 4.60f),
                 Mat("VehicleBody", new Color(0.030f, 0.032f, 0.036f), 0.30f, 0.4f));
             foreach (var side in new[] { -0.78f, 0.78f })
@@ -420,8 +641,8 @@ namespace Monster.EditorTools
                 lamp.transform.localPosition = new Vector3(side, 0.92f, -2.55f);
                 lamp.type = LightType.Point;
                 lamp.color = new Color(1.00f, 0.13f, 0.08f);
-                lamp.intensity = 3.4f;
-                lamp.range = 6.5f;
+                lamp.intensity = 9f;
+                lamp.range = 11f;
                 lamp.shadows = LightShadows.None;
             }
         }
@@ -432,11 +653,13 @@ namespace Monster.EditorTools
         {
             var go = new GameObject("PlayerCamera");
             go.tag = "MainCamera";
-            go.transform.SetPositionAndRotation(new Vector3(0f, 1.24f, -0.05f), Quaternion.Euler(4f, 0f, 0f));
+            // Pulled back and pitched down slightly from the first pass so more of the desk
+            // is in frame. The shot has to show the paperwork, not just the monitors.
+            go.transform.SetPositionAndRotation(new Vector3(-0.03f, 1.44f, -0.76f), Quaternion.Euler(13f, 0f, 0f));
 
             var camera = go.AddComponent<Camera>();
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(0.030f, 0.034f, 0.042f);
+            camera.backgroundColor = FogColor;
             camera.fieldOfView = 60f;
             camera.nearClipPlane = 0.03f;
             camera.farClipPlane = 60f;
@@ -522,8 +745,107 @@ namespace Monster.EditorTools
             return go;
         }
 
+        /// <summary>Generates a tiling grunge map and caches it as a project asset.
+        ///
+        /// Flat untextured colour is what made the first two renders read as an untextured
+        /// blockout rather than as a room. A single multi-octave noise map multiplied into
+        /// the albedo fixes most of that for almost nothing: it costs one texture fetch and
+        /// no authoring time, and it is generated from a seed so it is reproducible.</summary>
+        private static Texture2D Grunge(string name, int size, float frequency, float contrast,
+            float streaks, int seed)
+        {
+            var path = $"{TexturesFolder}/{name}.png";
+            var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            MonsterSetup.EnsureFolder(TexturesFolder);
+
+            var random = new System.Random(seed);
+            var offsetX = (float)random.NextDouble() * 1000f;
+            var offsetY = (float)random.NextDouble() * 1000f;
+
+            var texture = new Texture2D(size, size, TextureFormat.RGB24, true);
+            var pixels = new Color32[size * size];
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var u = (float)x / size;
+                    var v = (float)y / size;
+
+                    // Four octaves of Perlin. Sampling on a torus would be the correct way
+                    // to make it seamless; at these tiling rates the visible seam is well
+                    // below the noise floor of the grain pass, so it is not worth the cost.
+                    var value = 0f;
+                    var amplitude = 0.5f;
+                    var f = frequency;
+                    for (var octave = 0; octave < 4; octave++)
+                    {
+                        value += amplitude * Mathf.PerlinNoise(offsetX + u * f, offsetY + v * f);
+                        amplitude *= 0.5f;
+                        f *= 2.07f;
+                    }
+
+                    // Vertical streaking, which is what dirt on a wall actually looks like.
+                    if (streaks > 0f)
+                    {
+                        var streak = Mathf.PerlinNoise(offsetX + u * frequency * 3.1f, offsetY + v * 0.6f);
+                        value = Mathf.Lerp(value, value * streak * 1.6f, streaks);
+                    }
+
+                    value = Mathf.Clamp01(0.5f + (value - 0.5f) * contrast);
+                    var level = (byte)(Mathf.Lerp(0.45f, 1.0f, value) * 255f);
+                    pixels[y * size + x] = new Color32(level, level, level, 255);
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+
+            File.WriteAllBytes(Path.Combine(Directory.GetCurrentDirectory(), path), texture.EncodeToPNG());
+            Object.DestroyImmediate(texture);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+
+            if (AssetImporter.GetAtPath(path) is TextureImporter importer)
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.mipmapEnabled = true;
+                importer.sRGBTexture = true;
+                importer.maxTextureSize = size;
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        /// <summary>URP's Lit shader needs six properties and a keyword set consistently
+        /// for transparency to work; setting only _Surface leaves the material opaque in a
+        /// build even though it looks right in the editor.</summary>
+        private static Material TransparentMat(string name, Color baseColor, float smoothness,
+            Texture2D albedo = null, float tiling = 1f)
+        {
+            var material = Mat(name, baseColor, smoothness, 0f, null, albedo, tiling);
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 0f);
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_ZWrite", 0f);
+            material.SetFloat("_AlphaClip", 0f);
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.DisableKeyword("_ALPHATEST_ON");
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
         private static Material Mat(string name, Color baseColor, float smoothness,
-            float metallic = 0f, Color? emission = null)
+            float metallic = 0f, Color? emission = null, Texture2D albedo = null, float tiling = 1f)
         {
             if (Materials.TryGetValue(name, out var cached))
             {
@@ -552,6 +874,16 @@ namespace Monster.EditorTools
             material.SetColor("_BaseColor", baseColor);
             material.SetFloat("_Smoothness", smoothness);
             material.SetFloat("_Metallic", metallic);
+
+            if (albedo != null)
+            {
+                material.SetTexture("_BaseMap", albedo);
+                material.SetTextureScale("_BaseMap", Vector2.one * tiling);
+            }
+            else
+            {
+                material.SetTexture("_BaseMap", null);
+            }
 
             if (emission.HasValue)
             {

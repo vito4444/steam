@@ -98,30 +98,32 @@ namespace Monster.EditorTools
             tonemapping.mode.Override(TonemappingMode.Neutral);
 
             var colorAdjustments = profile.Add<ColorAdjustments>(true);
-            colorAdjustments.postExposure.Override(0.15f);
-            colorAdjustments.contrast.Override(20f);
-            colorAdjustments.saturation.Override(-14f);
+            colorAdjustments.postExposure.Override(-0.40f);
+            colorAdjustments.contrast.Override(26f);
+            colorAdjustments.saturation.Override(-20f);
             colorAdjustments.colorFilter.Override(new Color(1.0f, 0.95f, 0.86f));
 
             var whiteBalance = profile.Add<WhiteBalance>(true);
             whiteBalance.temperature.Override(8f);
             whiteBalance.tint.Override(-6f);
 
+            // Bloom is kept tight. At the first pass's settings the CRT faces bloomed into
+            // flat white blobs and took the rest of the frame's contrast with them.
             var bloom = profile.Add<Bloom>(true);
-            bloom.threshold.Override(0.85f);
-            bloom.intensity.Override(0.55f);
-            bloom.scatter.Override(0.62f);
-            bloom.tint.Override(new Color(1f, 0.92f, 0.80f));
+            bloom.threshold.Override(1.15f);
+            bloom.intensity.Override(0.34f);
+            bloom.scatter.Override(0.55f);
+            bloom.tint.Override(new Color(1f, 0.90f, 0.76f));
 
             var vignette = profile.Add<Vignette>(true);
-            vignette.intensity.Override(0.48f);
-            vignette.smoothness.Override(0.45f);
-            vignette.color.Override(new Color(0.02f, 0.02f, 0.03f));
+            vignette.intensity.Override(0.60f);
+            vignette.smoothness.Override(0.40f);
+            vignette.color.Override(new Color(0.015f, 0.015f, 0.022f));
 
             var grain = profile.Add<FilmGrain>(true);
-            grain.type.Override(FilmGrainLookup.Medium1);
-            grain.intensity.Override(0.55f);
-            grain.response.Override(0.75f);
+            grain.type.Override(FilmGrainLookup.Medium3);
+            grain.intensity.Override(0.72f);
+            grain.response.Override(0.80f);
 
             var aberration = profile.Add<ChromaticAberration>(true);
             aberration.intensity.Override(0.14f);

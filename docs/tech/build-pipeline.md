@@ -32,6 +32,7 @@ rasteriser can produce at a usable rate.
 
 | Component | Version / path | Status |
 | --- | --- | --- |
+| Pillow + numpy | for the screenshot comparison tool | ✅ installed |
 | Unity Hub | 3.20.1, from Unity's official apt repository | ✅ installed |
 | Unity Editor | **6000.5.8f1**, at `/opt/unity/editors/6000.5.8f1/Editor/Unity` | ✅ installed |
 | Windows Build Support (Mono) | Editor module | ✅ installed |
@@ -60,6 +61,11 @@ battle-tested option available. The decision is recorded here so the reason is n
 The Linux editor can cross-compile a Windows player with the **Mono** scripting backend.
 It **cannot** produce a Windows **IL2CPP** player: IL2CPP for Windows requires a Windows host
 with the MSVC toolchain.
+
+This is confirmed by inspection rather than taken from documentation. The editor's
+`PlaybackEngines/WindowsStandaloneSupport/Variations/` directory contains only
+`win64_player_development_mono`, `win64_player_nondevelopment_mono` and their 32-bit and
+ARM64 equivalents. There is no IL2CPP variant present to build against.
 
 Consequences, stated plainly:
 
@@ -119,7 +125,14 @@ xvfb-run -a /opt/unity/editors/6000.5.8f1/Editor/Unity \
    Unity's default batch-mode behaviour can exit 0 after a failed build, and a pipeline that
    reports success on a failed build is worse than no pipeline.
 
-⏳ Not yet executed; the Unity project does not exist yet.
+✅ Executed. The Windows build produces `MONSTER.exe`, a PE32+ x86-64 GUI executable of
+94.2 MB, in 40 seconds. The Linux build produces `MONSTER.x86_64` at 89.4 MB in 43 seconds.
+`BuildAll` runs both in one session in about two minutes from cold and about 13 seconds
+incrementally.
+
+The non-zero-exit requirement was validated the hard way on the first run: a compile error
+in `SelfCheckRunner.cs` was correctly caught and reported as a failure, where Unity's default
+batch-mode behaviour would have exited 0.
 
 ---
 
@@ -194,7 +207,13 @@ genuinely precise. Concepts A and B need explicit screenshot cameras placed at f
 transforms in a fixed-seed level, or the diff is pure noise. This is a design requirement on
 those concepts, not an afterthought.
 
-⏳ Designed, not yet implemented.
+✅ Implemented and running. `tools/selfcheck/run_selfcheck.sh` launches the player, and
+`tools/selfcheck/compare.py` produces the diffs and composites. A full cycle — regenerate the
+scene from code, build, run, capture, compare — takes about 25 seconds via
+`tools/build/iterate.sh`.
+
+First results are in `docs/progress/m1/`: 40.6 ms/frame at 1280x720 on llvmpipe, 206
+renderers, 3,764 triangles, 9 lights, 0 errors.
 
 ---
 
