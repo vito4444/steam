@@ -1,0 +1,1665 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="261" result="Passed" total="261" passed="261" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.2089444">
+  <test-suite type="TestSuite" id="1000" name="Decoder" fullname="Decoder" runstate="Runnable" testcasecount="261" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.208944" total="261" passed="261" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1287" name="Decoder.Tests.EditMode.dll" fullname="/workspace/unity/Decoder/Library/ScriptAssemblies/Decoder.Tests.EditMode.dll" runstate="Runnable" testcasecount="261" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.202720" total="261" passed="261" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="211938" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1288" name="Decoder" fullname="Decoder" runstate="Runnable" testcasecount="261" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.202462" total="261" passed="261" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1289" name="Tests" fullname="Decoder.Tests" runstate="Runnable" testcasecount="261" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.202310" total="261" passed="261" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestFixture" id="1001" name="CampaignStateTests" fullname="Decoder.Tests.CampaignStateTests" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" testcasecount="35" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.038627" total="35" passed="35" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1033" name="ArchivedFist_ReturnsInvalidForUnheardCallsign" fullname="Decoder.Tests.CampaignStateTests.ArchivedFist_ReturnsInvalidForUnheardCallsign" methodname="ArchivedFist_ReturnsInvalidForUnheardCallsign" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="460080266" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.008474" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1028" name="BelongsTo_RejectsProgressFromAnotherShift" fullname="Decoder.Tests.CampaignStateTests.BelongsTo_RejectsProgressFromAnotherShift" methodname="BelongsTo_RejectsProgressFromAnotherShift" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="2101290112" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000210" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1022" name="Deserialize_AcceptsCurrentVersion" fullname="Decoder.Tests.CampaignStateTests.Deserialize_AcceptsCurrentVersion" methodname="Deserialize_AcceptsCurrentVersion" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="2139953041" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.004378" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1021" name="Deserialize_RejectsFutureVersion" fullname="Decoder.Tests.CampaignStateTests.Deserialize_RejectsFutureVersion" methodname="Deserialize_RejectsFutureVersion" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1469239990" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000150" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1020" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.002548" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1013" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(null)" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(null)" methodname="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="501402963" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000759" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1014" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;&quot;)" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;&quot;)" methodname="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="437955639" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000051" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1015" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;这不是存档&quot;)" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;这不是存档&quot;)" methodname="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="225111109" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000069" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nversion\t不是数字\n&quot;)" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nversion\t不是数字\n&quot;)" methodname="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1723421677" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000035" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nshift\tx\n&quot;)" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nshift\tx\n&quot;)" methodname="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="55617570" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000029" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1018" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nreport\t字段不够\n&quot;)" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nreport\t字段不够\n&quot;)" methodname="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1203177129" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000032" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nreport\ts\tM08\t不存在的结果\tRoutine\tRoutine\t0.5\n&quot;)" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(&quot;decoder-save\nreport\ts\tM08\t不存在的结果\tRoutine\tRoutine\t0.5\n&quot;)" methodname="Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="2103075777" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000164" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1036" name="Deserialize_ReturnsNullOnTruncatedFistLine" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnTruncatedFistLine" methodname="Deserialize_ReturnsNullOnTruncatedFistLine" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1612515182" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000094" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1029" name="Deserialize_ReturnsNullOnTruncatedProgressLine" fullname="Decoder.Tests.CampaignStateTests.Deserialize_ReturnsNullOnTruncatedProgressLine" methodname="Deserialize_ReturnsNullOnTruncatedProgressLine" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1293503917" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000052" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1034" name="FistArchive_RoundTripsThroughSave" fullname="Decoder.Tests.CampaignStateTests.FistArchive_RoundTripsThroughSave" methodname="FistArchive_RoundTripsThroughSave" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1996643664" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.003619" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1035" name="FistArchive_SurvivesReportAndShiftAdvance" fullname="Decoder.Tests.CampaignStateTests.FistArchive_SurvivesReportAndShiftAdvance" methodname="FistArchive_SurvivesReportAndShiftAdvance" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="547785352" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000440" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1010" name="LevelCorrect_ReflectsExactLevelMatch" fullname="Decoder.Tests.CampaignStateTests.LevelCorrect_ReflectsExactLevelMatch" methodname="LevelCorrect_ReflectsExactLevelMatch" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="429446058" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000104" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1002" name="NewState_StartsAtFirstShiftWithNoHistory" fullname="Decoder.Tests.CampaignStateTests.NewState_StartsAtFirstShiftWithNoHistory" methodname="NewState_StartsAtFirstShiftWithNoHistory" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="854497585" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000603" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1031" name="NoteFist_DoesNotOverwriteWithLaterEncounters" fullname="Decoder.Tests.CampaignStateTests.NoteFist_DoesNotOverwriteWithLaterEncounters" methodname="NoteFist_DoesNotOverwriteWithLaterEncounters" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1697129918" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000215" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1032" name="NoteFist_IgnoresInvalidInput" fullname="Decoder.Tests.CampaignStateTests.NoteFist_IgnoresInvalidInput" methodname="NoteFist_IgnoresInvalidInput" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1001291115" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000099" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1030" name="NoteFist_RecordsFirstEncounter" fullname="Decoder.Tests.CampaignStateTests.NoteFist_RecordsFirstEncounter" methodname="NoteFist_RecordsFirstEncounter" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="303153256" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000124" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1024" name="Progress_EmptyFieldsSurviveRoundTrip" fullname="Decoder.Tests.CampaignStateTests.Progress_EmptyFieldsSurviveRoundTrip" methodname="Progress_EmptyFieldsSurviveRoundTrip" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1086075592" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000367" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1027" name="Progress_InactiveIsNotWrittenToSave" fullname="Decoder.Tests.CampaignStateTests.Progress_InactiveIsNotWrittenToSave" methodname="Progress_InactiveIsNotWrittenToSave" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="911877996" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000477" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1026" name="Progress_IsClearedAfterReport" fullname="Decoder.Tests.CampaignStateTests.Progress_IsClearedAfterReport" methodname="Progress_IsClearedAfterReport" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1821362652" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000142" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1023" name="Progress_RoundTripsThroughSave" fullname="Decoder.Tests.CampaignStateTests.Progress_RoundTripsThroughSave" methodname="Progress_RoundTripsThroughSave" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1763363182" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.001021" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1025" name="Progress_SurvivesTabsAndNewlinesInCopiedText" fullname="Decoder.Tests.CampaignStateTests.Progress_SurvivesTabsAndNewlinesInCopiedText" methodname="Progress_SurvivesTabsAndNewlinesInCopiedText" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="464637753" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000593" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1003" name="RecordAndAdvance_AppendsHistoryAndMovesToNextShift" fullname="Decoder.Tests.CampaignStateTests.RecordAndAdvance_AppendsHistoryAndMovesToNextShift" methodname="RecordAndAdvance_AppendsHistoryAndMovesToNextShift" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="645294176" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000145" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1012" name="Serialize_EmptyStateRoundTrips" fullname="Decoder.Tests.CampaignStateTests.Serialize_EmptyStateRoundTrips" methodname="Serialize_EmptyStateRoundTrips" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1299259428" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000102" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1037" name="Serialize_IsHumanReadable" fullname="Decoder.Tests.CampaignStateTests.Serialize_IsHumanReadable" methodname="Serialize_IsHumanReadable" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="432496397" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000349" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1011" name="SerializeThenDeserialize_PreservesEverything" fullname="Decoder.Tests.CampaignStateTests.SerializeThenDeserialize_PreservesEverything" methodname="SerializeThenDeserialize_PreservesEverything" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="625744503" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000346" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1006" name="Standing_IsClampedToUnitRange" fullname="Decoder.Tests.CampaignStateTests.Standing_IsClampedToUnitRange" methodname="Standing_IsClampedToUnitRange" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="1196779238" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.002003" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1005" name="Standing_PunishesUnderreportingHarderThanOverreporting" fullname="Decoder.Tests.CampaignStateTests.Standing_PunishesUnderreportingHarderThanOverreporting" methodname="Standing_PunishesUnderreportingHarderThanOverreporting" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="759450715" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000214" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1004" name="Standing_RewardsExactReports" fullname="Decoder.Tests.CampaignStateTests.Standing_RewardsExactReports" methodname="Standing_RewardsExactReports" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="552177604" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000094" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1008" name="StandingLine_DiffersBetweenGoodAndBadRecords" fullname="Decoder.Tests.CampaignStateTests.StandingLine_DiffersBetweenGoodAndBadRecords" methodname="StandingLine_DiffersBetweenGoodAndBadRecords" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="908044960" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000233" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1007" name="StandingLine_IsNeverEmptyAndCarriesNoNumbers" fullname="Decoder.Tests.CampaignStateTests.StandingLine_IsNeverEmptyAndCarriesNoNumbers" methodname="StandingLine_IsNeverEmptyAndCarriesNoNumbers" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="988399022" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000543" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1009" name="UnderreportCount_CountsOnlyLevelsBelowCorrect" fullname="Decoder.Tests.CampaignStateTests.UnderreportCount_CountsOnlyLevelsBelowCorrect" methodname="UnderreportCount_CountsOnlyLevelsBelowCorrect" classname="Decoder.Tests.CampaignStateTests" runstate="Runnable" seed="597283398" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000223" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1038" name="ChineseTelegraphCodeTests" fullname="Decoder.Tests.ChineseTelegraphCodeTests" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" testcasecount="26" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.018855" total="26" passed="26" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1050" name="DecodeDigits_KeepsTrailingPartialGroup" fullname="Decoder.Tests.ChineseTelegraphCodeTests.DecodeDigits_KeepsTrailingPartialGroup" methodname="DecodeDigits_KeepsTrailingPartialGroup" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1040603233" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.002288" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1048" name="DecodeDigits_SplitsStreamIntoFourDigitGroups" fullname="Decoder.Tests.ChineseTelegraphCodeTests.DecodeDigits_SplitsStreamIntoFourDigitGroups" methodname="DecodeDigits_SplitsStreamIntoFourDigitGroups" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="516653697" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000103" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1049" name="DecodeDigits_UnknownGroupBecomesBox" fullname="Decoder.Tests.ChineseTelegraphCodeTests.DecodeDigits_UnknownGroupBecomesBox" methodname="DecodeDigits_UnknownGroupBecomesBox" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="35022648" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.002338" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1051" name="EncodeText_ProducesSpaceSeparatedGroups" fullname="Decoder.Tests.ChineseTelegraphCodeTests.EncodeText_ProducesSpaceSeparatedGroups" methodname="EncodeText_ProducesSpaceSeparatedGroups" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="935267517" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000507" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1052" name="EncodeText_SkipsCharactersOutsideTable" fullname="Decoder.Tests.ChineseTelegraphCodeTests.EncodeText_SkipsCharactersOutsideTable" methodname="EncodeText_SkipsCharactersOutsideTable" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1786717474" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000099" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1053" name="EncodeThenDecode_RoundTripsExactly" fullname="Decoder.Tests.ChineseTelegraphCodeTests.EncodeThenDecode_RoundTripsExactly" methodname="EncodeThenDecode_RoundTripsExactly" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1250103702" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000168" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1056" name="Parse_HandlesCarriageReturns" fullname="Decoder.Tests.ChineseTelegraphCodeTests.Parse_HandlesCarriageReturns" methodname="Parse_HandlesCarriageReturns" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1156684880" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000201" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1055" name="Parse_IgnoresMalformedLines" fullname="Decoder.Tests.ChineseTelegraphCodeTests.Parse_IgnoresMalformedLines" methodname="Parse_IgnoresMalformedLines" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="306153779" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000078" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1039" name="Parse_ReadsEveryRecord" fullname="Decoder.Tests.ChineseTelegraphCodeTests.Parse_ReadsEveryRecord" methodname="Parse_ReadsEveryRecord" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1788261217" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000070" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1057" name="SharedTable_LoadsFullDataset" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_LoadsFullDataset" methodname="SharedTable_LoadsFullDataset" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="875022733" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.006470" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1065" name="SharedTable_MatchesKnownHistoricalCodes" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.003607" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1058" name="SharedTable_MatchesKnownHistoricalCodes(&quot;0001&quot;,'一')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes(&quot;0001&quot;,'一')" methodname="SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="941917980" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000294" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1059" name="SharedTable_MatchesKnownHistoricalCodes(&quot;0022&quot;,'中')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes(&quot;0022&quot;,'中')" methodname="SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="991087881" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000098" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1060" name="SharedTable_MatchesKnownHistoricalCodes(&quot;0079&quot;,'京')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes(&quot;0079&quot;,'京')" methodname="SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1751194001" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000034" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1061" name="SharedTable_MatchesKnownHistoricalCodes(&quot;0554&quot;,'北')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes(&quot;0554&quot;,'北')" methodname="SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="314086801" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000028" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1062" name="SharedTable_MatchesKnownHistoricalCodes(&quot;2429&quot;,'文')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes(&quot;2429&quot;,'文')" methodname="SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1276958047" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000028" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1063" name="SharedTable_MatchesKnownHistoricalCodes(&quot;4316&quot;,'码')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes(&quot;4316&quot;,'码')" methodname="SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="97588956" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000025" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1064" name="SharedTable_MatchesKnownHistoricalCodes(&quot;7193&quot;,'电')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_MatchesKnownHistoricalCodes(&quot;7193&quot;,'电')" methodname="SharedTable_MatchesKnownHistoricalCodes" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="2058427257" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000027" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1066" name="SharedTable_RoundTripsRealSentence" fullname="Decoder.Tests.ChineseTelegraphCodeTests.SharedTable_RoundTripsRealSentence" methodname="SharedTable_RoundTripsRealSentence" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="614908875" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000138" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1054" name="ToDigitStream_StripsSeparators" fullname="Decoder.Tests.ChineseTelegraphCodeTests.ToDigitStream_StripsSeparators" methodname="ToDigitStream_StripsSeparators" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1004358637" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000094" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1045" name="TryGetCharacter_ReturnsMappedCharacter" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCharacter_ReturnsMappedCharacter" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000705" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1040" name="TryGetCharacter_ReturnsMappedCharacter(&quot;0001&quot;,'一')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCharacter_ReturnsMappedCharacter(&quot;0001&quot;,'一')" methodname="TryGetCharacter_ReturnsMappedCharacter" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1302254678" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000124" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1041" name="TryGetCharacter_ReturnsMappedCharacter(&quot;0022&quot;,'中')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCharacter_ReturnsMappedCharacter(&quot;0022&quot;,'中')" methodname="TryGetCharacter_ReturnsMappedCharacter" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1232201688" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000035" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1042" name="TryGetCharacter_ReturnsMappedCharacter(&quot;2429&quot;,'文')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCharacter_ReturnsMappedCharacter(&quot;2429&quot;,'文')" methodname="TryGetCharacter_ReturnsMappedCharacter" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="30788837" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000028" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1043" name="TryGetCharacter_ReturnsMappedCharacter(&quot;7193&quot;,'电')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCharacter_ReturnsMappedCharacter(&quot;7193&quot;,'电')" methodname="TryGetCharacter_ReturnsMappedCharacter" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="1880763382" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000036" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1044" name="TryGetCharacter_ReturnsMappedCharacter(&quot;4316&quot;,'码')" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCharacter_ReturnsMappedCharacter(&quot;4316&quot;,'码')" methodname="TryGetCharacter_ReturnsMappedCharacter" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="38552528" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000028" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1046" name="TryGetCharacter_UnknownCodeFails" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCharacter_UnknownCodeFails" methodname="TryGetCharacter_UnknownCodeFails" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="2133851743" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000088" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1047" name="TryGetCode_IsInverseOfTryGetCharacter" fullname="Decoder.Tests.ChineseTelegraphCodeTests.TryGetCode_IsInverseOfTryGetCharacter" methodname="TryGetCode_IsInverseOfTryGetCharacter" classname="Decoder.Tests.ChineseTelegraphCodeTests" runstate="Runnable" seed="981716500" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000114" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1067" name="MorseCodeTests" fullname="Decoder.Tests.MorseCodeTests" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" testcasecount="28" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.009045" total="28" passed="28" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1099" name="BuildTimeline_AllSegmentsHavePositiveDuration" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_AllSegmentsHavePositiveDuration" methodname="BuildTimeline_AllSegmentsHavePositiveDuration" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1728730770" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.003321" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1094" name="BuildTimeline_InterCharacterGapIsThreeUnits" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_InterCharacterGapIsThreeUnits" methodname="BuildTimeline_InterCharacterGapIsThreeUnits" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1573962964" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000200" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1093" name="BuildTimeline_IntraCharacterGapIsOneUnit" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_IntraCharacterGapIsOneUnit" methodname="BuildTimeline_IntraCharacterGapIsOneUnit" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="565756160" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000198" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1096" name="BuildTimeline_NeverEndsWithSilence" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_NeverEndsWithSilence" methodname="BuildTimeline_NeverEndsWithSilence" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1761885803" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000495" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1097" name="BuildTimeline_ParisAtTwentyWpmTakesThreeSeconds" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_ParisAtTwentyWpmTakesThreeSeconds" methodname="BuildTimeline_ParisAtTwentyWpmTakesThreeSeconds" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="592096323" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000182" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1092" name="BuildTimeline_SingleDahIsThreeUnitsOfCarrier" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_SingleDahIsThreeUnitsOfCarrier" methodname="BuildTimeline_SingleDahIsThreeUnitsOfCarrier" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="195409652" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000139" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1091" name="BuildTimeline_SingleDitIsOneUnitOfCarrier" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_SingleDitIsOneUnitOfCarrier" methodname="BuildTimeline_SingleDitIsOneUnitOfCarrier" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1645124665" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000125" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1098" name="BuildTimeline_TotalTimeScalesInverselyWithSpeed" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_TotalTimeScalesInverselyWithSpeed" methodname="BuildTimeline_TotalTimeScalesInverselyWithSpeed" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="140421994" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000079" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1095" name="BuildTimeline_WordGapIsSevenUnits" fullname="Decoder.Tests.MorseCodeTests.BuildTimeline_WordGapIsSevenUnits" methodname="BuildTimeline_WordGapIsSevenUnits" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1901198365" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000140" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1086" name="Decode_EmptyInputReturnsEmpty" fullname="Decoder.Tests.MorseCodeTests.Decode_EmptyInputReturnsEmpty" methodname="Decode_EmptyInputReturnsEmpty" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="2132439067" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000226" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1078" name="Decode_MatchesItuStandardPatterns" fullname="Decoder.Tests.MorseCodeTests.Decode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000609" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1075" name="Decode_MatchesItuStandardPatterns(&quot;... --- ...&quot;,&quot;SOS&quot;)" fullname="Decoder.Tests.MorseCodeTests.Decode_MatchesItuStandardPatterns(&quot;... --- ...&quot;,&quot;SOS&quot;)" methodname="Decode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="921336524" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000195" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1076" name="Decode_MatchesItuStandardPatterns(&quot;.... . .-.. .-.. --- / .-- --- .-. .-.. -..&quot;,&quot;HELLO WORLD&quot;)" fullname="Decoder.Tests.MorseCodeTests.Decode_MatchesItuStandardPatterns(&quot;.... . .-.. .-.. --- / .-- --- .-. .-.. -..&quot;,&quot;HELLO WORLD&quot;)" methodname="Decode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1934502804" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000043" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1077" name="Decode_MatchesItuStandardPatterns(&quot;----- ----- ..--- ..---&quot;,&quot;0022&quot;)" fullname="Decoder.Tests.MorseCodeTests.Decode_MatchesItuStandardPatterns(&quot;----- ----- ..--- ..---&quot;,&quot;0022&quot;)" methodname="Decode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="901311380" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000027" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1085" name="Decode_UnknownPatternBecomesQuestionMark" fullname="Decoder.Tests.MorseCodeTests.Decode_UnknownPatternBecomesQuestionMark" methodname="Decode_UnknownPatternBecomesQuestionMark" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="349441379" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000062" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1074" name="Encode_MatchesItuStandardPatterns" fullname="Decoder.Tests.MorseCodeTests.Encode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000639" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1068" name="Encode_MatchesItuStandardPatterns(&quot;SOS&quot;,&quot;... --- ...&quot;)" fullname="Decoder.Tests.MorseCodeTests.Encode_MatchesItuStandardPatterns(&quot;SOS&quot;,&quot;... --- ...&quot;)" methodname="Encode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1417185617" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000073" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1069" name="Encode_MatchesItuStandardPatterns(&quot;E&quot;,&quot;.&quot;)" fullname="Decoder.Tests.MorseCodeTests.Encode_MatchesItuStandardPatterns(&quot;E&quot;,&quot;.&quot;)" methodname="Encode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1221658312" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000031" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1070" name="Encode_MatchesItuStandardPatterns(&quot;T&quot;,&quot;-&quot;)" fullname="Decoder.Tests.MorseCodeTests.Encode_MatchesItuStandardPatterns(&quot;T&quot;,&quot;-&quot;)" methodname="Encode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="759143017" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000026" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1071" name="Encode_MatchesItuStandardPatterns(&quot;PARIS&quot;,&quot;.--. .- .-. .. ...&quot;)" fullname="Decoder.Tests.MorseCodeTests.Encode_MatchesItuStandardPatterns(&quot;PARIS&quot;,&quot;.--. .- .-. .. ...&quot;)" methodname="Encode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1899695368" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000024" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="Encode_MatchesItuStandardPatterns(&quot;0022&quot;,&quot;----- ----- ..--- ..---&quot;)" fullname="Decoder.Tests.MorseCodeTests.Encode_MatchesItuStandardPatterns(&quot;0022&quot;,&quot;----- ----- ..--- ..---&quot;)" methodname="Encode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="190159366" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000025" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="Encode_MatchesItuStandardPatterns(&quot;HELLO WORLD&quot;,&quot;.... . .-.. .-.. --- / .-- --- .-. .-.. -..&quot;)" fullname="Decoder.Tests.MorseCodeTests.Encode_MatchesItuStandardPatterns(&quot;HELLO WORLD&quot;,&quot;.... . .-.. .-.. --- / .-- --- .-. .-.. -..&quot;)" methodname="Encode_MatchesItuStandardPatterns" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="2144141107" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000025" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1084" name="Encode_SkipsUnsupportedCharacters" fullname="Decoder.Tests.MorseCodeTests.Encode_SkipsUnsupportedCharacters" methodname="Encode_SkipsUnsupportedCharacters" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="951733169" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000058" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1083" name="EncodeThenDecode_RoundTripsExactly" fullname="Decoder.Tests.MorseCodeTests.EncodeThenDecode_RoundTripsExactly" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000508" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1079" name="EncodeThenDecode_RoundTripsExactly(&quot;THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG&quot;)" fullname="Decoder.Tests.MorseCodeTests.EncodeThenDecode_RoundTripsExactly(&quot;THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG&quot;)" methodname="EncodeThenDecode_RoundTripsExactly" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="11197996" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000114" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="EncodeThenDecode_RoundTripsExactly(&quot;0123456789&quot;)" fullname="Decoder.Tests.MorseCodeTests.EncodeThenDecode_RoundTripsExactly(&quot;0123456789&quot;)" methodname="EncodeThenDecode_RoundTripsExactly" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="277586200" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000032" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1081" name="EncodeThenDecode_RoundTripsExactly(&quot;CQ CQ DE R7X K&quot;)" fullname="Decoder.Tests.MorseCodeTests.EncodeThenDecode_RoundTripsExactly(&quot;CQ CQ DE R7X K&quot;)" methodname="EncodeThenDecode_RoundTripsExactly" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="302969200" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000028" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1082" name="EncodeThenDecode_RoundTripsExactly(&quot;0022 2429 7193 4316&quot;)" fullname="Decoder.Tests.MorseCodeTests.EncodeThenDecode_RoundTripsExactly(&quot;0022 2429 7193 4316&quot;)" methodname="EncodeThenDecode_RoundTripsExactly" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1903469784" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000027" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="ParameterizedMethod" id="1090" name="UnitSeconds_FollowsParisFormula" fullname="Decoder.Tests.MorseCodeTests.UnitSeconds_FollowsParisFormula" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000510" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1087" name="UnitSeconds_FollowsParisFormula(20.0f,0.06f)" fullname="Decoder.Tests.MorseCodeTests.UnitSeconds_FollowsParisFormula(20.0f,0.06f)" methodname="UnitSeconds_FollowsParisFormula" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="174449959" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000175" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1088" name="UnitSeconds_FollowsParisFormula(12.0f,0.1f)" fullname="Decoder.Tests.MorseCodeTests.UnitSeconds_FollowsParisFormula(12.0f,0.1f)" methodname="UnitSeconds_FollowsParisFormula" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="1968407644" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000034" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1089" name="UnitSeconds_FollowsParisFormula(5.0f,0.24f)" fullname="Decoder.Tests.MorseCodeTests.UnitSeconds_FollowsParisFormula(5.0f,0.24f)" methodname="UnitSeconds_FollowsParisFormula" classname="Decoder.Tests.MorseCodeTests" runstate="Runnable" seed="732176156" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000028" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+          </test-suite>
+          <test-suite type="TestFixture" id="1100" name="MorseReceiverTests" fullname="Decoder.Tests.MorseReceiverTests" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" testcasecount="21" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.005846" total="21" passed="21" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1116" name="Advance_DistinguishesDitFromDah" fullname="Decoder.Tests.MorseReceiverTests.Advance_DistinguishesDitFromDah" methodname="Advance_DistinguishesDitFromDah" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1908587869" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000569" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1113" name="Advance_DoesNotEmitTrailingSpace" fullname="Decoder.Tests.MorseReceiverTests.Advance_DoesNotEmitTrailingSpace" methodname="Advance_DoesNotEmitTrailingSpace" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="924747497" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000144" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1111" name="Advance_IsRobustToCoarseSampling" fullname="Decoder.Tests.MorseReceiverTests.Advance_IsRobustToCoarseSampling" methodname="Advance_IsRobustToCoarseSampling" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1798418414" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000114" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1122" name="Advance_MatchesWhatTheSynthesizerActuallyKeys" fullname="Decoder.Tests.MorseReceiverTests.Advance_MatchesWhatTheSynthesizerActuallyKeys" methodname="Advance_MatchesWhatTheSynthesizerActuallyKeys" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="903551660" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000614" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1110" name="Advance_RecoversTextAtHighSpeed" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTextAtHighSpeed" methodname="Advance_RecoversTextAtHighSpeed" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1937195673" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000105" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1109" name="Advance_RecoversTextAtVeryLowSpeed" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTextAtVeryLowSpeed" methodname="Advance_RecoversTextAtVeryLowSpeed" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="89265382" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000090" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1108" name="Advance_RecoversTransmittedText" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.001046" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1101" name="Advance_RecoversTransmittedText(&quot;SOS&quot;,12.0f)" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText(&quot;SOS&quot;,12.0f)" methodname="Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="447611237" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000178" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1102" name="Advance_RecoversTransmittedText(&quot;CQ&quot;,12.0f)" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText(&quot;CQ&quot;,12.0f)" methodname="Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1968443216" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000047" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1103" name="Advance_RecoversTransmittedText(&quot;PARIS&quot;,15.0f)" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText(&quot;PARIS&quot;,15.0f)" methodname="Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="169124540" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000049" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1104" name="Advance_RecoversTransmittedText(&quot;R7X&quot;,14.0f)" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText(&quot;R7X&quot;,14.0f)" methodname="Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1819324917" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000039" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1105" name="Advance_RecoversTransmittedText(&quot;0554&quot;,9.0f)" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText(&quot;0554&quot;,9.0f)" methodname="Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="631226467" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000047" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1106" name="Advance_RecoversTransmittedText(&quot;05540079&quot;,9.0f)" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText(&quot;05540079&quot;,9.0f)" methodname="Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1053606838" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000082" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1107" name="Advance_RecoversTransmittedText(&quot;THE QUICK BROWN FOX&quot;,18.0f)" fullname="Decoder.Tests.MorseReceiverTests.Advance_RecoversTransmittedText(&quot;THE QUICK BROWN FOX&quot;,18.0f)" methodname="Advance_RecoversTransmittedText" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="738041616" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000068" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1118" name="Advance_RestartsWhenTimeGoesBackwards" fullname="Decoder.Tests.MorseReceiverTests.Advance_RestartsWhenTimeGoesBackwards" methodname="Advance_RestartsWhenTimeGoesBackwards" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="255478793" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000137" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1112" name="Advance_SeparatesWordsWithSingleSpace" fullname="Decoder.Tests.MorseReceiverTests.Advance_SeparatesWordsWithSingleSpace" methodname="Advance_SeparatesWordsWithSingleSpace" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1718814304" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000147" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1120" name="Format_RespectsAssistLevel" fullname="Decoder.Tests.MorseReceiverTests.Format_RespectsAssistLevel" methodname="Format_RespectsAssistLevel" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="540260604" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000672" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1121" name="Format_SymbolsShowWordSeparator" fullname="Decoder.Tests.MorseReceiverTests.Format_SymbolsShowWordSeparator" methodname="Format_SymbolsShowWordSeparator" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1065917425" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000116" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1115" name="PendingSymbols_ClearsOnceCharacterCompletes" fullname="Decoder.Tests.MorseReceiverTests.PendingSymbols_ClearsOnceCharacterCompletes" methodname="PendingSymbols_ClearsOnceCharacterCompletes" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="638550926" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000111" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1114" name="PendingSymbols_ShowsPartialCharacterWhileReceiving" fullname="Decoder.Tests.MorseReceiverTests.PendingSymbols_ShowsPartialCharacterWhileReceiving" methodname="PendingSymbols_ShowsPartialCharacterWhileReceiving" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="1194832072" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000112" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1117" name="Reset_ClearsEverything" fullname="Decoder.Tests.MorseReceiverTests.Reset_ClearsEverything" methodname="Reset_ClearsEverything" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="845451616" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000198" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1119" name="SetSpeed_ChangesUnitDuration" fullname="Decoder.Tests.MorseReceiverTests.SetSpeed_ChangesUnitDuration" methodname="SetSpeed_ChangesUnitDuration" classname="Decoder.Tests.MorseReceiverTests" runstate="Runnable" seed="976529986" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000095" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1123" name="OneTimePadTests" fullname="Decoder.Tests.OneTimePadTests" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" testcasecount="31" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.007726" total="31" passed="31" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1154" name="BuildTransmission_HeaderIsPaddedToFixedWidth" fullname="Decoder.Tests.OneTimePadTests.BuildTransmission_HeaderIsPaddedToFixedWidth" methodname="BuildTransmission_HeaderIsPaddedToFixedWidth" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1256248176" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000598" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1155" name="BuildTransmission_RejectsPageBeyondIndicatorRange" fullname="Decoder.Tests.OneTimePadTests.BuildTransmission_RejectsPageBeyondIndicatorRange" methodname="BuildTransmission_RejectsPageBeyondIndicatorRange" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1511250500" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000754" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1153" name="BuildTransmission_ThenSolve_RecoversPlainText" fullname="Decoder.Tests.OneTimePadTests.BuildTransmission_ThenSolve_RecoversPlainText" methodname="BuildTransmission_ThenSolve_RecoversPlainText" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1997547280" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000223" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1141" name="Combine_PreservesSeparatorsWithoutConsumingKey" fullname="Decoder.Tests.OneTimePadTests.Combine_PreservesSeparatorsWithoutConsumingKey" methodname="Combine_PreservesSeparatorsWithoutConsumingKey" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="149583815" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000128" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1135" name="Decrypt_IsDigitwiseModuloTenSubtraction" fullname="Decoder.Tests.OneTimePadTests.Decrypt_IsDigitwiseModuloTenSubtraction" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000621" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1131" name="Decrypt_IsDigitwiseModuloTenSubtraction(&quot;0000&quot;,&quot;0000&quot;,&quot;0000&quot;)" fullname="Decoder.Tests.OneTimePadTests.Decrypt_IsDigitwiseModuloTenSubtraction(&quot;0000&quot;,&quot;0000&quot;,&quot;0000&quot;)" methodname="Decrypt_IsDigitwiseModuloTenSubtraction" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1888158555" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000162" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1132" name="Decrypt_IsDigitwiseModuloTenSubtraction(&quot;2345&quot;,&quot;1111&quot;,&quot;1234&quot;)" fullname="Decoder.Tests.OneTimePadTests.Decrypt_IsDigitwiseModuloTenSubtraction(&quot;2345&quot;,&quot;1111&quot;,&quot;1234&quot;)" methodname="Decrypt_IsDigitwiseModuloTenSubtraction" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="644605891" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000035" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1133" name="Decrypt_IsDigitwiseModuloTenSubtraction(&quot;0000&quot;,&quot;1111&quot;,&quot;9999&quot;)" fullname="Decoder.Tests.OneTimePadTests.Decrypt_IsDigitwiseModuloTenSubtraction(&quot;0000&quot;,&quot;1111&quot;,&quot;9999&quot;)" methodname="Decrypt_IsDigitwiseModuloTenSubtraction" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="968401382" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000026" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1134" name="Decrypt_IsDigitwiseModuloTenSubtraction(&quot;7845&quot;,&quot;7391&quot;,&quot;0554&quot;)" fullname="Decoder.Tests.OneTimePadTests.Decrypt_IsDigitwiseModuloTenSubtraction(&quot;7845&quot;,&quot;7391&quot;,&quot;0554&quot;)" methodname="Decrypt_IsDigitwiseModuloTenSubtraction" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1747482808" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000026" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1140" name="Decrypt_WithWrongPageProducesGarbageNotOriginal" fullname="Decoder.Tests.OneTimePadTests.Decrypt_WithWrongPageProducesGarbageNotOriginal" methodname="Decrypt_WithWrongPageProducesGarbageNotOriginal" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1613384010" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000083" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1144" name="Encrypt_EmptyInputReturnsEmpty" fullname="Decoder.Tests.OneTimePadTests.Encrypt_EmptyInputReturnsEmpty" methodname="Encrypt_EmptyInputReturnsEmpty" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="35500866" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000061" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1130" name="Encrypt_IsDigitwiseModuloTenAddition" fullname="Decoder.Tests.OneTimePadTests.Encrypt_IsDigitwiseModuloTenAddition" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000652" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1124" name="Encrypt_IsDigitwiseModuloTenAddition(&quot;0000&quot;,&quot;0000&quot;,&quot;0000&quot;)" fullname="Decoder.Tests.OneTimePadTests.Encrypt_IsDigitwiseModuloTenAddition(&quot;0000&quot;,&quot;0000&quot;,&quot;0000&quot;)" methodname="Encrypt_IsDigitwiseModuloTenAddition" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="129595912" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000079" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1125" name="Encrypt_IsDigitwiseModuloTenAddition(&quot;1234&quot;,&quot;0000&quot;,&quot;1234&quot;)" fullname="Decoder.Tests.OneTimePadTests.Encrypt_IsDigitwiseModuloTenAddition(&quot;1234&quot;,&quot;0000&quot;,&quot;1234&quot;)" methodname="Encrypt_IsDigitwiseModuloTenAddition" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="887626390" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000032" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1126" name="Encrypt_IsDigitwiseModuloTenAddition(&quot;1234&quot;,&quot;1111&quot;,&quot;2345&quot;)" fullname="Decoder.Tests.OneTimePadTests.Encrypt_IsDigitwiseModuloTenAddition(&quot;1234&quot;,&quot;1111&quot;,&quot;2345&quot;)" methodname="Encrypt_IsDigitwiseModuloTenAddition" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1313487682" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000027" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1127" name="Encrypt_IsDigitwiseModuloTenAddition(&quot;9999&quot;,&quot;1111&quot;,&quot;0000&quot;)" fullname="Decoder.Tests.OneTimePadTests.Encrypt_IsDigitwiseModuloTenAddition(&quot;9999&quot;,&quot;1111&quot;,&quot;0000&quot;)" methodname="Encrypt_IsDigitwiseModuloTenAddition" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="508385396" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000026" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1128" name="Encrypt_IsDigitwiseModuloTenAddition(&quot;5555&quot;,&quot;5555&quot;,&quot;0000&quot;)" fullname="Decoder.Tests.OneTimePadTests.Encrypt_IsDigitwiseModuloTenAddition(&quot;5555&quot;,&quot;5555&quot;,&quot;0000&quot;)" methodname="Encrypt_IsDigitwiseModuloTenAddition" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="503352656" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000031" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1129" name="Encrypt_IsDigitwiseModuloTenAddition(&quot;0554&quot;,&quot;7391&quot;,&quot;7845&quot;)" fullname="Decoder.Tests.OneTimePadTests.Encrypt_IsDigitwiseModuloTenAddition(&quot;0554&quot;,&quot;7391&quot;,&quot;7845&quot;)" methodname="Encrypt_IsDigitwiseModuloTenAddition" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="44523612" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000026" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1142" name="Encrypt_RejectsEmptyKey" fullname="Decoder.Tests.OneTimePadTests.Encrypt_RejectsEmptyKey" methodname="Encrypt_RejectsEmptyKey" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="244966963" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000184" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1143" name="Encrypt_RejectsNonNumericKey" fullname="Decoder.Tests.OneTimePadTests.Encrypt_RejectsNonNumericKey" methodname="Encrypt_RejectsNonNumericKey" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="575277985" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000182" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1139" name="EncryptThenDecrypt_RoundTripsExactly" fullname="Decoder.Tests.OneTimePadTests.EncryptThenDecrypt_RoundTripsExactly" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000512" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1136" name="EncryptThenDecrypt_RoundTripsExactly(&quot;0554007921483316&quot;)" fullname="Decoder.Tests.OneTimePadTests.EncryptThenDecrypt_RoundTripsExactly(&quot;0554007921483316&quot;)" methodname="EncryptThenDecrypt_RoundTripsExactly" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="297945258" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000161" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1137" name="EncryptThenDecrypt_RoundTripsExactly(&quot;0001&quot;)" fullname="Decoder.Tests.OneTimePadTests.EncryptThenDecrypt_RoundTripsExactly(&quot;0001&quot;)" methodname="EncryptThenDecrypt_RoundTripsExactly" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1871092302" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000033" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1138" name="EncryptThenDecrypt_RoundTripsExactly(&quot;999999999999&quot;)" fullname="Decoder.Tests.OneTimePadTests.EncryptThenDecrypt_RoundTripsExactly(&quot;999999999999&quot;)" methodname="EncryptThenDecrypt_RoundTripsExactly" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="411511108" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000027" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1157" name="FullChain_CipherDecodesToChineseThroughTelegraphTable" fullname="Decoder.Tests.OneTimePadTests.FullChain_CipherDecodesToChineseThroughTelegraphTable" methodname="FullChain_CipherDecodesToChineseThroughTelegraphTable" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1910878345" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000111" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1148" name="GeneratePage_ContainsOnlyDigitsAtRequestedLength" fullname="Decoder.Tests.OneTimePadTests.GeneratePage_ContainsOnlyDigitsAtRequestedLength" methodname="GeneratePage_ContainsOnlyDigitsAtRequestedLength" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1621926522" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000186" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1147" name="GeneratePage_DiffersBetweenBooks" fullname="Decoder.Tests.OneTimePadTests.GeneratePage_DiffersBetweenBooks" methodname="GeneratePage_DiffersBetweenBooks" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="264038283" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000059" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1146" name="GeneratePage_DiffersBetweenPages" fullname="Decoder.Tests.OneTimePadTests.GeneratePage_DiffersBetweenPages" methodname="GeneratePage_DiffersBetweenPages" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1195324595" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000047" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1145" name="GeneratePage_IsDeterministic" fullname="Decoder.Tests.OneTimePadTests.GeneratePage_IsDeterministic" methodname="GeneratePage_IsDeterministic" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="592628548" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000050" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1149" name="GeneratePage_IsReasonablyUniform" fullname="Decoder.Tests.OneTimePadTests.GeneratePage_IsReasonablyUniform" methodname="GeneratePage_IsReasonablyUniform" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="2106857432" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000651" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1150" name="ReadPageNumber_ExtractsLeadingDigits" fullname="Decoder.Tests.OneTimePadTests.ReadPageNumber_ExtractsLeadingDigits" methodname="ReadPageNumber_ExtractsLeadingDigits" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1099157536" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000108" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1151" name="ReadPageNumber_ReturnsMinusOneWhenHeaderIncomplete" fullname="Decoder.Tests.OneTimePadTests.ReadPageNumber_ReturnsMinusOneWhenHeaderIncomplete" methodname="ReadPageNumber_ReturnsMinusOneWhenHeaderIncomplete" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1765573989" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000068" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1156" name="Solve_WithWrongPageDoesNotRecoverPlainText" fullname="Decoder.Tests.OneTimePadTests.Solve_WithWrongPageDoesNotRecoverPlainText" methodname="Solve_WithWrongPageDoesNotRecoverPlainText" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="376957577" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000059" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1152" name="StripHeader_RemovesExactlyThePageIndicator" fullname="Decoder.Tests.OneTimePadTests.StripHeader_RemovesExactlyThePageIndicator" methodname="StripHeader_RemovesExactlyThePageIndicator" classname="Decoder.Tests.OneTimePadTests" runstate="Runnable" seed="1751562178" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000062" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1158" name="OperatorFistTests" fullname="Decoder.Tests.OperatorFistTests" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" testcasecount="27" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.010370" total="27" passed="27" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1163" name="BuildTimeline_DiffersBetweenSeeds" fullname="Decoder.Tests.OperatorFistTests.BuildTimeline_DiffersBetweenSeeds" methodname="BuildTimeline_DiffersBetweenSeeds" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="330752342" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000383" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1162" name="BuildTimeline_IsDeterministicForSameSeed" fullname="Decoder.Tests.OperatorFistTests.BuildTimeline_IsDeterministicForSameSeed" methodname="BuildTimeline_IsDeterministicForSameSeed" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1252252576" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000260" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1164" name="BuildTimeline_LongerDahRatioProducesLongerKeyDowns" fullname="Decoder.Tests.OperatorFistTests.BuildTimeline_LongerDahRatioProducesLongerKeyDowns" methodname="BuildTimeline_LongerDahRatioProducesLongerKeyDowns" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="730961050" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000168" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1165" name="BuildTimeline_NoJitterKeepsEveryDitIdentical" fullname="Decoder.Tests.OperatorFistTests.BuildTimeline_NoJitterKeepsEveryDitIdentical" methodname="BuildTimeline_NoJitterKeepsEveryDitIdentical" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1792163304" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000314" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1161" name="BuildTimeline_WithoutFist_MatchesMachineFist" fullname="Decoder.Tests.OperatorFistTests.BuildTimeline_WithoutFist_MatchesMachineFist" methodname="BuildTimeline_WithoutFist_MatchesMachineFist" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1792907906" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000678" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1160" name="DefaultStruct_IsNotValid" fullname="Decoder.Tests.OperatorFistTests.DefaultStruct_IsNotValid" methodname="DefaultStruct_IsNotValid" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="186250228" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000084" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1184" name="Describe_AgreesBetweenArchivedAndMeasuredFist" fullname="Decoder.Tests.OperatorFistTests.Describe_AgreesBetweenArchivedAndMeasuredFist" methodname="Describe_AgreesBetweenArchivedAndMeasuredFist" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="574525792" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.002883" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1182" name="Describe_CallsOutMachineSending" fullname="Decoder.Tests.OperatorFistTests.Describe_CallsOutMachineSending" methodname="Describe_CallsOutMachineSending" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="518610885" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000768" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1186" name="Describe_DistinguishesDraggedFromClippedDashes" fullname="Decoder.Tests.OperatorFistTests.Describe_DistinguishesDraggedFromClippedDashes" methodname="Describe_DistinguishesDraggedFromClippedDashes" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="438209244" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000131" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1183" name="Describe_IsNeverEmptyAndCarriesNoNumbers" fullname="Decoder.Tests.OperatorFistTests.Describe_IsNeverEmptyAndCarriesNoNumbers" methodname="Describe_IsNeverEmptyAndCarriesNoNumbers" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1025467666" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000242" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1185" name="Describe_StillSeparatesImpostorFromGenuine" fullname="Decoder.Tests.OperatorFistTests.Describe_StillSeparatesImpostorFromGenuine" methodname="Describe_StillSeparatesImpostorFromGenuine" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1656407669" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000156" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1177" name="DistanceTo_CountsCharacterGapOnItsOwn" fullname="Decoder.Tests.OperatorFistTests.DistanceTo_CountsCharacterGapOnItsOwn" methodname="DistanceTo_CountsCharacterGapOnItsOwn" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="2064933601" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000241" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1179" name="DistanceTo_CountsDashRatioOnItsOwn" fullname="Decoder.Tests.OperatorFistTests.DistanceTo_CountsDashRatioOnItsOwn" methodname="DistanceTo_CountsDashRatioOnItsOwn" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1071879943" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000091" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1178" name="DistanceTo_CountsWordGapOnItsOwn" fullname="Decoder.Tests.OperatorFistTests.DistanceTo_CountsWordGapOnItsOwn" methodname="DistanceTo_CountsWordGapOnItsOwn" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1163769534" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000072" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1180" name="DistanceTo_GrowsWithDifference" fullname="Decoder.Tests.OperatorFistTests.DistanceTo_GrowsWithDifference" methodname="DistanceTo_GrowsWithDifference" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="477378026" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000077" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1176" name="DistanceTo_IsSymmetric" fullname="Decoder.Tests.OperatorFistTests.DistanceTo_IsSymmetric" methodname="DistanceTo_IsSymmetric" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="419143231" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000083" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1175" name="DistanceTo_IsZeroForIdenticalFists" fullname="Decoder.Tests.OperatorFistTests.DistanceTo_IsZeroForIdenticalFists" methodname="DistanceTo_IsZeroForIdenticalFists" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="206258891" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000059" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1181" name="DistanceTo_SeparatesImpostorFromGenuineOperator" fullname="Decoder.Tests.OperatorFistTests.DistanceTo_SeparatesImpostorFromGenuineOperator" methodname="DistanceTo_SeparatesImpostorFromGenuineOperator" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="731103927" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000223" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1159" name="Machine_MatchesTextbookRatios" fullname="Decoder.Tests.OperatorFistTests.Machine_MatchesTextbookRatios" methodname="Machine_MatchesTextbookRatios" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="2092176296" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000097" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1172" name="Measure_DetectsJitter" fullname="Decoder.Tests.OperatorFistTests.Measure_DetectsJitter" methodname="Measure_DetectsJitter" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1491539463" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000135" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1174" name="Measure_IsIndependentOfSendingSpeed" fullname="Decoder.Tests.OperatorFistTests.Measure_IsIndependentOfSendingSpeed" methodname="Measure_IsIndependentOfSendingSpeed" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1098786109" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000155" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1166" name="Measure_RecoversMachineFistExactly" fullname="Decoder.Tests.OperatorFistTests.Measure_RecoversMachineFistExactly" methodname="Measure_RecoversMachineFistExactly" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="207259372" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000096" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1171" name="Measure_RecoversRatiosFromTimeline" fullname="Decoder.Tests.OperatorFistTests.Measure_RecoversRatiosFromTimeline" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000672" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1167" name="Measure_RecoversRatiosFromTimeline(2.5f,3.0f)" fullname="Decoder.Tests.OperatorFistTests.Measure_RecoversRatiosFromTimeline(2.5f,3.0f)" methodname="Measure_RecoversRatiosFromTimeline" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1884322423" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000160" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1168" name="Measure_RecoversRatiosFromTimeline(3.0f,3.0f)" fullname="Decoder.Tests.OperatorFistTests.Measure_RecoversRatiosFromTimeline(3.0f,3.0f)" methodname="Measure_RecoversRatiosFromTimeline" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1303964346" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000056" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1169" name="Measure_RecoversRatiosFromTimeline(3.6f,2.4f)" fullname="Decoder.Tests.OperatorFistTests.Measure_RecoversRatiosFromTimeline(3.6f,2.4f)" methodname="Measure_RecoversRatiosFromTimeline" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1905330046" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000043" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1170" name="Measure_RecoversRatiosFromTimeline(3.2f,3.8f)" fullname="Decoder.Tests.OperatorFistTests.Measure_RecoversRatiosFromTimeline(3.2f,3.8f)" methodname="Measure_RecoversRatiosFromTimeline" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="1398686455" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000043" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1173" name="Measure_ReturnsInvalidOnTooFewElements" fullname="Decoder.Tests.OperatorFistTests.Measure_ReturnsInvalidOnTooFewElements" methodname="Measure_ReturnsInvalidOnTooFewElements" classname="Decoder.Tests.OperatorFistTests" runstate="Runnable" seed="852899140" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000196" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1187" name="ReportAftermathTests" fullname="Decoder.Tests.ReportAftermathTests" classname="Decoder.Tests.ReportAftermathTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.006305" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1190" name="CleanReportOnUrgentSignalMovesSomeone" fullname="Decoder.Tests.ReportAftermathTests.CleanReportOnUrgentSignalMovesSomeone" methodname="CleanReportOnUrgentSignalMovesSomeone" classname="Decoder.Tests.ReportAftermathTests" runstate="Runnable" seed="501074056" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000261" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1191" name="DeskNoteFallsBackWhenTransmissionHasNoDebrief" fullname="Decoder.Tests.ReportAftermathTests.DeskNoteFallsBackWhenTransmissionHasNoDebrief" methodname="DeskNoteFallsBackWhenTransmissionHasNoDebrief" classname="Decoder.Tests.ReportAftermathTests" runstate="Runnable" seed="758270293" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000305" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1192" name="DeskNoteUsesAuthoredTextWhenAvailable" fullname="Decoder.Tests.ReportAftermathTests.DeskNoteUsesAuthoredTextWhenAvailable" methodname="DeskNoteUsesAuthoredTextWhenAvailable" classname="Decoder.Tests.ReportAftermathTests" runstate="Runnable" seed="99416840" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000119" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1188" name="EveryOutcomeAndLevelCombinationHasText" fullname="Decoder.Tests.ReportAftermathTests.EveryOutcomeAndLevelCombinationHasText" methodname="EveryOutcomeAndLevelCombinationHasText" classname="Decoder.Tests.ReportAftermathTests" runstate="Runnable" seed="750314903" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.002281" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1193" name="HeadlineNeverMentionsTheListeningStation" fullname="Decoder.Tests.ReportAftermathTests.HeadlineNeverMentionsTheListeningStation" methodname="HeadlineNeverMentionsTheListeningStation" classname="Decoder.Tests.ReportAftermathTests" runstate="Runnable" seed="379098006" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000297" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1189" name="ReplyDistinguishesSevereUnderreportingFromMild" fullname="Decoder.Tests.ReportAftermathTests.ReplyDistinguishesSevereUnderreportingFromMild" methodname="ReplyDistinguishesSevereUnderreportingFromMild" classname="Decoder.Tests.ReportAftermathTests" runstate="Runnable" seed="771410065" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000100" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1194" name="ReportGraderTests" fullname="Decoder.Tests.ReportGraderTests" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" testcasecount="31" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.007289" total="31" passed="31" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1219" name="Grade_CallsignComparisonIgnoresCase" fullname="Decoder.Tests.ReportGraderTests.Grade_CallsignComparisonIgnoresCase" methodname="Grade_CallsignComparisonIgnoresCase" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="256541063" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000782" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1222" name="Grade_ChineseTelegraphAcceptsUngroupedDigits" fullname="Decoder.Tests.ReportGraderTests.Grade_ChineseTelegraphAcceptsUngroupedDigits" methodname="Grade_ChineseTelegraphAcceptsUngroupedDigits" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="372211206" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000175" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1220" name="Grade_ChineseTelegraphComparesDigitStream" fullname="Decoder.Tests.ReportGraderTests.Grade_ChineseTelegraphComparesDigitStream" methodname="Grade_ChineseTelegraphComparesDigitStream" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="487190579" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000115" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1221" name="Grade_ChineseTelegraphWrongDigitShowsWhichGroupFailed" fullname="Decoder.Tests.ReportGraderTests.Grade_ChineseTelegraphWrongDigitShowsWhichGroupFailed" methodname="Grade_ChineseTelegraphWrongDigitShowsWhichGroupFailed" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1585722146" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000096" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1208" name="Grade_CorrectCopyButLevelTooHighIsOverreacted" fullname="Decoder.Tests.ReportGraderTests.Grade_CorrectCopyButLevelTooHighIsOverreacted" methodname="Grade_CorrectCopyButLevelTooHighIsOverreacted" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1520957689" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000128" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1209" name="Grade_CorrectCopyButLevelTooLowIsUnderreported" fullname="Decoder.Tests.ReportGraderTests.Grade_CorrectCopyButLevelTooLowIsUnderreported" methodname="Grade_CorrectCopyButLevelTooLowIsUnderreported" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1490753978" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000099" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1218" name="Grade_FrequencyToleranceIsHalfKilohertz" fullname="Decoder.Tests.ReportGraderTests.Grade_FrequencyToleranceIsHalfKilohertz" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000888" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1213" name="Grade_FrequencyToleranceIsHalfKilohertz(7042.0f,True)" fullname="Decoder.Tests.ReportGraderTests.Grade_FrequencyToleranceIsHalfKilohertz(7042.0f,True)" methodname="Grade_FrequencyToleranceIsHalfKilohertz" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="249749446" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000242" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1214" name="Grade_FrequencyToleranceIsHalfKilohertz(7042.4f,True)" fullname="Decoder.Tests.ReportGraderTests.Grade_FrequencyToleranceIsHalfKilohertz(7042.4f,True)" methodname="Grade_FrequencyToleranceIsHalfKilohertz" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1340024862" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000052" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1215" name="Grade_FrequencyToleranceIsHalfKilohertz(7041.6f,True)" fullname="Decoder.Tests.ReportGraderTests.Grade_FrequencyToleranceIsHalfKilohertz(7041.6f,True)" methodname="Grade_FrequencyToleranceIsHalfKilohertz" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="235579905" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000037" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1216" name="Grade_FrequencyToleranceIsHalfKilohertz(7043.0f,False)" fullname="Decoder.Tests.ReportGraderTests.Grade_FrequencyToleranceIsHalfKilohertz(7043.0f,False)" methodname="Grade_FrequencyToleranceIsHalfKilohertz" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1255778794" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000035" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1217" name="Grade_FrequencyToleranceIsHalfKilohertz(7000.0f,False)" fullname="Decoder.Tests.ReportGraderTests.Grade_FrequencyToleranceIsHalfKilohertz(7000.0f,False)" methodname="Grade_FrequencyToleranceIsHalfKilohertz" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1626448171" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000036" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1212" name="Grade_LevelIsIgnoredWhenCopyIsUseless" fullname="Decoder.Tests.ReportGraderTests.Grade_LevelIsIgnoredWhenCopyIsUseless" methodname="Grade_LevelIsIgnoredWhenCopyIsUseless" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1621932298" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000110" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1211" name="Grade_MostlyWrongCopyIsUseless" fullname="Decoder.Tests.ReportGraderTests.Grade_MostlyWrongCopyIsUseless" methodname="Grade_MostlyWrongCopyIsUseless" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1353009036" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000091" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1207" name="Grade_PerfectCopyWithRightLevelIsClean" fullname="Decoder.Tests.ReportGraderTests.Grade_PerfectCopyWithRightLevelIsClean" methodname="Grade_PerfectCopyWithRightLevelIsClean" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1177801827" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000126" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1210" name="Grade_SmallCopyErrorIsGarbledNotClean" fullname="Decoder.Tests.ReportGraderTests.Grade_SmallCopyErrorIsGarbledNotClean" methodname="Grade_SmallCopyErrorIsGarbledNotClean" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="213122958" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000112" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1202" name="LevenshteinDistance_IsSymmetric" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_IsSymmetric" methodname="LevenshteinDistance_IsSymmetric" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="261472884" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000073" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-suite type="ParameterizedMethod" id="1201" name="LevenshteinDistance_MatchesKnownValues" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_MatchesKnownValues" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000795" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1195" name="LevenshteinDistance_MatchesKnownValues(&quot;&quot;,&quot;&quot;,0)" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_MatchesKnownValues(&quot;&quot;,&quot;&quot;,0)" methodname="LevenshteinDistance_MatchesKnownValues" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1712681558" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000180" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1196" name="LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;ABC&quot;,0)" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;ABC&quot;,0)" methodname="LevenshteinDistance_MatchesKnownValues" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="840251633" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000041" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1197" name="LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;ABD&quot;,1)" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;ABD&quot;,1)" methodname="LevenshteinDistance_MatchesKnownValues" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1430122556" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000029" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1198" name="LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;AC&quot;,1)" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;AC&quot;,1)" methodname="LevenshteinDistance_MatchesKnownValues" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1914118699" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000032" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1199" name="LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;AXBC&quot;,1)" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_MatchesKnownValues(&quot;ABC&quot;,&quot;AXBC&quot;,1)" methodname="LevenshteinDistance_MatchesKnownValues" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1184172279" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000025" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1200" name="LevenshteinDistance_MatchesKnownValues(&quot;KITTEN&quot;,&quot;SITTING&quot;,3)" fullname="Decoder.Tests.ReportGraderTests.LevenshteinDistance_MatchesKnownValues(&quot;KITTEN&quot;,&quot;SITTING&quot;,3)" methodname="LevenshteinDistance_MatchesKnownValues" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1847546644" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000026" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-case id="1206" name="Normalize_IgnoresGroupingAndCase" fullname="Decoder.Tests.ReportGraderTests.Normalize_IgnoresGroupingAndCase" methodname="Normalize_IgnoresGroupingAndCase" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="585693392" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000096" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1227" name="ShiftDefinition_BuildsOneStationPerTransmission" fullname="Decoder.Tests.ReportGraderTests.ShiftDefinition_BuildsOneStationPerTransmission" methodname="ShiftDefinition_BuildsOneStationPerTransmission" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1408065915" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000794" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1226" name="ShiftDefinition_FindsPrimaryTransmission" fullname="Decoder.Tests.ReportGraderTests.ShiftDefinition_FindsPrimaryTransmission" methodname="ShiftDefinition_FindsPrimaryTransmission" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="227772545" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000312" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1205" name="SimilarityRatio_EmptyAgainstNonEmptyIsZero" fullname="Decoder.Tests.ReportGraderTests.SimilarityRatio_EmptyAgainstNonEmptyIsZero" methodname="SimilarityRatio_EmptyAgainstNonEmptyIsZero" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1904100978" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000103" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1203" name="SimilarityRatio_IsOneForIdenticalStrings" fullname="Decoder.Tests.ReportGraderTests.SimilarityRatio_IsOneForIdenticalStrings" methodname="SimilarityRatio_IsOneForIdenticalStrings" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="337500665" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000057" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1204" name="SimilarityRatio_MissingOneDigitScoresBetterThanAllWrong" fullname="Decoder.Tests.ReportGraderTests.SimilarityRatio_MissingOneDigitScoresBetterThanAllWrong" methodname="SimilarityRatio_MissingOneDigitScoresBetterThanAllWrong" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="341034754" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000081" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1225" name="TransmissionEntry_BuildsStationWithMatchingFrequency" fullname="Decoder.Tests.ReportGraderTests.TransmissionEntry_BuildsStationWithMatchingFrequency" methodname="TransmissionEntry_BuildsStationWithMatchingFrequency" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1508699281" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000122" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1223" name="TransmissionEntry_ChineseTelegraphSendsDigitsNotCharacters" fullname="Decoder.Tests.ReportGraderTests.TransmissionEntry_ChineseTelegraphSendsDigitsNotCharacters" methodname="TransmissionEntry_ChineseTelegraphSendsDigitsNotCharacters" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="207512385" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000068" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1224" name="TransmissionEntry_PlainMorseIsUppercased" fullname="Decoder.Tests.ReportGraderTests.TransmissionEntry_PlainMorseIsUppercased" methodname="TransmissionEntry_PlainMorseIsUppercased" classname="Decoder.Tests.ReportGraderTests" runstate="Runnable" seed="1087655805" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000067" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1228" name="ShiftContentTests" fullname="Decoder.Tests.ShiftContentTests" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" testcasecount="17" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.012513" total="17" passed="17" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1243" name="EncryptedTransmissionsInTheSameShiftUseDifferentPages" fullname="Decoder.Tests.ShiftContentTests.EncryptedTransmissionsInTheSameShiftUseDifferentPages" methodname="EncryptedTransmissionsInTheSameShiftUseDifferentPages" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="1756689118" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.002122" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1229" name="EveryChineseCharacterIsInTheCodeTable" fullname="Decoder.Tests.ShiftContentTests.EveryChineseCharacterIsInTheCodeTable" methodname="EveryChineseCharacterIsInTheCodeTable" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="1460909600" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000349" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1242" name="EveryEncryptedTransmissionSolvesBackToItsPlainText" fullname="Decoder.Tests.ShiftContentTests.EveryEncryptedTransmissionSolvesBackToItsPlainText" methodname="EveryEncryptedTransmissionSolvesBackToItsPlainText" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="1100449561" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000364" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1230" name="EveryPlainMorseCharacterIsTransmittable" fullname="Decoder.Tests.ShiftContentTests.EveryPlainMorseCharacterIsTransmittable" methodname="EveryPlainMorseCharacterIsTransmittable" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="2055032525" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000410" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1233" name="EveryShiftHasExactlyOnePrimaryTransmission" fullname="Decoder.Tests.ShiftContentTests.EveryShiftHasExactlyOnePrimaryTransmission" methodname="EveryShiftHasExactlyOnePrimaryTransmission" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="1286416472" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000262" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1231" name="EveryStationSitsInsideTheTunableBand" fullname="Decoder.Tests.ShiftContentTests.EveryStationSitsInsideTheTunableBand" methodname="EveryStationSitsInsideTheTunableBand" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="1216384492" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000407" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1235" name="EveryTransmissionHasAudibleStrength" fullname="Decoder.Tests.ShiftContentTests.EveryTransmissionHasAudibleStrength" methodname="EveryTransmissionHasAudibleStrength" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="807221363" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000301" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1237" name="EveryTransmissionHasAValidFist" fullname="Decoder.Tests.ShiftContentTests.EveryTransmissionHasAValidFist" methodname="EveryTransmissionHasAValidFist" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="1705135761" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000230" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1244" name="FirstShiftPrimaryDecodesToItsPlainText" fullname="Decoder.Tests.ShiftContentTests.FirstShiftPrimaryDecodesToItsPlainText" methodname="FirstShiftPrimaryDecodesToItsPlainText" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="222292613" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000134" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1245" name="FirstShiftPrimaryFitsInOneMinute" fullname="Decoder.Tests.ShiftContentTests.FirstShiftPrimaryFitsInOneMinute" methodname="FirstShiftPrimaryFitsInOneMinute" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="51112277" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000173" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1240" name="FistSeedsAreUniqueSoRhythmNeverRepeats" fullname="Decoder.Tests.ShiftContentTests.FistSeedsAreUniqueSoRhythmNeverRepeats" methodname="FistSeedsAreUniqueSoRhythmNeverRepeats" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="1104634484" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000437" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1239" name="ImpostorFistIsFarEnoughFromTheGenuineOperator" fullname="Decoder.Tests.ShiftContentTests.ImpostorFistIsFarEnoughFromTheGenuineOperator" methodname="ImpostorFistIsFarEnoughFromTheGenuineOperator" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="592852571" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000354" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1241" name="KnownFistLookupCoversEveryCallsignInPlay" fullname="Decoder.Tests.ShiftContentTests.KnownFistLookupCoversEveryCallsignInPlay" methodname="KnownFistLookupCoversEveryCallsignInPlay" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="608015896" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000268" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1234" name="PrimaryTransmissionIsNotRoutine" fullname="Decoder.Tests.ShiftContentTests.PrimaryTransmissionIsNotRoutine" methodname="PrimaryTransmissionIsNotRoutine" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="75241773" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000185" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1238" name="SameCallsignKeepsSameFistAcrossShifts" fullname="Decoder.Tests.ShiftContentTests.SameCallsignKeepsSameFistAcrossShifts" methodname="SameCallsignKeepsSameFistAcrossShifts" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="582449011" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.003863" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1236" name="SpeedIsWithinCopyableRange" fullname="Decoder.Tests.ShiftContentTests.SpeedIsWithinCopyableRange" methodname="SpeedIsWithinCopyableRange" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="987211460" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000333" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1232" name="StationsAreFarEnoughApartToBeSeparable" fullname="Decoder.Tests.ShiftContentTests.StationsAreFarEnoughApartToBeSeparable" methodname="StationsAreFarEnoughApartToBeSeparable" classname="Decoder.Tests.ShiftContentTests" runstate="Runnable" seed="506360131" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000284" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1246" name="SignalClockTests" fullname="Decoder.Tests.SignalClockTests" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" testcasecount="10" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.013432" total="10" passed="10" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1248" name="Clock_AdvancesOnMainThreadWhenAudioNeverRenders" fullname="Decoder.Tests.SignalClockTests.Clock_AdvancesOnMainThreadWhenAudioNeverRenders" methodname="Clock_AdvancesOnMainThreadWhenAudioNeverRenders" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="2140972090" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000258" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1249" name="Clock_DoesNotDoubleCountWhenAudioIsRunning" fullname="Decoder.Tests.SignalClockTests.Clock_DoesNotDoubleCountWhenAudioIsRunning" methodname="Clock_DoesNotDoubleCountWhenAudioIsRunning" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="1981696329" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.004986" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1251" name="Clock_IgnoresNegativeDelta" fullname="Decoder.Tests.SignalClockTests.Clock_IgnoresNegativeDelta" methodname="Clock_IgnoresNegativeDelta" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="481874522" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000167" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1252" name="Clock_ResetsWithTime" fullname="Decoder.Tests.SignalClockTests.Clock_ResetsWithTime" methodname="Clock_ResetsWithTime" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="216732384" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000239" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1250" name="Clock_ResumesMainThreadTakeoverAfterAudioStops" fullname="Decoder.Tests.SignalClockTests.Clock_ResumesMainThreadTakeoverAfterAudioStops" methodname="Clock_ResumesMainThreadTakeoverAfterAudioStops" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="2032366720" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000476" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1247" name="Clock_StartsAtZero" fullname="Decoder.Tests.SignalClockTests.Clock_StartsAtZero" methodname="Clock_StartsAtZero" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="386516756" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000077" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1256" name="Envelope_DistinguishesDitFromDah" fullname="Decoder.Tests.SignalClockTests.Envelope_DistinguishesDitFromDah" methodname="Envelope_DistinguishesDitFromDah" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="1859912933" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000341" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1254" name="Envelope_FollowsKeyingExactly" fullname="Decoder.Tests.SignalClockTests.Envelope_FollowsKeyingExactly" methodname="Envelope_FollowsKeyingExactly" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="1178843375" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.005379" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1253" name="Envelope_IsZeroWhenNothingIsTuned" fullname="Decoder.Tests.SignalClockTests.Envelope_IsZeroWhenNothingIsTuned" methodname="Envelope_IsZeroWhenNothingIsTuned" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="1645838522" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000178" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1255" name="Envelope_ScalesWithReceivedSignalLevel" fullname="Decoder.Tests.SignalClockTests.Envelope_ScalesWithReceivedSignalLevel" methodname="Envelope_ScalesWithReceivedSignalLevel" classname="Decoder.Tests.SignalClockTests" runstate="Runnable" seed="541335617" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000137" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1257" name="SignalSynthesizerTests" fullname="Decoder.Tests.SignalSynthesizerTests" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" testcasecount="29" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.067836" total="29" passed="29" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1261" name="BandpassResponse_DecreasesMonotonicallyWithDetune" fullname="Decoder.Tests.SignalSynthesizerTests.BandpassResponse_DecreasesMonotonicallyWithDetune" methodname="BandpassResponse_DecreasesMonotonicallyWithDetune" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="828220800" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000514" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1259" name="BandpassResponse_FallsToZeroAtBandEdge" fullname="Decoder.Tests.SignalSynthesizerTests.BandpassResponse_FallsToZeroAtBandEdge" methodname="BandpassResponse_FallsToZeroAtBandEdge" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="502135150" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000136" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1260" name="BandpassResponse_IsSymmetric" fullname="Decoder.Tests.SignalSynthesizerTests.BandpassResponse_IsSymmetric" methodname="BandpassResponse_IsSymmetric" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1974727284" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000077" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1258" name="BandpassResponse_PeaksAtZeroDetune" fullname="Decoder.Tests.SignalSynthesizerTests.BandpassResponse_PeaksAtZeroDetune" methodname="BandpassResponse_PeaksAtZeroDetune" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1201666546" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000070" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1280" name="EvaluateReception_AgreesWithWhatRenderingProduces" fullname="Decoder.Tests.SignalSynthesizerTests.EvaluateReception_AgreesWithWhatRenderingProduces" methodname="EvaluateReception_AgreesWithWhatRenderingProduces" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1049878804" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000676" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1278" name="EvaluateReception_ClearsStateWhenNothingIsInBand" fullname="Decoder.Tests.SignalSynthesizerTests.EvaluateReception_ClearsStateWhenNothingIsInBand" methodname="EvaluateReception_ClearsStateWhenNothingIsInBand" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1303431320" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000180" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1279" name="EvaluateReception_PicksStrongestStationInBand" fullname="Decoder.Tests.SignalSynthesizerTests.EvaluateReception_PicksStrongestStationInBand" methodname="EvaluateReception_PicksStrongestStationInBand" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="328108179" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000127" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1277" name="EvaluateReception_ReportsDetuneDirection" fullname="Decoder.Tests.SignalSynthesizerTests.EvaluateReception_ReportsDetuneDirection" methodname="EvaluateReception_ReportsDetuneDirection" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1610388795" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000144" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1276" name="EvaluateReception_WorksWithoutRenderingAnyAudio" fullname="Decoder.Tests.SignalSynthesizerTests.EvaluateReception_WorksWithoutRenderingAnyAudio" methodname="EvaluateReception_WorksWithoutRenderingAnyAudio" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="336722668" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000170" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1269" name="Render_AmplitudeDropsAsTuningDriftsAway" fullname="Decoder.Tests.SignalSynthesizerTests.Render_AmplitudeDropsAsTuningDriftsAway" methodname="Render_AmplitudeDropsAsTuningDriftsAway" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="328992387" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.008008" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1267" name="Render_CarrierIsAudibleWhenTunedOnStation" fullname="Decoder.Tests.SignalSynthesizerTests.Render_CarrierIsAudibleWhenTunedOnStation" methodname="Render_CarrierIsAudibleWhenTunedOnStation" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1123616863" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.004520" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1274" name="Render_DifferentSeedsProduceDifferentNoise" fullname="Decoder.Tests.SignalSynthesizerTests.Render_DifferentSeedsProduceDifferentNoise" methodname="Render_DifferentSeedsProduceDifferentNoise" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="375889735" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000974" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1273" name="Render_IsDeterministicForSameSeed" fullname="Decoder.Tests.SignalSynthesizerTests.Render_IsDeterministicForSameSeed" methodname="Render_IsDeterministicForSameSeed" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1347209496" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.012438" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1272" name="Render_KeyingHasSmoothEdgesWithoutClicks" fullname="Decoder.Tests.SignalSynthesizerTests.Render_KeyingHasSmoothEdgesWithoutClicks" methodname="Render_KeyingHasSmoothEdgesWithoutClicks" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1920384919" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.007455" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1265" name="Render_OutputStaysWithinUnitRange" fullname="Decoder.Tests.SignalSynthesizerTests.Render_OutputStaysWithinUnitRange" methodname="Render_OutputStaysWithinUnitRange" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1897193526" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.008292" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1275" name="Render_RejectsCountLargerThanBuffer" fullname="Decoder.Tests.SignalSynthesizerTests.Render_RejectsCountLargerThanBuffer" methodname="Render_RejectsCountLargerThanBuffer" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="388213397" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000195" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1268" name="Render_StationOutsideBandwidthIsInaudible" fullname="Decoder.Tests.SignalSynthesizerTests.Render_StationOutsideBandwidthIsInaudible" methodname="Render_StationOutsideBandwidthIsInaudible" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1662858780" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.001452" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1270" name="Render_ToneMatchesNominalPitchWhenCentered" fullname="Decoder.Tests.SignalSynthesizerTests.Render_ToneMatchesNominalPitchWhenCentered" methodname="Render_ToneMatchesNominalPitchWhenCentered" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1959026431" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.004562" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1271" name="Render_ToneRisesWhenTunedBelowStation" fullname="Decoder.Tests.SignalSynthesizerTests.Render_ToneRisesWhenTunedBelowStation" methodname="Render_ToneRisesWhenTunedBelowStation" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1980914467" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.010062" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1266" name="Render_WithNoStationsProducesOnlyNoise" fullname="Decoder.Tests.SignalSynthesizerTests.Render_WithNoStationsProducesOnlyNoise" methodname="Render_WithNoStationsProducesOnlyNoise" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1310514721" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000438" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1285" name="Station_EmptyMessageNeverKeys" fullname="Decoder.Tests.SignalSynthesizerTests.Station_EmptyMessageNeverKeys" methodname="Station_EmptyMessageNeverKeys" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="963798680" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000119" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1281" name="Station_KeyIsDownAtStartOfTransmission" fullname="Decoder.Tests.SignalSynthesizerTests.Station_KeyIsDownAtStartOfTransmission" methodname="Station_KeyIsDownAtStartOfTransmission" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="474787162" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000086" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1282" name="Station_KeyIsUpBeforeStartOffset" fullname="Decoder.Tests.SignalSynthesizerTests.Station_KeyIsUpBeforeStartOffset" methodname="Station_KeyIsUpBeforeStartOffset" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1842691346" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000106" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1283" name="Station_LoopsAfterGap" fullname="Decoder.Tests.SignalSynthesizerTests.Station_LoopsAfterGap" methodname="Station_LoopsAfterGap" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="20643222" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000113" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1284" name="Station_NonLoopingStopsAfterMessage" fullname="Decoder.Tests.SignalSynthesizerTests.Station_NonLoopingStopsAfterMessage" methodname="Station_NonLoopingStopsAfterMessage" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1478545909" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000072" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1286" name="Station_TotalSecondsMatchesTimeline" fullname="Decoder.Tests.SignalSynthesizerTests.Station_TotalSecondsMatchesTimeline" methodname="Station_TotalSecondsMatchesTimeline" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="536504821" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000107" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1262" name="ToneForDetune_IsNominalWhenCentered" fullname="Decoder.Tests.SignalSynthesizerTests.ToneForDetune_IsNominalWhenCentered" methodname="ToneForDetune_IsNominalWhenCentered" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="199917872" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000059" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1264" name="ToneForDetune_NeverGoesBelowAudibleFloor" fullname="Decoder.Tests.SignalSynthesizerTests.ToneForDetune_NeverGoesBelowAudibleFloor" methodname="ToneForDetune_NeverGoesBelowAudibleFloor" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1333178444" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000050" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1263" name="ToneForDetune_RisesAboveCenterAndFallsBelow" fullname="Decoder.Tests.SignalSynthesizerTests.ToneForDetune_RisesAboveCenterAndFallsBelow" methodname="ToneForDetune_RisesAboveCenterAndFallsBelow" classname="Decoder.Tests.SignalSynthesizerTests" runstate="Runnable" seed="1385227732" result="Passed" start-time="2026-08-13 15:34:41Z" end-time="2026-08-13 15:34:41Z" duration="0.000068" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[Saving results to: /workspace/artifacts/reports/test-results-EditMode.xml
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
