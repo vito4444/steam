@@ -98,12 +98,19 @@ namespace Undertown.Core.Sim
         }
 
         /// <summary>
-        /// Wears a patch of bare earth at each doorway, and nowhere else.
+        /// Gives each building the ground its use would produce: a working yard around the
+        /// places goods move through, and a path to the door everywhere else.
         ///
-        /// Beating a full ring around every building is what turned the settlement into a mud
-        /// flat: with buildings a cell or two apart the rings merge and there is no grass left
-        /// between them. Traffic in and out of a door does wear the ground, but only in front
-        /// of the door.
+        /// Neither extreme was right. Beating a ring around every building turned the whole
+        /// settlement into one sheet of mud, because with buildings a cell or two apart the
+        /// rings merge and no grass survives between them. Wearing nothing but the doorstep
+        /// left it all grass, which is just as wrong the other way: the reference's blocks are
+        /// largely bare earth, and that is a good part of why its ground reads warm.
+        ///
+        /// The paths are laid as lane rather than as earth, and run two cells out to meet the
+        /// road. That is what keeps a gateway in the fence: fencing is derived from where
+        /// enclosed ground meets a lane, and a yard whose only opening is worn earth would be
+        /// fenced right across its entrance.
         /// </summary>
         private static void TreadYards(TownState town)
         {
@@ -113,11 +120,27 @@ namespace Undertown.Core.Sim
                 var def = building.Def;
                 if (def == null || def.Underground) continue;
 
+                if (WorksGoods(building.Kind))
+                {
+                    Pave(map,
+                        building.Origin.X - 1, building.Origin.Y - 1,
+                        building.Origin.X + def.Width, building.Origin.Y + def.Height,
+                        TileKind.Dirt);
+                }
+
                 int doorX = building.Origin.X + def.Width / 2;
                 int doorY = building.Origin.Y - 1;
-                Pave(map, doorX - 1, doorY, doorX + 1, doorY, TileKind.Dirt);
+                Pave(map, doorX, doorY - 1, doorX, doorY, TileKind.Road);
             }
         }
+
+        /// <summary>
+        /// Whether enough is carried in and out to wear the whole plot bare. Dwellings are not:
+        /// a cottage yard keeps its grass, and that contrast between the working blocks and the
+        /// lived-in ones is what stops the town being one texture.
+        /// </summary>
+        private static bool WorksGoods(BuildingKind kind) =>
+            kind != BuildingKind.House && kind != BuildingKind.Field;
 
         private static int FindRoadRow(GridMap map)
         {

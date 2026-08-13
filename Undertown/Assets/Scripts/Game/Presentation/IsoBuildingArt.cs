@@ -761,8 +761,13 @@ namespace Undertown.Game.Presentation
                     // Four cottages: differing render, thatch age and eaves height. Village
                     // houses were built by different hands in different decades and the ones
                     // that were re-thatched last are visibly paler.
-                    var walls = new[] { C(0xC6, 0xB2, 0x8E), C(0xB0, 0x9A, 0x76), C(0xCE, 0xBE, 0xA0), C(0xA8, 0x8E, 0x68) };
-                    var thatch = new[] { C(0xC4, 0x9E, 0x52), C(0xA8, 0x86, 0x44), C(0xD2, 0xB0, 0x62), C(0x96, 0x78, 0x3E) };
+                    //
+                    // Darker than they were. Sampled thatch in the reference sits around
+                    // #534b15 and its daub around #6b5f45; ours was near-white plaster under
+                    // straw the colour of fresh butter, and with ten of them on screen that
+                    // alone was holding the whole frame far brighter than the target.
+                    var walls = new[] { C(0x9E, 0x8C, 0x6C), C(0x8C, 0x78, 0x58), C(0xA6, 0x96, 0x78), C(0x84, 0x6E, 0x50) };
+                    var thatch = new[] { C(0x8E, 0x70, 0x38), C(0x78, 0x5E, 0x2E), C(0x9A, 0x7E, 0x42), C(0x6A, 0x54, 0x28) };
                     return new Scheme
                     {
                         Wall = walls[variant], Roof = thatch[variant],
@@ -775,7 +780,7 @@ namespace Undertown.Game.Presentation
                 case BuildingKind.TownHall:
                     return new Scheme
                     {
-                        Wall = C(0xCA, 0xBE, 0xA4), Roof = C(0x9C, 0x42, 0x30),
+                        Wall = C(0xA4, 0x98, 0x80), Roof = C(0x82, 0x38, 0x28),
                         Timber = C(0x53, 0x3A, 0x26), Plinth = C(0x6E, 0x6A, 0x62),
                         WallHeight = 34, Pitch = 16, HalfTimbered = true, Chimney = true,
                     };
@@ -789,7 +794,7 @@ namespace Undertown.Game.Presentation
                 case BuildingKind.Brewery:
                     return new Scheme
                     {
-                        Wall = C(0x9C, 0x76, 0x48), Roof = C(0x4C, 0x62, 0x48),
+                        Wall = C(0x80, 0x60, 0x3A), Roof = C(0x3E, 0x52, 0x3C),
                         Timber = C(0x4E, 0x36, 0x22), Plinth = C(0x60, 0x5A, 0x50),
                         WallHeight = 32, Pitch = 14, HalfTimbered = true, Chimney = true,
                         LeanTo = true,
@@ -797,7 +802,7 @@ namespace Undertown.Game.Presentation
                 case BuildingKind.Still:
                     return new Scheme
                     {
-                        Wall = C(0x64, 0x50, 0x38), Roof = C(0xA8, 0x6E, 0x2E),
+                        Wall = C(0x56, 0x44, 0x30), Roof = C(0x8A, 0x5A, 0x26),
                         Timber = C(0x3A, 0x2A, 0x1A), Plinth = C(0x40, 0x38, 0x30),
                         WallHeight = 20, Pitch = 8,
                     };
@@ -818,14 +823,14 @@ namespace Undertown.Game.Presentation
                 case BuildingKind.HiddenEntrance:
                     return new Scheme
                     {
-                        Wall = C(0x62, 0x4E, 0x34), Roof = C(0x8A, 0x6C, 0x3E),
+                        Wall = C(0x54, 0x42, 0x2C), Roof = C(0x72, 0x58, 0x32),
                         Timber = C(0x3A, 0x2A, 0x18), Plinth = C(0x44, 0x3C, 0x30),
                         WallHeight = 16, Pitch = 6, Thatch = true,
                     };
                 default:
                     return new Scheme
                     {
-                        Wall = C(0x94, 0x78, 0x52), Roof = C(0x72, 0x54, 0x38),
+                        Wall = C(0x7C, 0x64, 0x44), Roof = C(0x5E, 0x46, 0x2E),
                         Timber = C(0x46, 0x32, 0x20), Plinth = C(0x56, 0x50, 0x46),
                         WallHeight = 26, Pitch = 12,
                     };

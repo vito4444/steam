@@ -116,12 +116,12 @@ namespace Undertown.Game.Presentation
         /// <summary>
         /// Ground worth fencing: someone's plot rather than open country or a way through.
         ///
-        /// Trodden earth is excluded on purpose. It is worn where people walk, which means a
-        /// patch of it against a lane is a gateway, and fencing across a gateway would wall
-        /// every door in the town off from the road it opens onto.
+        /// Worn earth counts, because a working yard is as much a plot as a grass one. What
+        /// keeps a gate in the fence is that paths to doors are laid as lane, not as earth -
+        /// see TownFounder - so the opening is a lane meeting a lane and no rail is drawn.
         /// </summary>
         private static bool IsEnclosed(TileKind kind) =>
-            kind == TileKind.Grass || kind == TileKind.ClayDeposit;
+            kind == TileKind.Grass || kind == TileKind.Dirt || kind == TileKind.ClayDeposit;
 
         private static bool IsLane(TileKind kind) => kind == TileKind.Road;
 
@@ -180,8 +180,8 @@ namespace Undertown.Game.Presentation
             // backdrop rather than standing in a landscape. These are decoration only: they
             // come from the cell coordinate, never from the map, so nothing the simulation
             // cares about - timber, clay, room to build - changes because of them.
-            if (!country || h % 4 != 0) return null;
-            return IsoPropArt.ForClutter(CountryClutter[(h / 4) % CountryClutter.Length], (h / 31) & 3);
+            if (!country || h % 3 != 0) return null;
+            return IsoPropArt.ForClutter(CountryClutter[(h / 3) % CountryClutter.Length], (h / 31) & 3);
         }
 
         private static readonly IsoPropArt.Clutter[] TownClutter =

@@ -39,6 +39,10 @@ namespace Undertown.Game.Bootstrap
         /// </summary>
         private bool _runTheStill;
 
+        /// <summary>Layer to capture. Underground states cannot be reached from a headless
+        /// run any other way, since there is no keyboard to press the layer key with.</summary>
+        private int _depth;
+
         private void Start()
         {
             if (!ParseArguments()) { enabled = false; return; }
@@ -79,6 +83,9 @@ namespace Undertown.Game.Bootstrap
                     case "-autoshotRunTheStill":
                         _runTheStill = true;
                         break;
+                    case "-autoshotDepth" when i + 1 < args.Length:
+                        int.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out _depth);
+                        break;
                 }
             }
             return !string.IsNullOrEmpty(_directory);
@@ -105,6 +112,12 @@ namespace Undertown.Game.Bootstrap
                 {
                     bootstrap.FastForward(_warmupMinutes);
                     Debug.Log($"[SHOT] fast-forwarded {_warmupMinutes} simulated minutes");
+                }
+
+                if (bootstrap != null && _depth > 0)
+                {
+                    bootstrap.SwitchLayer();
+                    Debug.Log("[SHOT] switched to the underground layer");
                 }
 
                 // The HUD reads the town in its own Update, which for this component has

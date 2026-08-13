@@ -73,9 +73,9 @@ namespace Undertown.Game.Presentation
         /// </summary>
         private static void Shrub(Color32[] px, int cx, int cy, int variant)
         {
-            var dark = new Color32(0x2E, 0x4A, 0x28, 0xFF);
-            var mid = new Color32(0x3E, 0x5E, 0x30, 0xFF);
-            var lit = new Color32(0x54, 0x74, 0x3A, 0xFF);
+            var dark = new Color32(0x2A, 0x3A, 0x22, 0xFF);
+            var mid = new Color32(0x36, 0x4A, 0x26, 0xFF);
+            var lit = new Color32(0x46, 0x5A, 0x2C, 0xFF);
 
             int lobes = 2 + variant % 2;
             for (int lobe = 0; lobe < lobes; lobe++)
@@ -104,9 +104,9 @@ namespace Undertown.Game.Presentation
         /// </summary>
         private static void Broadleaf(Color32[] px, int cx, int cy, int variant)
         {
-            var dark = C(0x2C, 0x44, 0x1E);
-            var mid = C(0x3E, 0x5C, 0x26);
-            var lit = C(0x5E, 0x7E, 0x34);
+            var dark = C(0x28, 0x38, 0x1B);
+            var mid = C(0x36, 0x4A, 0x22);
+            var lit = C(0x4C, 0x62, 0x2A);
             var trunk = C(0x46, 0x34, 0x20);
             var trunkLit = C(0x5E, 0x48, 0x2E);
             var shadow = new Color32(0x14, 0x18, 0x0A, 0x4C);
@@ -146,8 +146,8 @@ namespace Undertown.Game.Presentation
 
         private static void TallGrass(Color32[] px, int cx, int cy, int variant)
         {
-            var blade = new Color32(0x5C, 0x72, 0x36, 0xFF);
-            var bladeLit = new Color32(0x74, 0x8A, 0x44, 0xFF);
+            var blade = new Color32(0x50, 0x5C, 0x2C, 0xFF);
+            var bladeLit = new Color32(0x64, 0x72, 0x36, 0xFF);
 
             for (int i = 0; i < 9; i++)
             {
@@ -228,9 +228,9 @@ namespace Undertown.Game.Presentation
 
         private static void Conifer(Color32[] px, int cx, int baseY, int canopy, int spread)
         {
-            var dark = C(0x23, 0x36, 0x19);
-            var mid = C(0x31, 0x4A, 0x21);
-            var lit = C(0x4E, 0x6E, 0x30);
+            var dark = C(0x22, 0x30, 0x18);
+            var mid = C(0x2C, 0x3E, 0x1E);
+            var lit = C(0x40, 0x56, 0x26);
             var trunk = C(0x3C, 0x2C, 0x1A);
             var shadow = new Color32(0x14, 0x18, 0x0A, 0x4C);
 

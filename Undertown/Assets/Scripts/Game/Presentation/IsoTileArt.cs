@@ -19,18 +19,25 @@ namespace Undertown.Game.Presentation
             // the sense that grass is a desaturated olive under overcast light, and wrong in
             // the sense that it left every building sitting on mud. The reference is lit like
             // late afternoon, and the ground has to carry that or nothing else can.
-            { TileKind.Grass,       new Color32(0x7B, 0x86, 0x42, 0xFF) },
-            { TileKind.Dirt,        new Color32(0x96, 0x79, 0x4E, 0xFF) },
-            { TileKind.Road,        new Color32(0xAC, 0x8D, 0x60, 0xFF) },
+            // Sampled off the reference rather than chosen. Its ground is not green: patches
+            // that read as grass come out around #5f5218 to #785c2e, olive-brown with red above
+            // green, and the whole frame averages (75,64,37). This was a bright yellow-green
+            // averaging (118,121,62) - two thirds brighter and on the wrong side of the
+            // red-green line, which is why the two pictures never looked like the same place
+            // however much detail went into them. Ground is most of the screen, so its hue is
+            // most of the answer.
+            { TileKind.Grass,       new Color32(0x60, 0x5B, 0x2C, 0xFF) },
+            { TileKind.Dirt,        new Color32(0x84, 0x66, 0x3C, 0xFF) },
+            { TileKind.Road,        new Color32(0x96, 0x76, 0x46, 0xFF) },
             { TileKind.Water,       new Color32(0x32, 0x68, 0x8E, 0xFF) },
             // Woodland floor is grass. Even a few shades darker, a wooded cell drew its own
             // diamond outline on the map, and a wood came out as a run of tiles rather than a
             // stand of trees. What marks it as woodland is the trees standing on it; the litter
             // and shade underneath them are painted as scatter, which does not follow the cell
             // boundary and so does not advertise it.
-            { TileKind.Forest,      new Color32(0x7B, 0x86, 0x42, 0xFF) },
-            { TileKind.ClayDeposit, new Color32(0x9A, 0x5F, 0x44, 0xFF) },
-            { TileKind.Rock,        new Color32(0x6E, 0x6E, 0x66, 0xFF) },
+            { TileKind.Forest,      new Color32(0x60, 0x5B, 0x2C, 0xFF) },
+            { TileKind.ClayDeposit, new Color32(0x8A, 0x54, 0x3A, 0xFF) },
+            { TileKind.Rock,        new Color32(0x64, 0x60, 0x54, 0xFF) },
             { TileKind.DisusedMine, new Color32(0x54, 0x44, 0x30, 0xFF) },
 
             // Underground, solid ground is dark and excavated ground is light. That is the
@@ -38,7 +45,7 @@ namespace Undertown.Game.Presentation
             // and it is the right way round for the screen: what the player needs to find at a
             // glance is where the tunnels run, and a tunnel lit by the lamps working in it
             // reads instantly against dead rock.
-            { TileKind.Earth,       new Color32(0x2B, 0x23, 0x1A, 0xFF) },
+            { TileKind.Earth,       new Color32(0x1D, 0x18, 0x12, 0xFF) },
             { TileKind.Cavity,      new Color32(0x84, 0x6C, 0x4A, 0xFF) },
             { TileKind.Bedrock,     new Color32(0x26, 0x28, 0x2C, 0xFF) },
             { TileKind.Aquifer,     new Color32(0x2A, 0x50, 0x66, 0xFF) },
@@ -135,8 +142,8 @@ namespace Undertown.Game.Presentation
                         int gy = skirt + Hash(i, variant, 977) % Iso.TileHeight;
                         if (!Iso.InsideDiamond(gx, gy - skirt, w, Iso.TileHeight)) continue;
                         Tuft(px, w, h, gx, gy, (i & 1) == 0
-                            ? new Color32(0x64, 0x6A, 0x3A, 0xFF)
-                            : new Color32(0x7A, 0x7E, 0x48, 0xFF));
+                            ? new Color32(0x5C, 0x56, 0x2A, 0xFF)
+                            : new Color32(0x78, 0x70, 0x38, 0xFF));
                     }
                     break;
 
@@ -153,7 +160,7 @@ namespace Undertown.Game.Presentation
 
                         var tone = i % 3 == 0
                             ? new Color32(0x53, 0x50, 0x2E, 0xFF)
-                            : new Color32(0x6C, 0x74, 0x3C, 0xFF);
+                            : new Color32(0x60, 0x5A, 0x2C, 0xFF);
                         Plot(px, w, h, gx, gy, tone);
                         Plot(px, w, h, gx + 1, gy, tone);
                     }
@@ -163,8 +170,8 @@ namespace Undertown.Game.Presentation
                     // Wheel ruts running along the diamond's long axis.
                     for (int i = -12; i <= 12; i++)
                     {
-                        Plot(px, w, h, cx + i * 2, cy + i - 4, new Color32(0x86, 0x6C, 0x48, 0xFF));
-                        Plot(px, w, h, cx + i * 2, cy + i + 3, new Color32(0x86, 0x6C, 0x48, 0xFF));
+                        Plot(px, w, h, cx + i * 2, cy + i - 4, new Color32(0x7E, 0x62, 0x3A, 0xFF));
+                        Plot(px, w, h, cx + i * 2, cy + i + 3, new Color32(0x7E, 0x62, 0x3A, 0xFF));
                     }
                     break;
 
