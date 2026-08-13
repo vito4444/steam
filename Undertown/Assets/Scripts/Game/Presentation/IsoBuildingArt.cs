@@ -41,6 +41,9 @@ namespace Undertown.Game.Presentation
             public int Pitch;
 
             public bool Thatch;
+
+            /// <summary>A mill tower and sails standing off one gable.</summary>
+            public bool Mill;
             public bool HalfTimbered;
             public bool Chimney;
 
@@ -79,9 +82,10 @@ namespace Undertown.Game.Presentation
 
             // Enough room for the eaves, and for an outshot standing clear of the east wall.
             int marginX = Mathf.CeilToInt(Overhang * Iso.TileWidth) + (scheme.LeanTo || scheme.Porch ? 30 : 4);
+            if (scheme.Mill) marginX = Mathf.Max(marginX, 44);
             int footW = Iso.FootprintWidth(cw, ch) + marginX * 2;
             int footH = Iso.FootprintHeight(cw, ch);
-            int total = footH + scheme.WallHeight + peak + marginX + 12;
+            int total = footH + scheme.WallHeight + peak + marginX + 12 + (scheme.Mill ? 96 : 0);
 
             var px = Blank(footW, total);
             int ox = ch * Iso.HalfWidth + marginX;
@@ -123,6 +127,8 @@ namespace Undertown.Game.Presentation
                 case BuildingKind.TownHall: BellTower(px, w, h, cw, ch, ox, oy, scheme, peak); break;
                 case BuildingKind.Warehouse: LoadingDoor(px, w, h, cw, ch, ox, oy, scheme, peak); break;
             }
+
+            if (scheme.Mill) MillTower(px, w, h, cw, ch, ox, oy, scheme);
         }
 
         /// <summary>
@@ -471,6 +477,97 @@ namespace Undertown.Game.Presentation
         /// A bell turret on the hall's ridge. The town needs one thing taller than its roofs,
         /// or the eye has nowhere to land and the settlement reads as an even field of sheds.
         /// </summary>
+        /// <summary>
+        /// A mill tower with sails, standing off the brewery's west gable.
+        ///
+        /// The reference has a windmill and a watermill, both taller than anything around them
+        /// and neither shaped like a house; the tallest thing here was the town hall's bell
+        /// turret, and a settlement whose skyline is all roof ridges reads as one building type
+        /// repeated. A mill is also the one landmark this town can have without inventing a
+        /// trade for it - the brewery already needs its malt ground.
+        ///
+        /// Nothing about it is simulated. The brewery's recipe, cost and output are untouched;
+        /// this is the same building wearing what it does on the outside.
+        /// </summary>
+        private static void MillTower(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme)
+        {
+            var stone = C(0x6C, 0x63, 0x54);
+            var stoneLit = C(0x82, 0x79, 0x68);
+            var stoneDark = C(0x4A, 0x43, 0x38);
+            var cap = C(0x4A, 0x3A, 0x26);
+            var capLit = C(0x64, 0x50, 0x34);
+            var sail = C(0x5E, 0x46, 0x2A);
+            var sailLit = C(0x86, 0x68, 0x40);
+            var cloth = C(0x8A, 0x80, 0x66);
+
+            // Standing clear of the west gable rather than on the roof: a tower that starts
+            // at ridge height is a turret, and the point of a mill is that it is taller than
+            // the buildings around it.
+            var c = Iso.Project(-0.24f, ch * 0.80f, ox, oy);
+            const int height = 78;
+
+            // The tower batters inwards as it rises, which is what tells it from a chimney.
+            for (int lift = 0; lift < height; lift++)
+            {
+                float t = lift / (float)height;
+                int half = Mathf.RoundToInt(Mathf.Lerp(17f, 10f, t));
+
+                for (int dx = -half; dx <= half; dx++)
+                {
+                    var tone = dx < -half / 2 ? stoneLit : dx > half / 2 ? stoneDark : stone;
+
+                    // Courses, broken so they do not rule straight across the curve.
+                    if ((lift + (dx < 0 ? 0 : 1)) % 4 == 0) tone = Darken(tone, 12);
+                    Plot(px, w, h, c.x + dx, c.y + 2 + lift, tone);
+                }
+            }
+
+            for (int lift = 0; lift < 12; lift++)
+            {
+                int half = Mathf.RoundToInt(Mathf.Lerp(10f, 1f, lift / 11f));
+                for (int dx = -half; dx <= half; dx++)
+                    Plot(px, w, h, c.x + dx, c.y + 2 + height + lift, dx < 0 ? capLit : cap);
+            }
+
+            // Four sails on a shaft standing out from the cap, set as a saltire: upright and
+            // level arms make a cross that reads as scaffolding, and a mill at rest is nearly
+            // always left with its sails on the diagonal anyway.
+            int hubX = c.x + 6;
+            int hubY = c.y + height - 2;
+            const int arm = 31;
+
+            for (int blade = 0; blade < 4; blade++)
+            {
+                float angle = (45f + blade * 90f) * Mathf.Deg2Rad;
+                float dirX = Mathf.Cos(angle);
+                float dirY = Mathf.Sin(angle) * 0.86f;
+
+                for (int t = 3; t <= arm; t++)
+                {
+                    int bx = hubX + Mathf.RoundToInt(dirX * t);
+                    int by = hubY + Mathf.RoundToInt(dirY * t);
+
+                    Plot(px, w, h, bx, by, sailLit);
+
+                    // Whip and lattice: bars across the frame every third step, plus the cloth
+                    // laid over the trailing half of each sail.
+                    int span = t < arm - 3 ? 3 : 1;
+                    for (int k = 1; k <= span; k++)
+                    {
+                        int lx = bx + Mathf.RoundToInt(-dirY * k * 1.6f);
+                        int ly = by + Mathf.RoundToInt(dirX * k * 0.9f);
+                        bool bar = t % 3 == 0;
+                        Plot(px, w, h, lx, ly, bar ? sail : k == span ? sail : cloth);
+                    }
+                }
+            }
+
+            for (int dy = -2; dy <= 2; dy++)
+            for (int dx = -2; dx <= 2; dx++)
+                if (dx * dx + dy * dy <= 5) Plot(px, w, h, hubX + dx, hubY + dy, C(0x38, 0x30, 0x24));
+        }
+
         private static void BellTower(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
             Scheme scheme, int peak)
         {
@@ -1088,7 +1185,7 @@ namespace Undertown.Game.Presentation
                         Wall = C(0x80, 0x60, 0x3A), Roof = C(0x3E, 0x52, 0x3C),
                         Timber = C(0x4E, 0x36, 0x22), Plinth = C(0x60, 0x5A, 0x50),
                         WallHeight = 32, Pitch = 14, HalfTimbered = true, Chimney = true,
-                        LeanTo = true,
+                        LeanTo = true, Mill = true,
                     };
                 case BuildingKind.Still:
                     return new Scheme

@@ -47,9 +47,16 @@ namespace Undertown.Core.Sim
             // The civic block, north of the street, set back a cell so there is a yard between
             // each frontage and the fence along the lane. Built hard against the fence line the
             // rails cut across the bottom of every wall, and the town reads as a stockade.
-            PlaceNear(town, BuildingKind.TownHall, cx - 6, roadY + 2);
+            //
+            // The brewery is at the west end and the town hall at the east, rather than the
+            // other way round. The brewery carries the mill tower, which is the tallest thing
+            // in the settlement, and the east end of the civic row projects to the top-right
+            // corner of the screen - straight behind the minimap. The bell turret is short
+            // enough to sit there. The two swap places on screen only; they are the same
+            // distance from the warehouse either way.
+            PlaceNear(town, BuildingKind.Brewery, cx - 6, roadY + 2);
             PlaceNear(town, BuildingKind.Warehouse, cx + 1, roadY + 2);
-            PlaceNear(town, BuildingKind.Brewery, cx + 7, roadY + 2);
+            PlaceNear(town, BuildingKind.TownHall, cx + 7, roadY + 2);
 
             // Dwellings behind it, off the lane, packed close the way a village is.
             PlaceNear(town, BuildingKind.House, cx - 6, roadY + 4);
