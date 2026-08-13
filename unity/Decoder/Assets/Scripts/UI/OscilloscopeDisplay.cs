@@ -36,6 +36,9 @@ namespace Decoder.UI
         public float persistenceHalfLife = 0.28f;
 
         public Color traceColor = new Color(0.45f, 1f, 0.55f, 1f);
+
+        [Tooltip("迹线宽度，单位是纹理列。屏幕在画面里很小，单列的线会被采样丢掉")]
+        [Range(1, 9)] public int traceWidth = 5;
         public Color gridColor = new Color(0.06f, 0.22f, 0.10f, 1f);
         public Color axisColor = new Color(0.10f, 0.34f, 0.16f, 1f);
         public Color backgroundColor = new Color(0.008f, 0.035f, 0.015f, 1f);
@@ -47,7 +50,6 @@ namespace Decoder.UI
         private Texture2D _texture;
         private Color32[] _pixels;
         private Color32[] _background;
-        private MaterialPropertyBlock _block;
         private NoiseSource _jitter;
 
         private float _sweepPosition;
@@ -85,14 +87,17 @@ namespace Decoder.UI
 
             if (targetRenderer != null)
             {
-                _block = new MaterialPropertyBlock();
-                targetRenderer.GetPropertyBlock(_block);
-                _block.SetTexture("_MainTex", _texture);
+                // 直接实例化材质，而不是走 MaterialPropertyBlock。
+                // 属性块设置的贴图在静态批处理下会被丢掉，屏幕就是一片黑，
+                // 而且不报任何错。这里只有一块屏幕，多一份材质实例不值得省。
+                var material = targetRenderer.material;
+                material.mainTexture = _texture;
+                material.EnableKeyword("_EMISSION");
                 // 屏幕自身发光，所以同一张图也喂给自发光通道，
                 // 否则波形在暗房间里会是死的。
-                _block.SetTexture("_EmissionMap", _texture);
-                _block.SetColor("_EmissionColor", Color.white);
-                targetRenderer.SetPropertyBlock(_block);
+                material.SetTexture("_EmissionMap", _texture);
+                material.SetColor("_EmissionColor", Color.white);
+                material.SetColor("_Color", Color.white);
             }
         }
 
@@ -249,15 +254,25 @@ namespace Decoder.UI
             var hi = Mathf.Max(fromY, toY);
             var trace = (Color32)traceColor;
 
+            // 迹线画满 traceWidth 列而不是一列。屏幕在画面里只占两百来像素宽，
+            // 384 列的纹理缩下去，单列的线会被采样直接丢掉——
+            // 听障玩家全靠看这条线读点划，它不能只在放大截图里才存在。
+            var from = Mathf.Max(0, column - traceWidth / 2);
+            var to = Mathf.Min(textureWidth - 1, column + traceWidth / 2);
+
             for (var y = lo; y <= hi; y++)
             {
-                var index = y * textureWidth + column;
-                var pixel = _pixels[index];
-                // 加法混合：迹线重叠处更亮，模拟电子束停留更久的地方磷光更强。
-                pixel.r = (byte)Mathf.Min(255, pixel.r + trace.r);
-                pixel.g = (byte)Mathf.Min(255, pixel.g + trace.g);
-                pixel.b = (byte)Mathf.Min(255, pixel.b + trace.b);
-                _pixels[index] = pixel;
+                var row = y * textureWidth;
+                for (var x = from; x <= to; x++)
+                {
+                    var index = row + x;
+                    var pixel = _pixels[index];
+                    // 加法混合：迹线重叠处更亮，模拟电子束停留更久的地方磷光更强。
+                    pixel.r = (byte)Mathf.Min(255, pixel.r + trace.r);
+                    pixel.g = (byte)Mathf.Min(255, pixel.g + trace.g);
+                    pixel.b = (byte)Mathf.Min(255, pixel.b + trace.b);
+                    _pixels[index] = pixel;
+                }
             }
 
             return fromY;

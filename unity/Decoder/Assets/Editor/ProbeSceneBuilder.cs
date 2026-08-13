@@ -331,7 +331,8 @@ namespace Decoder.EditorTools
             return mat;
         }
 
-        private static Material MakeEmissive(string name, Color color, float intensity)
+        private static Material MakeEmissive(
+            string name, Color color, float intensity, bool needsEmissionMap = false)
         {
             const string dir = "Assets/Materials/Probe";
             var mat = new Material(Shader.Find("Standard"));
@@ -341,8 +342,42 @@ namespace Decoder.EditorTools
             mat.EnableKeyword("_EMISSION");
             mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             mat.SetColor("_EmissionColor", color * intensity);
+
+            if (needsEmissionMap)
+            {
+                // 示波器在运行时通过 MaterialPropertyBlock 把波形塞进 _EmissionMap。
+                // 但 Standard 的着色器变体是编译期按材质有没有这张贴图选定的：
+                // 材质创建时槽是空的，选中的变体压根不采样自发光贴图，
+                // 运行时再塞也没用，屏幕就是一片黑。预置一张白图把变体固定下来。
+                mat.SetTexture("_EmissionMap", WhitePixel());
+                mat.SetTexture("_MainTex", WhitePixel());
+            }
+
             AssetDatabase.CreateAsset(mat, $"{dir}/{name}.mat");
             return mat;
+        }
+
+        private static Texture2D _whitePixel;
+
+        private static Texture2D WhitePixel()
+        {
+            if (_whitePixel != null)
+            {
+                return _whitePixel;
+            }
+
+            const string path = "Assets/Materials/Probe/WhitePixel.asset";
+            _whitePixel = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (_whitePixel != null)
+            {
+                return _whitePixel;
+            }
+
+            _whitePixel = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            _whitePixel.SetPixel(0, 0, Color.white);
+            _whitePixel.Apply();
+            AssetDatabase.CreateAsset(_whitePixel, path);
+            return _whitePixel;
         }
 
         // ---------- 环境 ----------
@@ -394,7 +429,8 @@ namespace Decoder.EditorTools
             var root = new GameObject("InstrumentWall").transform;
             root.position = new Vector3(0, 0, -1.7f);
 
-            var crtMat = MakeEmissive("CrtScreen", CrtGreen, _cfg.emission.crtScreen);
+            var crtMat = MakeEmissive("CrtScreen", CrtGreen, _cfg.emission.crtScreen,
+                needsEmissionMap: true);
             var meterMat = MakeEmissive("MeterFace", new Color(0.75f, 0.85f, 0.55f), _cfg.emission.meterFace);
             var neonMat = MakeEmissive("NeonLamp", NeonAmber, _cfg.emission.neonLamp);
 
@@ -594,20 +630,25 @@ namespace Decoder.EditorTools
                     new Vector3(0.022f, 0.006f, 0.022f), Quaternion.Euler(90, 0, 0), _brassKnob);
             }
 
-            // 中央 CRT 示波器：画面的绿色光源本体
-            AddBox(root, "CrtBezel", new Vector3(0, 1.98f, 0.14f), new Vector3(0.74f, 0.60f, 0.30f), _steelDark);
+            // 中央 CRT 示波器：画面的绿色光源本体，也是听障玩家读电码的唯一途径。
+            //
+            // 高度从 1.98 降到 1.48。原来那个位置在坐姿眼高 1.24 之上 0.74 米，
+            // 而屏幕离眼睛只有 0.43 米——夹角 58 度，远超视野半角，
+            // 屏幕根本不在画面里，看到的绿色只是它打在墙上的光。
+            // 真实工位的显示器不会架在头顶。
+            AddBox(root, "CrtBezel", new Vector3(0, 1.48f, 0.14f), new Vector3(0.74f, 0.60f, 0.30f), _steelDark);
 
             // 遮光罩：真实示波器都带一个，挡住环境光让屏幕可读。
             // 对画面而言它更重要的作用是在面板上投下一圈硬阴影。
-            AddBox(root, "CrtHoodTop", new Vector3(0, 2.262f, 0.312f),
+            AddBox(root, "CrtHoodTop", new Vector3(0, 1.762f, 0.312f),
                 new Vector3(0.80f, 0.014f, 0.072f), _steelDark, Quaternion.Euler(-26f, 0, 0));
-            AddBox(root, "CrtHoodBottom", new Vector3(0, 1.698f, 0.312f),
+            AddBox(root, "CrtHoodBottom", new Vector3(0, 1.198f, 0.312f),
                 new Vector3(0.80f, 0.014f, 0.072f), _steelDark, Quaternion.Euler(26f, 0, 0));
-            AddBox(root, "CrtHoodLeft", new Vector3(-0.422f, 1.98f, 0.312f),
+            AddBox(root, "CrtHoodLeft", new Vector3(-0.422f, 1.48f, 0.312f),
                 new Vector3(0.014f, 0.58f, 0.072f), _steelDark, Quaternion.Euler(0, 26f, 0));
-            AddBox(root, "CrtHoodRight", new Vector3(0.422f, 1.98f, 0.312f),
+            AddBox(root, "CrtHoodRight", new Vector3(0.422f, 1.48f, 0.312f),
                 new Vector3(0.014f, 0.58f, 0.072f), _steelDark, Quaternion.Euler(0, -26f, 0));
-            AddBox(root, "CrtScreen", new Vector3(0, 1.98f, 0.273f), new Vector3(0.58f, 0.44f, 0.012f), crtMat);
+            AddBox(root, "CrtScreen", new Vector3(0, 1.48f, 0.273f), new Vector3(0.58f, 0.44f, 0.012f), crtMat);
 
             // 两侧模拟表盘
             for (var i = 0; i < 4; i++)
@@ -837,7 +878,7 @@ namespace Decoder.EditorTools
             //    否则整间混凝土房都会被染绿，失去三色分区。
             var crtCfg = _cfg.lights.fillCrtGreen;
             var crt = NewLight(root, "FillLight_CrtGreen", LightType.Point, CrtGreen, crtCfg.intensity, crtCfg.range);
-            crt.transform.localPosition = new Vector3(0f, 1.96f, -1.36f);
+            crt.transform.localPosition = new Vector3(0f, 1.46f, -1.36f);
             crt.shadows = LightShadows.Soft;
             crt.shadowBias = 0.02f;
             crt.shadowNormalBias = 0.12f;
