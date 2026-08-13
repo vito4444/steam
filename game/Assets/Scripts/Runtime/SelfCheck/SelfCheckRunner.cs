@@ -286,6 +286,16 @@ namespace Monster.SelfCheck
                 yield break;
             }
 
+            // Checked before anything is installed. Everything below runs through a
+            // scripted source, so without this the whole exercise would keep passing in
+            // exactly the build that shipped with no input at all -- which is the bug this
+            // was written for.
+            if (interactor.Input is NullInputSource)
+            {
+                _logLines.Add("Error: the desk interactor has no input source of its own, so the " +
+                              "built player cannot be looked around or clicked in");
+            }
+
             var scripted = new ScriptedInputSource();
             var previous = interactor.Input;
             interactor.Input = scripted;
@@ -372,6 +382,58 @@ namespace Monster.SelfCheck
                 _logLines.Add("Error: a click through the input path never reached an interactable");
             }
 
+            // The generic sweep proves the path is connected but not what it reached. This
+            // aims at a named verdict switch and asserts the decision actually landed,
+            // which is the one interaction the whole game is made of and the only one a
+            // person has still never performed by hand.
+            var threw = false;
+            var presenter = FindFirstObjectByType<BoothPresenter>();
+            var verdictSwitch = FindObjectsByType<DeskInteractable>(FindObjectsSortMode.None)
+                .FirstOrDefault(d => d.Mode == DeskInteractable.Behaviour.Operate
+                                     && Enum.TryParse<Verdict>(d.Payload, true, out _));
+
+            if (presenter == null || verdictSwitch == null)
+            {
+                _logLines.Add("Error: no verdict switch in the scene to aim at");
+            }
+            else
+            {
+                presenter.BeginShift(0);
+                yield return null;
+
+                var before = presenter.Director.Position;
+
+                boothCamera.SnapLookAt(verdictSwitch.transform.position);
+                yield return null;
+                yield return null;
+
+                if (interactor.Hovered != verdictSwitch)
+                {
+                    _logLines.Add($"Error: looking straight at '{verdictSwitch.name}' did not put it " +
+                                  $"under the centre of the view (hovering " +
+                                  $"'{(interactor.Hovered == null ? "nothing" : interactor.Hovered.name)}')");
+                }
+                else
+                {
+                    scripted.Click();
+                    yield return null;
+                    yield return null;
+
+                    threw = presenter.Director.Position > before;
+
+                    if (!threw)
+                    {
+                        _logLines.Add($"Error: clicking '{verdictSwitch.name}' through the input path " +
+                                      "did not record a decision");
+                    }
+                    else
+                    {
+                        Debug.Log($"[SelfCheck] threw '{verdictSwitch.Payload}' through the input path; " +
+                                  $"the queue advanced from {before} to {presenter.Director.Position}");
+                    }
+                }
+            }
+
             interactor.Release();
             interactor.Input = previous;
             boothCamera.ResetToHome();
@@ -382,9 +444,10 @@ namespace Monster.SelfCheck
                 "      \"name\": \"input\",\n" +
                 "      \"camera_turned_degrees\": {0:F1},\n" +
                 "      \"interactables_hovered\": {1},\n" +
-                "      \"click_reached_target\": {2}\n" +
+                "      \"click_reached_target\": {2},\n" +
+                "      \"switch_thrown_by_click\": {3}\n" +
                 "    }}",
-                turned, hovered, clicked ? "true" : "false"));
+                turned, hovered, clicked ? "true" : "false", threw ? "true" : "false"));
         }
 
         /// <summary>Plays several nights to their end by throwing switches directly, then

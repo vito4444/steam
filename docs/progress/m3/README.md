@@ -295,6 +295,17 @@ DISTRICT CIRCULAR / LAMP REPLACEMENT SCHEDULE SUSPENDED UNTIL FURTHER NOTICE. /
 FILED off the screen — and right mouse sits back. No stutter, tearing,
 flickering, stuck highlights or camera clipping.
 
+Playing it also found the collider bug that had been swallowing every click.
+`MakeInspectable` sizes a collider in proportion to its target, because the desk
+objects are very thin scaled cubes and a collider matching one exactly is almost
+impossible to hit with a ray. The post tray's interactable was attached to its
+text anchor, which has no scale of its own, so the proportional collider came out
+as an invisible box one metre square and eight metres tall standing in the middle
+of the booth. Every click in the recorded session landed on the post because
+almost every ray in the room did. It is attached to the tray itself now, and an
+unscaled target is refused with an error rather than silently becoming metres
+across.
+
 Two things the play session turned up on the way:
 
 **Un-hovering set an object's emission to black** rather than restoring what its
@@ -389,10 +400,13 @@ Reassessed from M2's list.
 
 1. **Only one person has played it, and only for a minute.** Looking, hovering,
    leaning in and backing out are confirmed by hand on a real display. Throwing a
-   switch and watching a vehicle leave is not — aiming by script is unreliable
-   once the pointer is locked, and every click in the recorded session landed on
-   the post tray. That path is covered by the self-check and by the `admitted`
-   screenshot, but no human has done it. *Medium.*
+   switch by hand is not: aiming a script at a two-centimetre knob is unreliable
+   once the pointer is locked and the capture is not pixel-aligned with the
+   viewport. Rather than keep poking at it, the self-check now aims the camera at
+   a named verdict switch, clicks it through the real interactor and asserts the
+   queue advanced — `switch_thrown_by_click: true`. That is a better guard than
+   one manual success would have been, but it is not the same as a person
+   playing. *Medium.*
 2. **Audio has never been heard.** Synthesised, structurally tested, and now
    wired to the intercom as well — but this machine has no audio device.
    *Medium.*

@@ -49,7 +49,7 @@ namespace Monster.EditorTools
                 Light[] headlights, Light[] taillights,
                 Transform permitMesh, Transform permitAnchor,
                 Transform manualMesh, Transform manualAnchor,
-                Transform logAnchor, Transform mailAnchor, Transform clockAnchor,
+                Transform logAnchor, Transform mailMesh, Transform mailAnchor, Transform clockAnchor,
                 IReadOnlyList<Transform> screenAnchors,
                 IReadOnlyList<Transform> switchMeshes,
                 IReadOnlyList<Transform> switchLabelAnchors,
@@ -67,6 +67,7 @@ namespace Monster.EditorTools
                 ManualMesh = manualMesh;
                 ManualAnchor = manualAnchor;
                 LogAnchor = logAnchor;
+                MailMesh = mailMesh;
                 MailAnchor = mailAnchor;
                 ClockAnchor = clockAnchor;
                 ScreenAnchors = screenAnchors;
@@ -87,6 +88,7 @@ namespace Monster.EditorTools
             public Transform ManualMesh { get; }
             public Transform ManualAnchor { get; }
             public Transform LogAnchor { get; }
+            public Transform MailMesh { get; }
             public Transform MailAnchor { get; }
             public Transform ClockAnchor { get; }
             public IReadOnlyList<Transform> ScreenAnchors { get; }
@@ -148,7 +150,9 @@ namespace Monster.EditorTools
             {
                 presenter.RegisterManualControl(manualKey);
             }
-            var mailKey = MakeInspectable(handles.MailAnchor, "mail", 0.40f, new Vector3(0f, 1f, -0.34f),
+            // The tray itself, not its text anchor: the anchor has no scale, so a collider
+            // sized in proportion to it would be metres across.
+            var mailKey = MakeInspectable(handles.MailMesh, "mail", 0.40f, new Vector3(0f, 1f, -0.34f),
                 DeskInteractable.Behaviour.Leaf);
             if (mailKey != null)
             {
@@ -340,8 +344,21 @@ namespace Monster.EditorTools
             {
                 var collider = mesh.gameObject.AddComponent<BoxCollider>();
 
-                // The mesh is a very thin scaled cube; a collider matching it exactly is
-                // almost impossible to hit with a ray, so it is thickened in local Y only.
+                // Thickened in local Y because these are very thin scaled cubes and a
+                // collider matching one exactly is almost impossible to hit with a ray.
+                //
+                // Only valid on a scaled mesh. Put on an unscaled anchor this is a box one
+                // metre square and eight metres tall, which is what the post tray had: an
+                // invisible column through the whole booth that swallowed almost every
+                // click in the room. Anything without a scale of its own is refused.
+                var scale = mesh.lossyScale;
+                if (Mathf.Max(scale.x, scale.y, scale.z) > 0.9f)
+                {
+                    Debug.LogError($"[Booth] '{mesh.name}' is unscaled, so a proportional collider " +
+                                   "would be metres across; give the interactable the mesh rather " +
+                                   "than its anchor");
+                }
+
                 collider.size = new Vector3(1f, 8f, 1f);
             }
 

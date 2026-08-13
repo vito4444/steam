@@ -71,6 +71,7 @@ namespace Monster.EditorTools
         private static Transform _manualPages;
         private static Transform _manualAnchor;
         private static Transform _logAnchor;
+        private static Transform _mailMesh;
         private static Transform _mailAnchor;
         private static Transform _clockAnchor;
         private static Vector3 _lampOrigin;
@@ -98,6 +99,7 @@ namespace Monster.EditorTools
             _manualPages = null;
             _manualAnchor = null;
             _logAnchor = null;
+            _mailMesh = null;
             _mailAnchor = null;
             _clockAnchor = null;
             _lampOrigin = Vector3.zero;
@@ -127,7 +129,7 @@ namespace Monster.EditorTools
                 _barrierArm, _vehicleRoot, _subjectRoot, Headlights.ToArray(), Taillights.ToArray(),
                 _permitPaper, _permitAnchor,
                 _manualPages, _manualAnchor,
-                _logAnchor, _mailAnchor, _clockAnchor,
+                _logAnchor, _mailMesh, _mailAnchor, _clockAnchor,
                 ScreenAnchors, Switches, SwitchLabelAnchors,
                 IntercomKeys, IntercomKeyLabels,
                 camera.gameObject));
@@ -351,11 +353,11 @@ namespace Monster.EditorTools
                 Quaternion.Euler(90f, 0f, 0f));
 
             // The mail tray, front left. Whatever the office sent tonight lands here.
-            Box("MailTray", forms, new Vector3(-0.54f, DeskTopY + 0.002f, 0.40f),
+            _mailMesh = Box("MailTray", forms, new Vector3(-0.54f, DeskTopY + 0.002f, 0.40f),
                 new Vector3(0.246f, 0.004f, 0.336f),
                 Mat("PaperMail", new Color(0.560f, 0.540f, 0.470f), 0.05f, 0f, null,
                     Grunge("Grunge_Mail", 256, 3.4f, 0.60f, 0.0f, 5150), 1f),
-                new Vector3(0f, -9f, 0f));
+                new Vector3(0f, -9f, 0f)).transform;
             _mailAnchor = Anchor("MailText", forms, new Vector3(-0.54f, DeskTopY + 0.006f, 0.40f),
                 Quaternion.Euler(0f, -9f, 0f) * Quaternion.Euler(90f, 0f, 0f));
             Box("Form_Stack_B", forms, new Vector3(-0.30f, DeskTopY + 0.012f, 0.73f),
