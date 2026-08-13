@@ -30,6 +30,14 @@
     <!-- Unity's facade assemblies deliberately forward types; that is not an error. -->
     <NoWarn>$(NoWarn);CS0436;CS1701;CS1702</NoWarn>
     <UnityManagedDir Condition="'$(UnityManagedDir)' == ''">$(UNITY_MANAGED_DIR)</UnityManagedDir>
+
+    <!--
+      Package assemblies come from the project's own Library first. Those are the exact
+      versions this project resolved, so the check matches what Unity will compile;
+      the Editor's bundled template cache is a fallback for a fresh clone that has not
+      been imported yet, and may be a different package version.
+    -->
+    <UnityPackageAssemblies Condition="'$(UnityPackageAssemblies)' == '' AND Exists('$(MSBuildThisFileDirectory)../../Library/ScriptAssemblies')">$(MSBuildThisFileDirectory)../../Library/ScriptAssemblies</UnityPackageAssemblies>
     <UnityPackageAssemblies Condition="'$(UnityPackageAssemblies)' == ''">$(UNITY_PACKAGE_ASSEMBLIES)</UnityPackageAssemblies>
   </PropertyGroup>
 
@@ -50,7 +58,13 @@
     <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll')" />
   </ItemGroup>
 
+  <!--
+    Listed one by one rather than globbed: the project's ScriptAssemblies folder also
+    contains Worker.Core.dll and Worker.Game.dll compiled by Unity, and referencing
+    those alongside the same sources produces duplicate type errors.
+  -->
   <ItemGroup Condition="'$(UnityPackageAssemblies)' != ''">
+    <Reference Include="$(UnityPackageAssemblies)/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/UnityEngine.UI.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.InputSystem.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.InputSystem.dll')" />

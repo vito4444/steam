@@ -49,8 +49,14 @@ namespace Worker.Game
             runner.SpeedMultiplier = ReadInt("--speed", 1);
 
             root.AddComponent<FactoryView>();
+            root.AddComponent<PlayerController>();
+            root.AddComponent<SelectionOverlay>();
             root.AddComponent<DebugControls>();
             root.AddComponent<HeadlessCapture>();
+
+            // The HUD is skipped for capture runs that ask for the plain debug readout,
+            // so screenshots can show the world without any interface over it.
+            if (!HasFlag("--no-hud")) root.AddComponent<GameHud>();
 
             root.SetActive(true);
             Object.DontDestroyOnLoad(root);

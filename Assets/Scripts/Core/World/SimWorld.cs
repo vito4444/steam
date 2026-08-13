@@ -474,12 +474,14 @@ namespace Worker.Core
         internal int PeekNextBuildingId() => _nextBuildingId;
         internal int PeekNextWorkerId() => _nextWorkerId;
         internal int PeekNextOrderId() => _nextOrderId;
+        internal int PeekNextContractId() => _nextContractId;
 
-        internal void RestoreCounters(int nextBuilding, int nextWorker, int nextOrder)
+        internal void RestoreCounters(int nextBuilding, int nextWorker, int nextOrder, int nextContract)
         {
             _nextBuildingId = nextBuilding;
             _nextWorkerId = nextWorker;
             _nextOrderId = nextOrder;
+            _nextContractId = nextContract;
         }
 
         internal void RestoreTick(int tick) => Tick = tick;
@@ -501,5 +503,7 @@ namespace Worker.Core
         internal void RegisterLoadedWorker(WorkerUnit worker) => _workers.Add(worker);
 
         internal void RegisterLoadedOrder(Order order) => _orders.Add(order);
+
+        internal void RegisterLoadedContract(SupplyContract contract) => _contracts.Add(contract);
     }
 }

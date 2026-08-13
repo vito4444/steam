@@ -42,16 +42,25 @@ namespace Worker.Game
                 _runner.SpeedMultiplier = _runner.SpeedMultiplier > 0 ? 0 : 1;
             }
 
-            if (Input.GetKeyDown(KeyCode.Alpha1)) _runner.SpeedMultiplier = 1;
-            if (Input.GetKeyDown(KeyCode.Alpha2)) _runner.SpeedMultiplier = 3;
-            if (Input.GetKeyDown(KeyCode.Alpha3)) _runner.SpeedMultiplier = 8;
+            // Number keys belong to the build bar and R rotates the placement, so speed
+            // and restart live on keys the player controller does not claim. Pressing 3
+            // used to select the sawbench and jump to 8x speed at the same time.
+            if (Input.GetKeyDown(KeyCode.Equals) || Input.GetKeyDown(KeyCode.KeypadPlus))
+            {
+                _runner.SpeedMultiplier = _runner.SpeedMultiplier >= 8 ? 1 : Mathf.Max(1, _runner.SpeedMultiplier * 2);
+            }
 
-            if (Input.GetKeyDown(KeyCode.R))
+            if (Input.GetKeyDown(KeyCode.Minus) || Input.GetKeyDown(KeyCode.KeypadMinus))
+            {
+                _runner.SpeedMultiplier = Mathf.Max(1, _runner.SpeedMultiplier / 2);
+            }
+
+            if (Input.GetKeyDown(KeyCode.F5))
             {
                 _runner.CreateWorld();
             }
 
-            if (Input.GetKeyDown(KeyCode.T))
+            if (Input.GetKeyDown(KeyCode.F6))
             {
                 _runner.StartAutomated = !_runner.StartAutomated;
                 _runner.CreateWorld();
@@ -90,7 +99,7 @@ namespace Worker.Game
             GUILayout.Label("idle    " + idle + "/" + world.Workers.Count, _style);
 
             GUILayout.Space(8f);
-            GUILayout.Label("space pause   1/2/3 speed   r restart   t layout", _style);
+            GUILayout.Label("space pause   +/- speed   F5 restart   F6 layout", _style);
 
             GUILayout.EndArea();
         }

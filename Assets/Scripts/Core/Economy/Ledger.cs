@@ -67,5 +67,9 @@ namespace Worker.Core
         }
 
         internal void SetBalanceRaw(int balance) => Balance = balance;
+
+        /// <summary>Restores a history entry during load without touching the balance.</summary>
+        internal void AppendHistoryRaw(int tick, LedgerEntryKind kind, int amount)
+            => _history.Add(new LedgerEntry(tick, kind, amount));
     }
 }
