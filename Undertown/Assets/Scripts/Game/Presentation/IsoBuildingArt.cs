@@ -44,6 +44,9 @@ namespace Undertown.Game.Presentation
 
             /// <summary>A mill tower and sails standing off one gable.</summary>
             public bool Mill;
+
+            /// <summary>A gable turned through ninety degrees, breaking the front roof plane.</summary>
+            public bool CrossGable;
             public bool HalfTimbered;
             public bool Chimney;
 
@@ -117,6 +120,7 @@ namespace Undertown.Game.Presentation
             Openings(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX);
             Brackets(px, w, h, cw, ch, ox, oy, scheme);
             Roof(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
+            if (scheme.CrossGable) CrossGable(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
             if (scheme.LeanTo) LeanTo(px, w, h, cw, ch, ox, oy, scheme);
             if (scheme.Porch) Porch(px, w, h, cw, ch, ox, oy, scheme);
             if (scheme.Chimney) Chimney(px, w, h, cw, ch, ox, oy, scheme, peak);
@@ -477,6 +481,124 @@ namespace Undertown.Game.Presentation
         /// A bell turret on the hall's ridge. The town needs one thing taller than its roofs,
         /// or the eye has nowhere to land and the settlement reads as an even field of sheds.
         /// </summary>
+        /// <summary>
+        /// A cross gable over the front: a second ridge at right angles to the main one,
+        /// breaking the south roof plane with a gable end of its own.
+        ///
+        /// The buildings here are boxes with two roof slopes each, and the reference has almost
+        /// no two on the same plan. A cross gable is the cheapest way out of that which is
+        /// still honest carpentry: it changes the outline against the sky and puts a second
+        /// gable end on the face the viewer sees, and it costs nothing on the ground - the
+        /// footprint, and therefore everything the simulation knows about the building, is
+        /// unchanged.
+        ///
+        /// Its ridge is level, as a cross gable's is, and its height is set just below the main
+        /// roof's so the two planes meet where they should instead of one cutting through the
+        /// other.
+        /// </summary>
+        private static void CrossGable(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme, bool ridgeAlongX, int peak)
+        {
+            var wall = scheme.Wall;
+            var roof = scheme.Roof;
+            var roofLit = Lighten(scheme.Roof, 22);
+            var roofDark = Darken(scheme.Roof, 26);
+            var edge = Darken(scheme.Roof, 48);
+            var timber = scheme.Timber;
+
+            // Off centre, not over the door. A bay in the middle of the frontage buries the
+            // doorway it is standing in front of, and an asymmetric front is closer to the
+            // reference anyway - nothing there is centred on anything.
+            float mid = cw * 0.32f;
+            float half = Mathf.Min(0.55f, cw * 0.22f);
+            float depth = Mathf.Min(1.1f, ch * 0.6f);
+            int ridgeLift = scheme.WallHeight + Mathf.RoundToInt(peak * 0.78f);
+
+            int steps = 260;
+
+            // The gable end itself. It stands a little south of the main wall, out past the
+            // eaves rather than flush with them: set back, the main roof's overhang cuts across
+            // its head and the whole thing reads as a hole in the slope instead of a bay
+            // standing out of it.
+            const float jut = 0.26f;
+
+            for (int i = 0; i <= steps; i++)
+            {
+                float u = Mathf.Lerp(mid - half, mid + half, i / (float)steps);
+                float t = Mathf.Abs(u - mid) / half;
+                int top = scheme.WallHeight + Mathf.RoundToInt((1f - t) * (ridgeLift - scheme.WallHeight));
+
+                var p = Iso.Project(u, ch + jut, ox, oy);
+
+                // Carried on the wall below, so the bay does not float. Studding on the same
+                // spacing as the rest of the building: a blank panel this size on a frontage
+                // that is half-timbered everywhere else looks like a rendering fault.
+                bool stud = scheme.HalfTimbered && ((i * 7) / steps) % 2 == 0 && t > 0.12f;
+
+                for (int lift = 0; lift < top; lift++)
+                {
+                    var tone = lift < scheme.WallHeight
+                        ? Darken(wall, 16 + (int)(t * 10f))
+                        : Darken(wall, (int)(t * 12f));
+                    if (stud && lift < scheme.WallHeight - 2) tone = timber;
+                    Plot(px, w, h, p.x, p.y + lift, tone);
+                }
+
+                // A sill beam where the gable sits on the wall head.
+                if (top > scheme.WallHeight)
+                    Plot(px, w, h, p.x, p.y + scheme.WallHeight - 1, timber);
+
+                // Barge boards down both slopes of the gable end.
+                Plot(px, w, h, p.x, p.y + top, timber);
+                Plot(px, w, h, p.x, p.y + top + 1, timber);
+            }
+
+            // The two roof planes running back from it.
+            for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
+            {
+                float u = Mathf.Lerp(mid - half - 0.09f, mid + half + 0.09f, i / (float)steps);
+                float v = ch + jut + 0.09f - (j / (float)steps) * (depth + jut + 0.09f);
+
+                float t = Mathf.Clamp01(Mathf.Abs(u - mid) / (half + 0.09f));
+                int lift = scheme.WallHeight
+                    + Mathf.RoundToInt((1f - t) * (ridgeLift - scheme.WallHeight));
+
+                // Only the part that stands above the main roof. Drawn without this check the
+                // cross gable paints over the slope it is supposed to be let into, and the
+                // whole thing reads as a patch stuck onto the front rather than a second ridge
+                // meeting the first.
+                if (lift <= MainRoofLift(cw, ch, u, v, scheme, ridgeAlongX, peak)) continue;
+
+                var tone = u < mid ? roofLit : roofDark;
+                if (t > 0.94f) tone = edge;
+                else if (t < 0.06f) tone = Lighten(roof, 34);
+                else if (scheme.Thatch)
+                {
+                    float band = t * 3f;
+                    if (band - Mathf.Floor(band) > 0.8f) tone = Darken(tone, 16);
+                }
+
+                var p = Iso.Project(u, v, ox, oy);
+                Plot(px, w, h, p.x, p.y + lift, tone);
+            }
+        }
+
+        /// <summary>How high the main roof stands at a point, in the same units as everything
+        /// drawn on top of it.</summary>
+        private static int MainRoofLift(int cw, int ch, float u, float v, Scheme scheme,
+            bool ridgeAlongX, int peak)
+        {
+            float u0 = -Overhang, u1 = cw + Overhang;
+            float v0 = -Overhang, v1 = ch + Overhang;
+
+            float across = ridgeAlongX
+                ? Mathf.InverseLerp(v0, v1, v)
+                : Mathf.InverseLerp(u0, u1, u);
+            float fromRidge = Mathf.Abs(across - 0.5f) * 2f;
+            return scheme.WallHeight + Mathf.RoundToInt((1f - fromRidge) * peak);
+        }
+
         /// <summary>
         /// A mill tower with sails, standing off the brewery's west gable.
         ///
@@ -1162,6 +1284,7 @@ namespace Undertown.Game.Presentation
                         Thatch = straw, HalfTimbered = true, Chimney = true,
                         LeanTo = variant == 1 || variant == 2 || variant == 5 || variant == 7,
                         Porch = variant == 0 || variant == 3 || variant == 4 || variant == 6,
+                        CrossGable = variant == 2 || variant == 5 || variant == 7,
                     };
                 }
                 case BuildingKind.TownHall:
