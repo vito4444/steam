@@ -174,7 +174,42 @@ namespace Decoder.Signal
         /// </summary>
         public static List<Element> BuildTimeline(string morse, float wordsPerMinute)
         {
+            return BuildTimeline(morse, wordsPerMinute, OperatorFist.Machine, 0);
+        }
+
+        /// <summary>
+        /// 按指定报务员的手法展开键控时序。
+        ///
+        /// 手键发报的人做不到机器那样的精确，划长和间隔都会有系统性偏差，
+        /// 而这些偏差在同一个人身上是稳定的。抖动用种子驱动，
+        /// 保证同一条电文每次听到的都是同一段节奏——玩家反复听来分辨手法时，
+        /// 听到的东西不能每次都变。
+        /// </summary>
+        public static List<Element> BuildTimeline(
+            string morse, float wordsPerMinute, OperatorFist fist, int seed)
+        {
+            if (!fist.IsValid)
+            {
+                fist = OperatorFist.Machine;
+            }
+
             var unit = UnitSeconds(wordsPerMinute);
+            var noise = new NoiseSource(seed);
+
+            float Shape(float units)
+            {
+                var seconds = unit * units;
+                if (fist.jitter <= 0f)
+                {
+                    return seconds;
+                }
+
+                // 抖动是乘性的：发得快的人绝对偏差自然更小。
+                // 下限卡在两成，免得抽到极端值时片段短到听不见。
+                var factor = 1f + noise.NextWhite() * fist.jitter;
+                return seconds * Math.Max(0.2f, factor);
+            }
+
             var timeline = new List<Element>();
             if (string.IsNullOrWhiteSpace(morse))
             {
@@ -190,28 +225,23 @@ namespace Decoder.Signal
 
                 if (token == WordSeparator)
                 {
-                    // 词间隔总共 7 单位。前一个字符已经补了 3 单位的字符间隔，
-                    // 所以这里补 4 单位，避免重复计算。
-                    ReplaceOrAppendGap(timeline, unit * 7f, unit);
+                    ReplaceOrAppendGap(timeline, Shape(fist.wordGapRatio), unit);
                     continue;
                 }
 
                 for (var i = 0; i < token.Length; i++)
                 {
-                    var length = token[i] == Dah ? 3f : 1f;
-                    timeline.Add(new Element(true, unit * length));
+                    timeline.Add(new Element(true, Shape(token[i] == Dah ? fist.dahRatio : 1f)));
 
                     if (i < token.Length - 1)
                     {
-                        timeline.Add(new Element(false, unit));
+                        timeline.Add(new Element(false, Shape(1f)));
                     }
                 }
 
-                var isLast = t == tokens.Length - 1;
-                var nextIsWordBreak = !isLast && tokens[t + 1] == WordSeparator;
-                if (!isLast && !nextIsWordBreak)
+                if (t < tokens.Length - 1 && tokens[t + 1] != WordSeparator)
                 {
-                    timeline.Add(new Element(false, unit * 3f));
+                    timeline.Add(new Element(false, Shape(fist.charGapRatio)));
                 }
             }
 
