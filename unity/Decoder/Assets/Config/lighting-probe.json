@@ -1,53 +1,53 @@
 {
   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
   "ambientSky": [
-    0.000163,
-    0.000204,
-    0.000285
+    0.0016,
+    0.002,
+    0.0028
   ],
   "ambientEquator": [
-    0.000102,
-    0.000122,
-    0.000163
+    0.001,
+    0.0012,
+    0.0016
   ],
   "ambientGround": [
-    6.1e-05,
-    6.1e-05,
-    8.1e-05
+    0.0006,
+    0.0006,
+    0.0008
   ],
   "fogDensity": 0.05,
   "lights": {
     "keyLampWarm": {
-      "intensity": 4.13542,
-      "range": 8.0,
+      "intensity": 7.0,
+      "range": 3.0,
       "spotAngle": 78.0
     },
     "fillCrtGreen": {
-      "intensity": 1.35522,
-      "range": 5.95186
+      "intensity": 2.6,
+      "range": 1.7
     },
     "rimColdWindow": {
-      "intensity": 1.06505,
-      "range": 8.0,
+      "intensity": 3.2,
+      "range": 2.6,
       "spotAngle": 54.0
     },
     "bounceDeskWarm": {
-      "intensity": 0.68692,
-      "range": 5.25164,
+      "intensity": 1.2,
+      "range": 1.5,
       "spotAngle": 72.0
     },
     "practicalNeon": {
-      "intensity": 1.48044,
-      "range": 6.30199
+      "intensity": 2.2,
+      "range": 1.8
     }
   },
   "emission": {
-    "crtScreen": 0.61027,
-    "neonLamp": 3.08895,
+    "crtScreen": 0.95,
+    "neonLamp": 3.0,
     "meterFace": 0.3,
-    "dialStrip": 0.21318,
+    "dialStrip": 0.45,
     "frostedGlass": 0.85,
     "labelPlate": 0.16,
-    "indicatorLamp": 5.73117
+    "indicatorLamp": 2.0
   }
 }

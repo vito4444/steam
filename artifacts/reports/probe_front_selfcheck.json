@@ -4,35 +4,35 @@
    "path": "artifacts/screenshots/probe_front.png",
    "width": 1920,
    "height": 1080,
-   "luma_mean": 0.2347217533073342,
-   "luma_median": 0.1772392156862745,
-   "luma_p05": 0.07500392156862745,
-   "luma_p95": 0.6443458823529411,
-   "shadow_ratio": 0.02056884765625,
-   "highlight_ratio": 0.004835340711805556,
-   "contrast_rms": 0.18392041555512526,
-   "saturation_mean": 0.3713520436263105,
-   "saturation_p90": 0.6337448559670782,
-   "warm_ratio": 0.7082112630208334,
-   "cool_ratio": 0.0659518771701389,
-   "green_ratio": 0.04585096571180555,
-   "edge_density": 0.05349392361111111,
+   "luma_mean": 0.19365810468154276,
+   "luma_median": 0.1356329411764706,
+   "luma_p05": 0.05381647058823529,
+   "luma_p95": 0.5292901960784314,
+   "shadow_ratio": 0.10350884331597222,
+   "highlight_ratio": 0.003987630208333333,
+   "contrast_rms": 0.16552732456054214,
+   "saturation_mean": 0.3567445191572921,
+   "saturation_p90": 0.5571428571428572,
+   "warm_ratio": 0.0987209743923611,
+   "cool_ratio": 0.3295355902777778,
+   "green_ratio": 0.5363023546006944,
+   "edge_density": 0.048163519965277776,
    "dominant_hues": [
     [
-     0,
-     0.3801
+     150,
+     0.2562
     ],
     [
-     30,
-     0.2567
+     180,
+     0.1825
     ],
     [
-     330,
-     0.0663
+     120,
+     0.1755
     ],
     [
      210,
-     0.0547
+     0.1467
     ]
    ]
   },
@@ -84,19 +84,19 @@
     "metric": "luma_mean",
     "label": "平均亮度",
     "note": "画面整体明暗",
-    "mine": 0.2347,
+    "mine": 0.1937,
     "target": 0.1484,
-    "diff": 0.0863,
+    "diff": 0.0452,
     "tolerance": 0.05,
-    "ok": false
+    "ok": true
    },
    {
     "metric": "luma_p05",
     "label": "暗部下限",
     "note": "暗部是否死黑",
-    "mine": 0.075,
+    "mine": 0.0538,
     "target": 0.0,
-    "diff": 0.075,
+    "diff": 0.0538,
     "tolerance": 0.04,
     "ok": false
    },
@@ -104,19 +104,19 @@
     "metric": "luma_p95",
     "label": "亮部上限",
     "note": "亮部是否够亮",
-    "mine": 0.6443,
+    "mine": 0.5293,
     "target": 0.4881,
-    "diff": 0.1562,
+    "diff": 0.0412,
     "tolerance": 0.06,
-    "ok": false
+    "ok": true
    },
    {
     "metric": "shadow_ratio",
     "label": "死黑占比",
     "note": "亮度<0.06 的像素比例",
-    "mine": 0.0206,
+    "mine": 0.1035,
     "target": 0.3997,
-    "diff": -0.3791,
+    "diff": -0.2962,
     "tolerance": 0.08,
     "ok": false
    },
@@ -124,9 +124,9 @@
     "metric": "highlight_ratio",
     "label": "过曝占比",
     "note": "亮度>0.90 的像素比例",
-    "mine": 0.0048,
+    "mine": 0.004,
     "target": 0.0017,
-    "diff": 0.0032,
+    "diff": 0.0023,
     "tolerance": 0.04,
     "ok": true
    },
@@ -134,9 +134,9 @@
     "metric": "contrast_rms",
     "label": "对比度",
     "note": "亮度标准差",
-    "mine": 0.1839,
+    "mine": 0.1655,
     "target": 0.1623,
-    "diff": 0.0216,
+    "diff": 0.0032,
     "tolerance": 0.04,
     "ok": true
    },
@@ -144,9 +144,9 @@
     "metric": "edge_density",
     "label": "细节密度",
     "note": "可读结构的丰富程度",
-    "mine": 0.0535,
+    "mine": 0.0482,
     "target": 0.1947,
-    "diff": -0.1412,
+    "diff": -0.1465,
     "tolerance": 0.06,
     "ok": false
    }
@@ -154,33 +154,21 @@
   "composition_gaps": [
    {
     "label": "死黑占比",
-    "diff": -0.3791,
+    "diff": -0.2962,
     "tolerance": 0.08,
-    "severity": 4.74
-   },
-   {
-    "label": "亮部上限",
-    "diff": 0.1562,
-    "tolerance": 0.06,
-    "severity": 2.6
+    "severity": 3.7
    },
    {
     "label": "细节密度",
-    "diff": -0.1412,
+    "diff": -0.1465,
     "tolerance": 0.06,
-    "severity": 2.35
+    "severity": 2.44
    },
    {
     "label": "暗部下限",
-    "diff": 0.075,
+    "diff": 0.0538,
     "tolerance": 0.04,
-    "severity": 1.88
-   },
-   {
-    "label": "平均亮度",
-    "diff": 0.0863,
-    "tolerance": 0.05,
-    "severity": 1.73
+    "severity": 1.35
    }
   ],
   "palette_rows": [
@@ -188,9 +176,9 @@
     "metric": "saturation_mean",
     "label": "平均饱和度",
     "note": "画面色彩浓度",
-    "mine": 0.3714,
+    "mine": 0.3567,
     "target": 0.45,
-    "diff": -0.0786,
+    "diff": -0.0933,
     "tolerance": 0.06,
     "ok": false
    },
@@ -198,9 +186,9 @@
     "metric": "warm_ratio",
     "label": "暖色占比",
     "note": "红橙黄区域",
-    "mine": 0.7082,
+    "mine": 0.0987,
     "target": 0.22,
-    "diff": 0.4882,
+    "diff": -0.1213,
     "tolerance": 0.08,
     "ok": false
    },
@@ -208,9 +196,9 @@
     "metric": "green_ratio",
     "label": "绿色占比",
     "note": "黄绿到青区域",
-    "mine": 0.0459,
+    "mine": 0.5363,
     "target": 0.38,
-    "diff": -0.3341,
+    "diff": 0.1563,
     "tolerance": 0.08,
     "ok": false
    },
@@ -218,31 +206,37 @@
     "metric": "cool_ratio",
     "label": "冷色占比",
     "note": "青到紫蓝区域",
-    "mine": 0.066,
+    "mine": 0.3295,
     "target": 0.1,
-    "diff": -0.034,
+    "diff": 0.2295,
     "tolerance": 0.08,
-    "ok": true
+    "ok": false
    }
   ],
   "palette_gaps": [
    {
-    "label": "暖色占比",
-    "diff": 0.4882,
+    "label": "冷色占比",
+    "diff": 0.2295,
     "tolerance": 0.08,
-    "severity": 6.1
+    "severity": 2.87
    },
    {
     "label": "绿色占比",
-    "diff": -0.3341,
+    "diff": 0.1563,
     "tolerance": 0.08,
-    "severity": 4.18
+    "severity": 1.95
    },
    {
     "label": "平均饱和度",
-    "diff": -0.0786,
+    "diff": -0.0933,
     "tolerance": 0.06,
-    "severity": 1.31
+    "severity": 1.55
+   },
+   {
+    "label": "暖色占比",
+    "diff": -0.1213,
+    "tolerance": 0.08,
+    "severity": 1.52
    }
   ]
  }
