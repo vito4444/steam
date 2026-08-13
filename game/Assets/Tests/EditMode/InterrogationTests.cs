@@ -151,5 +151,67 @@ namespace Monster.Tests
 
             Assert.Greater(row.Distinct().Count(), 3, "the primary trace is nearly a flat line");
         }
+
+        /// <summary>Questions cost nine minutes each and their answers used to be the least
+        /// durable thing on the desk: one reply replaced the last, so a player who spent
+        /// three of them could read one answer and had to hold the other two in their head.
+        /// </summary>
+        [Test]
+        public void TheIntercomKeepsEverythingThisBearerHasBeenAsked()
+        {
+            var subject = new SubjectGenerator().Generate(CampaignSeed, 3, 0).Attributes;
+
+            var replies = new[]
+            {
+                Interrogation.Ask(subject, Question.District),
+                Interrogation.Ask(subject, Question.Purpose),
+                Interrogation.Ask(subject, Question.Destination),
+            };
+
+            var page = DocumentBuilder.IntercomReply(replies).ToPrintedPage();
+
+            foreach (var reply in replies)
+            {
+                StringAssert.Contains(Interrogation.TagFor(reply.Question), page,
+                    $"the transcript dropped the {reply.Question} question");
+                StringAssert.Contains(reply.Answer, page,
+                    $"the transcript dropped what the bearer said about {reply.Question}");
+            }
+        }
+
+        [Test]
+        public void EveryQuestionHasAKeyTagAndTheyAreAllDifferent()
+        {
+            var tags = System.Enum.GetValues(typeof(Question))
+                .Cast<Question>()
+                .Select(Interrogation.TagFor)
+                .ToList();
+
+            CollectionAssert.AllItemsAreUnique(tags);
+            Assert.IsTrue(tags.All(t => t.Length == 4), "a tag does not fit on a key face");
+        }
+
+        [Test]
+        public void AnEmptyTranscriptIsTheIdleChannel()
+        {
+            Assert.AreEqual(
+                DocumentBuilder.IntercomIdle().ToPrintedPage(),
+                DocumentBuilder.IntercomReply(System.Array.Empty<Reply>()).ToPrintedPage());
+        }
+
+        /// <summary>The trace belongs to the newest reply. It is a thing you watch rather
+        /// than read, and a stack of four of them would be noise.</summary>
+        [Test]
+        public void TheVoiceTraceFollowsTheMostRecentReply()
+        {
+            var subject = new SubjectGenerator().Generate(CampaignSeed, 3, 1).Attributes;
+
+            var first = Interrogation.Ask(subject, Question.District);
+            var second = Interrogation.Ask(subject, Question.Destination);
+
+            Assert.AreEqual(Interrogation.VoiceTrace(second, 20),
+                DocumentBuilder.IntercomReply(new[] { first, second }).Footer);
+        }
+
     }
 }

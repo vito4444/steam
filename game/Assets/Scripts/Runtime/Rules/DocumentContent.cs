@@ -165,20 +165,39 @@ namespace Monster.Rules
                 null,
                 ScreenLabelWidth);
 
-        /// <summary>The intercom with a reply on it: what was said, how long the bearer took
-        /// to start saying it, and the trace of the channel while they spoke.</summary>
-        public static DocumentContent IntercomReply(in Reply reply) =>
-            new(
+        /// <summary>Everything this bearer has been asked, and what came back.
+        ///
+        /// One reply used to replace the last, so a player who spent three questions -- nine
+        /// minutes off the clock apiece -- could see the answer to one of them and had to
+        /// hold the other two in their head. Questions are the most expensive thing in the
+        /// game and their answers were the least durable thing on the desk.
+        ///
+        /// The transcript clears when the vehicle does. Each line is the key that asked it,
+        /// what was said and how long the pause was; the voice trace under them belongs to
+        /// the most recent, because a trace is a thing you watch rather than read.</summary>
+        public static DocumentContent IntercomReply(IReadOnlyList<Reply> replies)
+        {
+            if (replies == null || replies.Count == 0)
+            {
+                return IntercomIdle();
+            }
+
+            var fields = new List<DocumentField>(replies.Count);
+
+            foreach (var reply in replies)
+            {
+                fields.Add(new DocumentField(
+                    Interrogation.TagFor(reply.Question),
+                    $"{reply.Answer}  {Interrogation.FormatDelay(reply.DelaySeconds)}"));
+            }
+
+            return new DocumentContent(
                 "INTERCOM 14",
-                new[]
-                {
-                    new DocumentField("ASKED", reply.Prompt),
-                    new DocumentField("REPLY", reply.Answer),
-                    new DocumentField("PAUSE", Interrogation.FormatDelay(reply.DelaySeconds)),
-                },
-                Interrogation.VoiceTrace(reply, 20),
+                fields,
+                Interrogation.VoiceTrace(replies[replies.Count - 1], 20),
                 null,
                 ScreenLabelWidth);
+        }
 
         public static DocumentContent UndersideScan(in SubjectAttributes subject) =>
             new(

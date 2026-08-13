@@ -1035,6 +1035,7 @@ namespace Monster.EditorTools
                 entry.FindPropertyRelative("leanIn").boolValue = poses[i].leanIn;
                 entry.FindPropertyRelative("stagePhase").intValue = poses[i].stage;
                 entry.FindPropertyRelative("askQuestion").intValue = poses[i].ask;
+                entry.FindPropertyRelative("askEverything").boolValue = poses[i].name == "intercom";
                 entry.FindPropertyRelative("turnPage").boolValue = poses[i].name.EndsWith("_page2");
                 entry.FindPropertyRelative("night").intValue = poses[i].night;
             }

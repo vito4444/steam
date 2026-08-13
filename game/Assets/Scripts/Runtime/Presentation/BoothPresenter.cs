@@ -47,6 +47,9 @@ namespace Monster.Presentation
         private ShiftDirector _director;
         private Coroutine _vehicleCycle;
         private Coroutine _pendingReply;
+
+        /// <summary>What this bearer has been asked so far. Cleared when the vehicle is.</summary>
+        private readonly List<Reply> _transcript = new();
         private IReadOnlyList<Notice> _mail = Array.Empty<Notice>();
         private int _mailPage;
         private int _manualPage;
@@ -101,6 +104,13 @@ namespace Monster.Presentation
                 return false;
             }
 
+            // Asking the same thing twice buys nothing -- the answer is deterministic -- and
+            // it would cost nine minutes to be told what is already on the screen.
+            if (_transcript.Any(r => r.Question == question))
+            {
+                return false;
+            }
+
             // The clock is the whole reason asking is a decision rather than a habit.
             if (!_director.Spend(ShiftDirector.MinutesPerQuestion))
             {
@@ -122,7 +132,8 @@ namespace Monster.Presentation
 
             yield return new WaitForSeconds(Mathf.Max(0.05f, reply.DelaySeconds));
 
-            Show(intercom, DocumentBuilder.IntercomReply(reply));
+            _transcript.Add(reply);
+            Show(intercom, DocumentBuilder.IntercomReply(_transcript));
             ReplyReceived?.Invoke(reply);
             _pendingReply = null;
         }
@@ -504,6 +515,8 @@ namespace Monster.Presentation
                 StopCoroutine(_pendingReply);
                 _pendingReply = null;
             }
+
+            _transcript.Clear();
 
             Show(permit, _director.Permit);
             Show(biometrics, _director.Biometrics);

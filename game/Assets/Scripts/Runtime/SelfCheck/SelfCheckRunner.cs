@@ -51,6 +51,9 @@ namespace Monster.SelfCheck
             [Tooltip("Pose the road outside before capturing. -1 leaves it alone.")]
             public int stagePhase = -1;
 
+            [Tooltip("Put every question through the intercom, not just the first.")]
+            public bool askEverything;
+
             [Tooltip("Put this question through the intercom and wait for the reply. -1 asks nothing.")]
             public int askQuestion = -1;
 
@@ -181,29 +184,38 @@ namespace Monster.SelfCheck
                 // an answer is however long this bearer takes.
                 if (presenter != null && checkpoint.askQuestion >= 0)
                 {
-                    var replied = false;
+                    // Every question when the checkpoint wants the transcript, so the shot
+                    // shows what a player who spent four of them actually sees.
+                    var last = checkpoint.askEverything
+                        ? System.Enum.GetValues(typeof(Question)).Length - 1
+                        : checkpoint.askQuestion;
 
-                    void OnReply(Reply _) => replied = true;
-
-                    presenter.ReplyReceived += OnReply;
-                    if (!presenter.Ask((Question)checkpoint.askQuestion))
+                    for (var q = checkpoint.askQuestion; q <= last; q++)
                     {
-                        _logLines.Add($"Error: checkpoint '{checkpoint.name}' could not put a question " +
-                                      "through the intercom");
-                        replied = true;
-                    }
+                        var replied = false;
 
-                    var giveUp = Time.realtimeSinceStartup + 12f;
-                    while (!replied && Time.realtimeSinceStartup < giveUp)
-                    {
-                        yield return null;
-                    }
+                        void OnReply(Reply _) => replied = true;
 
-                    presenter.ReplyReceived -= OnReply;
+                        presenter.ReplyReceived += OnReply;
+                        if (!presenter.Ask((Question)q))
+                        {
+                            _logLines.Add($"Error: checkpoint '{checkpoint.name}' could not put " +
+                                          $"question {q} through the intercom");
+                            replied = true;
+                        }
 
-                    if (!replied)
-                    {
-                        _logLines.Add($"Error: no reply arrived for checkpoint '{checkpoint.name}'");
+                        var giveUp = Time.realtimeSinceStartup + 12f;
+                        while (!replied && Time.realtimeSinceStartup < giveUp)
+                        {
+                            yield return null;
+                        }
+
+                        presenter.ReplyReceived -= OnReply;
+
+                        if (!replied)
+                        {
+                            _logLines.Add($"Error: no reply arrived for checkpoint '{checkpoint.name}'");
+                        }
                     }
                 }
 

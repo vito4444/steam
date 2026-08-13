@@ -67,6 +67,17 @@ namespace Monster.Rules
             _ => throw new ArgumentOutOfRangeException(nameof(question), question, null),
         };
 
+        /// <summary>The four letters engraved on the key that asks it. Used where a whole
+        /// prompt will not fit, which is the transcript of everything asked so far.</summary>
+        public static string TagFor(Question question) => question switch
+        {
+            Question.District => "DIST",
+            Question.Purpose => "PURP",
+            Question.IssuingOffice => "OFFC",
+            Question.Destination => "DEST",
+            _ => throw new ArgumentOutOfRangeException(nameof(question), question, null),
+        };
+
         public static Reply Ask(in SubjectAttributes subject, Question question)
         {
             var answer = question switch
