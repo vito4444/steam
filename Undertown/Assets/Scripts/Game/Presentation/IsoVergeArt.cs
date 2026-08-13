@@ -54,6 +54,64 @@ namespace Undertown.Game.Presentation
             return Cache[key] = ToSprite(px, $"iso_verge_{edges:X}_{(onGrass ? 'g' : 'e')}_{variant}");
         }
 
+        /// <summary>
+        /// The shadow an excavated cell takes from the rock standing along the given edges.
+        ///
+        /// Shading every cell darker at its own rim drew the grid across the workings, because
+        /// a cell in the middle of a chamber has no wall to cast anything. Only the boundaries
+        /// with rock behind them get a shadow, so a chamber comes out as one lit floor inside a
+        /// dark rim and a tunnel as a corridor.
+        /// </summary>
+        public static Sprite ForCavity(int edges, int variant)
+        {
+            edges &= 0xF;
+            if (edges == 0) return null;
+
+            variant = ((variant % Variants) + Variants) % Variants;
+            int key = 0x10000 + edges * Variants + variant;
+            if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+
+            var px = new Color32[Width * Height];
+            for (int i = 0; i < px.Length; i++) px[i] = new Color32(0, 0, 0, 0);
+
+            int seed = variant * 53;
+            if ((edges & IsoShoreArt.South) != 0) Wall(px, 0f, 0f, 1f, 0f, seed + 0);
+            if ((edges & IsoShoreArt.West) != 0) Wall(px, 0f, 1f, 0f, 0f, seed + 1);
+            if ((edges & IsoShoreArt.East) != 0) Wall(px, 1f, 0f, 1f, 1f, seed + 2);
+            if ((edges & IsoShoreArt.North) != 0) Wall(px, 1f, 1f, 0f, 1f, seed + 3);
+
+            return Cache[key] = ToSprite(px, $"iso_cavitywall_{edges:X}_{variant}");
+        }
+
+        private static void Wall(Color32[] px, float u0, float v0, float u1, float v1, int seed)
+        {
+            Project((u0 + u1) * 0.5f, (v0 + v1) * 0.5f, out int mx, out int my);
+            float sx = CentreX - mx;
+            float sy = CentreY - my;
+            float mag = Mathf.Max(0.001f, Mathf.Sqrt(sx * sx + sy * sy));
+            sx /= mag;
+            sy /= mag;
+
+            const int steps = 110;
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                Project(Mathf.Lerp(u0, u1, t), Mathf.Lerp(v0, v1, t), out int x, out int y);
+
+                int n = Noise(i, seed);
+                int reach = 5 + n % 3;
+                for (int d = 0; d < reach; d++)
+                {
+                    // Densest against the rock and gone within a few pixels, and stippled so
+                    // that the far edge of the shadow is not a second line beside the first.
+                    int fade = 150 - d * 26;
+                    if (d > 1 && Noise(i * 5 + d, seed + 7) % 6 < d) continue;
+                    Plot(px, x + Mathf.RoundToInt(sx * d), y + Mathf.RoundToInt(sy * d),
+                        new Color32(0x10, 0x0C, 0x08, (byte)Mathf.Clamp(fade, 0, 255)));
+                }
+            }
+        }
+
         private static void Edge(Color32[] px, float u0, float v0, float u1, float v1, int seed,
             bool onGrass)
         {

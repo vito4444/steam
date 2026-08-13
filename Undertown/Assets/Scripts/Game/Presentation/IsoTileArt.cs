@@ -285,27 +285,57 @@ namespace Undertown.Game.Presentation
                     break;
 
                 case TileKind.Earth:
-                    for (int i = 0; i < 5; i++)
+                {
+                    // Unworked ground, which is most of what is on screen once the player goes
+                    // below. Five dark specks left it a flat brown field, and a field of it is
+                    // the backdrop the tunnels have to read against.
+                    //
+                    // What is in it: bands of different soil, stone the diggers would have to
+                    // go round, and roots near enough the surface to still be alive.
+                    var soil = ColorOf(kind);
+                    for (int i = 0; i < 11; i++)
                     {
                         int gx = Hash(i, variant, 641) % w;
                         int gy = skirt + Hash(i, variant, 419) % Iso.TileHeight;
-                        if (!Iso.InsideDiamond(gx, gy - skirt, w, Iso.TileHeight)) continue;
-                        Plot(px, w, h, gx, gy, new Color32(0x5E, 0x50, 0x3E, 0xFF));
+                        int roll = Hash(i, variant, 73) % 10;
+
+                        if (roll < 5)
+                        {
+                            // A band of paler or darker soil, lying along the grid axis.
+                            var tone = Shift(soil, roll < 2 ? 9 : -10);
+                            for (int k = 0; k < 4 + roll * 2; k++)
+                            {
+                                Plot(px, w, h, gx + k * 2, gy + k, tone);
+                                Plot(px, w, h, gx + k * 2 + 1, gy + k, tone);
+                            }
+                        }
+                        else if (roll < 8)
+                        {
+                            var stone = new Color32(0x3E, 0x39, 0x33, 0xFF);
+                            for (int dy = -1; dy <= 1; dy++)
+                            for (int dx = -2; dx <= 2; dx++)
+                            {
+                                if (Mathf.Abs(dx) == 2 && dy != 0) continue;
+                                Plot(px, w, h, gx + dx, gy + dy, dy < 0 ? Shift(stone, 10) : stone);
+                            }
+                        }
+                        else
+                        {
+                            var root = new Color32(0x4A, 0x3A, 0x24, 0xFF);
+                            for (int k = 0; k < 6; k++)
+                                Plot(px, w, h, gx - k * 2, gy + k - (k > 3 ? 1 : 0), root);
+                        }
                     }
                     break;
+                }
 
                 case TileKind.Cavity:
-                    // A swept floor, darker towards the edges so a run of tunnel reads as a
-                    // corridor with walls rather than as a flat light patch.
-                    for (int y = 0; y < h; y++)
-                    for (int x = 0; x < w; x++)
-                    {
-                        if (px[y * w + x].a == 0) continue;
-                        float dx = Mathf.Abs(x - (w - 1) / 2f) / (w / 2f);
-                        float dy = Mathf.Abs(y - (h - 1) / 2f) / (h / 2f);
-                        float toEdge = dx + dy;
-                        if (toEdge > 0.72f) px[y * w + x] = Darken(px[y * w + x], 26);
-                    }
+                    // A swept floor. It used to be shaded darker towards the edge of every
+                    // cell, on the reasoning that a run of tunnel should read as a corridor
+                    // with walls - but a cell in the middle of a chamber has no walls, and
+                    // shading them in drew the grid across every excavation. The shadow at the
+                    // foot of a wall is now cast per boundary by the renderer, which knows
+                    // which sides actually have rock behind them.
                     for (int i = 0; i < 4; i++)
                     {
                         int gx = Hash(i, variant, 733) % w;

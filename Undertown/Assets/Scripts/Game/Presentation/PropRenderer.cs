@@ -44,7 +44,7 @@ namespace Undertown.Game.Presentation
                 var cell = new Coord(x, y, depth);
                 var kind = _map.Get(cell);
 
-                var verge = VergeOn(cell, kind);
+                var verge = kind == TileKind.Cavity ? CavityWallOn(cell) : VergeOn(cell, kind);
                 if (verge != null) Place(ref used, cell, verge, offset: -3);
 
                 var bed = GardenOn(cell, kind);
@@ -292,6 +292,25 @@ namespace Undertown.Game.Presentation
             if (edges == 0) return null;
 
             return IsoVergeArt.For(edges, turf, Hash(cell.X, cell.Y * 3) % IsoVergeArt.Variants);
+        }
+
+        /// <summary>Which sides of an excavated cell still have rock standing against them.</summary>
+        private Sprite CavityWallOn(Coord cell)
+        {
+            int edges = 0;
+            if (IsRock(cell.Offset(0, -1))) edges |= IsoShoreArt.South;
+            if (IsRock(cell.Offset(1, 0))) edges |= IsoShoreArt.East;
+            if (IsRock(cell.Offset(0, 1))) edges |= IsoShoreArt.North;
+            if (IsRock(cell.Offset(-1, 0))) edges |= IsoShoreArt.West;
+            if (edges == 0) return null;
+
+            return IsoVergeArt.ForCavity(edges, Hash(cell.X, cell.Y * 5) % IsoVergeArt.Variants);
+        }
+
+        private bool IsRock(Coord cell)
+        {
+            if (!_map.InBounds(cell)) return true;
+            return !Tiles.IsOpenUnderground(_map.Get(cell));
         }
 
         private bool Contrasts(Coord neighbour, bool turf)
