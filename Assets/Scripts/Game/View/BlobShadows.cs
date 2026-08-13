@@ -59,7 +59,10 @@ namespace Worker.Game
 
             var material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
 
-            var color = new Color(0.29f, 0.28f, 0.30f);
+            // Lifted close to the floor tone. A review called the previous value "black
+            // paper stuck to the ground": an opaque quad cannot blend, so the only lever
+            // is to keep it near what it sits on and let the difference do the work.
+            var color = new Color(0.37f, 0.36f, 0.37f);
             material.color = color;
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0f);

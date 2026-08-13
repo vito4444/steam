@@ -93,6 +93,7 @@ namespace Worker.Game
             public Transform Carried;
             public Renderer CarriedRenderer;
             public bool LastTired;
+            public WorkerRigAnimator Animator;
         }
 
         private void Awake()
@@ -111,14 +112,41 @@ namespace Worker.Game
         private void OnDestroy()
         {
             if (_runner != null) _runner.WorldCreated -= OnWorldCreated;
+            if (_world != null) _world.EventRaised -= OnSimEvent;
             ProceduralMesh.ClearCache();
             ProceduralTextures.ClearCache();
         }
 
         private void OnWorldCreated(SimWorld world)
         {
+            if (_world != null) _world.EventRaised -= OnSimEvent;
+
             _world = world;
+            _world.EventRaised += OnSimEvent;
             Rebuild();
+        }
+
+        /// <summary>
+        /// Turns simulation events into one-off visuals. Only completed crafts are
+        /// handled for now, and the effect is driven by the event rather than polled, so
+        /// it fires exactly once per unit produced.
+        /// </summary>
+        private void OnSimEvent(SimEvent evt)
+        {
+            if (evt.Kind != SimEventKind.CraftCompleted) return;
+
+            var building = _world.GetBuilding(evt.A);
+            if (building == null) return;
+            if (!_buildings.TryGetValue(building.Id, out var holder) || holder == null) return;
+
+            var recipe = GameData.Recipe((RecipeId)evt.B);
+
+            // Start above the housing. At 1.05 the item began inside the machine mesh
+            // and clipped through it on the way up.
+            OutputPop.Spawn(holder, MaterialFor(recipe.Output.Item),
+                new Vector3(0f, 1.5f, 0f),
+                new Vector3(0f, 0.45f, building.Height * 0.5f + 0.35f),
+                0.24f);
         }
 
         // ------------------------------------------------------------- materials
@@ -730,7 +758,17 @@ namespace Worker.Game
                 }
 
                 var position = InterpolatedPosition(worker);
-                rig.Root.position = new Vector3(position.x, 0.2f, position.y);
+
+                if (rig.Animator != null)
+                {
+                    rig.Animator.TargetPosition = new Vector3(position.x, 0.2f, position.y);
+                    rig.Animator.Walking = worker.PathCursor < worker.Path.Count;
+                    rig.Animator.Separation = SeparationFor(worker, position);
+                }
+                else
+                {
+                    rig.Root.position = new Vector3(position.x, 0.2f, position.y);
+                }
 
                 bool tired = worker.Stamina <= SimConfig.StaminaSeekRestThreshold;
                 if (tired != rig.LastTired)
@@ -773,6 +811,8 @@ namespace Worker.Game
             var holder = new GameObject("Worker " + worker.Name);
             holder.transform.SetParent(_root, false);
 
+            BlobShadows.Attach(holder.transform, _shadowMaterial, 0.5f, 0.5f, 0.7f);
+
             // Proportions matter more than polygon count at this size. A narrow body, a
             // clearly separated head and a hard hat give a silhouette that stays human
             // at roughly twenty pixels tall, which is all a worker ever occupies here.
@@ -780,12 +820,13 @@ namespace Worker.Game
             body.localScale = new Vector3(0.36f, 0.26f, 0.36f);
             body.localPosition = new Vector3(0f, 0.3f, 0f);
 
-            for (int side = -1; side <= 1; side += 2)
-            {
-                var arm = CreateCapsule("Arm", holder.transform, _workerMaterial);
-                arm.localScale = new Vector3(0.11f, 0.13f, 0.11f);
-                arm.localPosition = new Vector3(side * 0.2f, 0.34f, 0.02f);
-            }
+            var leftArm = CreateCapsule("ArmLeft", holder.transform, _workerMaterial);
+            leftArm.localScale = new Vector3(0.11f, 0.13f, 0.11f);
+            leftArm.localPosition = new Vector3(-0.2f, 0.34f, 0.02f);
+
+            var rightArm = CreateCapsule("ArmRight", holder.transform, _workerMaterial);
+            rightArm.localScale = new Vector3(0.11f, 0.13f, 0.11f);
+            rightArm.localPosition = new Vector3(0.2f, 0.34f, 0.02f);
 
             var head = CreateSphere("Head", holder.transform, _workerMaterial);
             head.localScale = new Vector3(0.28f, 0.28f, 0.28f);
@@ -799,22 +840,71 @@ namespace Worker.Game
 
             var brim = CreateCylinder("Brim", holder.transform, _helmetMaterial);
             brim.localScale = new Vector3(0.36f, 0.02f, 0.36f);
-            brim.localPosition = new Vector3(0f, 0.63f, 0.02f);
-
-            BlobShadows.Attach(holder.transform, _shadowMaterial, 0.5f, 0.5f, 0.7f);
+            brim.localPosition = new Vector3(0f, 0.71f, 0f);
 
             var carried = CreateBox("Carried", holder.transform, MaterialFor(ItemId.Log));
             carried.localScale = new Vector3(0.24f, 0.24f, 0.24f);
             carried.localPosition = new Vector3(0f, 0.58f, 0.28f);
             carried.gameObject.SetActive(false);
 
+            var animator = holder.AddComponent<WorkerRigAnimator>();
+            animator.Body = body;
+            animator.Head = head;
+            animator.Helmet = helmet;
+            animator.Brim = brim;
+            animator.LeftArm = leftArm;
+            animator.RightArm = rightArm;
+            animator.Carried = carried;
+
             return new WorkerRig
             {
                 Root = holder.transform,
                 Body = body.GetComponent<Renderer>(),
                 Carried = carried,
-                CarriedRenderer = carried.GetComponent<Renderer>()
+                CarriedRenderer = carried.GetComponent<Renderer>(),
+                Animator = animator
             };
+        }
+
+        /// <summary>
+        /// A small push away from anyone standing too close.
+        ///
+        /// The simulation lets two workers occupy the same tile, which is correct for a
+        /// grid model and looks wrong on screen: a video review flagged figures passing
+        /// straight through each other. This offsets the drawing only, so the model is
+        /// untouched and replays stay identical.
+        /// </summary>
+        private Vector3 SeparationFor(WorkerUnit worker, Vector2 position)
+        {
+            const float personalSpace = 0.62f;
+
+            var push = Vector2.zero;
+
+            for (int i = 0; i < _world.Workers.Count; i++)
+            {
+                var other = _world.Workers[i];
+                if (other.Id == worker.Id) continue;
+
+                var otherPosition = InterpolatedPosition(other);
+                var away = position - otherPosition;
+                float distance = away.magnitude;
+
+                if (distance >= personalSpace) continue;
+
+                // Two figures exactly on top of each other have no direction to separate
+                // along; break the tie with their ids so it stays deterministic.
+                if (distance < 0.001f)
+                {
+                    float angle = (worker.Id * 137 % 360) * Mathf.Deg2Rad;
+                    away = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                    distance = 0.001f;
+                }
+
+                push += away / distance * (personalSpace - distance) * 0.5f;
+            }
+
+            if (push.sqrMagnitude > 0.09f) push = push.normalized * 0.3f;
+            return new Vector3(push.x, 0f, push.y);
         }
 
         private static Vector2 InterpolatedPosition(WorkerUnit worker)
