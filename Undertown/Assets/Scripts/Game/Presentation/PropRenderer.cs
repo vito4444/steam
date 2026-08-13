@@ -47,6 +47,12 @@ namespace Undertown.Game.Presentation
 
                 var fence = IsoFenceArt.For(FenceEdgesAt(cell, kind));
                 if (fence != null) Place(ref used, cell, fence, offset: 1);
+
+                if (kind == TileKind.Water)
+                {
+                    var shore = IsoShoreArt.For(LandEdgesAt(cell), Hash(x, y) % IsoShoreArt.Variants);
+                    if (shore != null) Place(ref used, cell, shore, offset: 1);
+                }
             }
 
             for (int i = used; i < _pool.Count; i++)
@@ -119,6 +125,19 @@ namespace Undertown.Game.Presentation
 
         private static bool IsLane(TileKind kind) => kind == TileKind.Road;
 
+        /// <summary>Which edges of a water cell face dry ground, and so carry a bank.</summary>
+        private int LandEdgesAt(Coord cell)
+        {
+            int mask = 0;
+            if (IsDry(_map.Get(cell.Offset(0, -1)))) mask |= IsoShoreArt.South;
+            if (IsDry(_map.Get(cell.Offset(1, 0)))) mask |= IsoShoreArt.East;
+            if (IsDry(_map.Get(cell.Offset(0, 1)))) mask |= IsoShoreArt.North;
+            if (IsDry(_map.Get(cell.Offset(-1, 0)))) mask |= IsoShoreArt.West;
+            return mask;
+        }
+
+        private static bool IsDry(TileKind kind) => kind != TileKind.Water;
+
         private bool NearALane(Coord cell)
         {
             for (int dy = -2; dy <= 2; dy++)
@@ -147,18 +166,41 @@ namespace Undertown.Game.Presentation
             // barrels. Proximity to a lane is the test: open country has no lanes in it, and
             // any grass within a cell or two of one is somebody's plot.
             bool plot = kind == TileKind.Grass && NearALane(cell);
-            if (!yard && !plot) return null;
+            bool country = kind == TileKind.Grass && !plot;
 
             int h = Hash(cell.X, cell.Y);
-            if (h % (yard ? 5 : 9) != 0) return null;
-
-            var choices = new[]
+            if (yard || plot)
             {
-                IsoPropArt.Clutter.Woodpile, IsoPropArt.Clutter.Crates, IsoPropArt.Clutter.Barrels,
-                IsoPropArt.Clutter.Cart, IsoPropArt.Clutter.Well, IsoPropArt.Clutter.Fence,
-            };
-            return IsoPropArt.ForClutter(choices[(h / 9) % choices.Length]);
+                if (h % (yard ? 5 : 9) != 0) return null;
+                return IsoPropArt.ForClutter(TownClutter[(h / 9) % TownClutter.Length]);
+            }
+
+            // Open country gets bushes, weeds and loose stone. The land beyond the town was a
+            // flat green field with nothing in it, which made the settlement look pasted onto a
+            // backdrop rather than standing in a landscape. These are decoration only: they
+            // come from the cell coordinate, never from the map, so nothing the simulation
+            // cares about - timber, clay, room to build - changes because of them.
+            if (!country || h % 4 != 0) return null;
+            return IsoPropArt.ForClutter(CountryClutter[(h / 4) % CountryClutter.Length], (h / 31) & 3);
         }
+
+        private static readonly IsoPropArt.Clutter[] TownClutter =
+        {
+            IsoPropArt.Clutter.Woodpile, IsoPropArt.Clutter.Crates, IsoPropArt.Clutter.Barrels,
+            IsoPropArt.Clutter.Cart, IsoPropArt.Clutter.Well, IsoPropArt.Clutter.Fence,
+        };
+
+        /// <summary>
+        /// Weighted by repetition. Trees are here rather than in the map because forest is not
+        /// walkable and scenery must not close a route the pathfinder was counting on: these
+        /// stand on ordinary grass, so the country reads as open woodland and stays crossable.
+        /// </summary>
+        private static readonly IsoPropArt.Clutter[] CountryClutter =
+        {
+            IsoPropArt.Clutter.LoneTree, IsoPropArt.Clutter.Shrub, IsoPropArt.Clutter.TallGrass,
+            IsoPropArt.Clutter.Broadleaf, IsoPropArt.Clutter.LoneTree, IsoPropArt.Clutter.Stones,
+            IsoPropArt.Clutter.Shrub, IsoPropArt.Clutter.TallGrass, IsoPropArt.Clutter.Broadleaf,
+        };
 
         private static int Hash(int x, int y)
         {

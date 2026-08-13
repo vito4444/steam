@@ -23,10 +23,12 @@ namespace Undertown.Game.Presentation
             { TileKind.Dirt,        new Color32(0x96, 0x79, 0x4E, 0xFF) },
             { TileKind.Road,        new Color32(0xAC, 0x8D, 0x60, 0xFF) },
             { TileKind.Water,       new Color32(0x32, 0x68, 0x8E, 0xFF) },
-            // Close to grass on purpose: what marks woodland is the trees standing on it, not
-            // a differently coloured floor. Tinting the ground too made every wooded cell read
-            // as a dark tile pasted onto the map.
-            { TileKind.Forest,      new Color32(0x6E, 0x78, 0x3E, 0xFF) },
+            // Woodland floor is grass. Even a few shades darker, a wooded cell drew its own
+            // diamond outline on the map, and a wood came out as a run of tiles rather than a
+            // stand of trees. What marks it as woodland is the trees standing on it; the litter
+            // and shade underneath them are painted as scatter, which does not follow the cell
+            // boundary and so does not advertise it.
+            { TileKind.Forest,      new Color32(0x7B, 0x86, 0x42, 0xFF) },
             { TileKind.ClayDeposit, new Color32(0x9A, 0x5F, 0x44, 0xFF) },
             { TileKind.Rock,        new Color32(0x6E, 0x6E, 0x66, 0xFF) },
             { TileKind.DisusedMine, new Color32(0x54, 0x44, 0x30, 0xFF) },
@@ -143,13 +145,17 @@ namespace Undertown.Game.Presentation
                     // Anything drawn inside a ground tile is clipped by the cells in front of
                     // it, which decapitates anything that stands up. What belongs here is only
                     // what lies flat: leaf litter and a rougher floor.
-                    for (int i = 0; i < 5; i++)
+                    for (int i = 0; i < 22; i++)
                     {
                         int gx = Hash(i, variant, 233) % w;
                         int gy = skirt + Hash(i, variant, 811) % Iso.TileHeight;
                         if (!Iso.InsideDiamond(gx, gy - skirt, w, Iso.TileHeight)) continue;
-                        Plot(px, w, h, gx, gy, new Color32(0x53, 0x50, 0x2E, 0xFF));
-                        Plot(px, w, h, gx + 1, gy, new Color32(0x53, 0x50, 0x2E, 0xFF));
+
+                        var tone = i % 3 == 0
+                            ? new Color32(0x53, 0x50, 0x2E, 0xFF)
+                            : new Color32(0x6C, 0x74, 0x3C, 0xFF);
+                        Plot(px, w, h, gx, gy, tone);
+                        Plot(px, w, h, gx + 1, gy, tone);
                     }
                     break;
 
@@ -163,13 +169,39 @@ namespace Undertown.Game.Presentation
                     break;
 
                 case TileKind.Water:
-                    for (int i = -8; i <= 8; i += 4)
+                {
+                    // Depth mottling first, then broken highlights on top. Three even stripes
+                    // on flat blue read as a decorated tile; open water wants no repeating
+                    // feature large enough for the eye to lock onto and start counting.
+                    var deep = new Color32(0x27, 0x53, 0x74, 0xFF);
+                    var mid = new Color32(0x3A, 0x74, 0x9A, 0xFF);
+                    var glint = new Color32(0x6E, 0xA4, 0xC2, 0xFF);
+
+                    for (int i = 0; i < 46; i++)
                     {
-                        Plot(px, w, h, cx + i * 2, cy + i, new Color32(0x5A, 0x8C, 0xAC, 0xFF));
-                        Plot(px, w, h, cx + i * 2 + 1, cy + i, new Color32(0x5A, 0x8C, 0xAC, 0xFF));
-                        Plot(px, w, h, cx + i * 2 + 2, cy + i, new Color32(0x5A, 0x8C, 0xAC, 0xFF));
+                        int gx = Hash(i, variant, 811) % w;
+                        int gy = skirt + Hash(i, variant, 419) % Iso.TileHeight;
+                        if (!Iso.InsideDiamond(gx, gy - skirt, w, Iso.TileHeight)) continue;
+
+                        var tone = (i % 3 == 0) ? mid : deep;
+                        Plot(px, w, h, gx, gy, tone);
+                        Plot(px, w, h, gx + 1, gy, tone);
+                    }
+
+                    for (int i = 0; i < 7; i++)
+                    {
+                        int gx = Hash(i, variant, 227) % w;
+                        int gy = skirt + Hash(i, variant, 653) % Iso.TileHeight;
+                        int run = 2 + Hash(i, variant, 97) % 4;
+                        for (int k = 0; k < run; k++)
+                        {
+                            if (!Iso.InsideDiamond(gx + k * 2, gy - skirt, w, Iso.TileHeight)) continue;
+                            Plot(px, w, h, gx + k * 2, gy + k, glint);
+                            Plot(px, w, h, gx + k * 2 + 1, gy + k, glint);
+                        }
                     }
                     break;
+                }
 
                 case TileKind.Rock:
                 case TileKind.ClayDeposit:

@@ -15,8 +15,8 @@ namespace Undertown.Game.Presentation
     /// </summary>
     public static class IsoPropArt
     {
-        private const int Width = 48;
-        private const int Height = 56;
+        private const int Width = 60;
+        private const int Height = 76;
 
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
 
@@ -29,11 +29,17 @@ namespace Undertown.Game.Presentation
         /// cart. None of it is simulated. It is there because a settlement with nothing in
         /// the gaps between its buildings looks like a diagram of a settlement.
         /// </summary>
-        public enum Clutter { Well, Woodpile, Crates, Barrels, Cart, Fence }
-
-        public static Sprite ForClutter(Clutter clutter)
+        public enum Clutter
         {
-            int key = 1000 + (int)clutter;
+            Well, Woodpile, Crates, Barrels, Cart, Fence,
+
+            // Open country, away from anything the town uses.
+            Shrub, TallGrass, Stones, LoneTree, Broadleaf,
+        }
+
+        public static Sprite ForClutter(Clutter clutter, int variant = 0)
+        {
+            int key = 1000 + (int)clutter * 8 + (variant & 3);
             if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
 
             var px = Blank();
@@ -48,9 +54,135 @@ namespace Undertown.Game.Presentation
                 case Clutter.Barrels: Barrels(px, cx, cy); break;
                 case Clutter.Cart: Cart(px, cx, cy); break;
                 case Clutter.Fence: Fence(px, cx, cy); break;
+                case Clutter.Shrub: Shrub(px, cx, cy, variant); break;
+                case Clutter.TallGrass: TallGrass(px, cx, cy, variant); break;
+                case Clutter.Stones: Stones(px, cx, cy, variant); break;
+                case Clutter.LoneTree:
+                    Conifer(px, cx - 1 + (variant & 1), cy, 19 + variant * 3, 9 + (variant & 1));
+                    break;
+                case Clutter.Broadleaf: Broadleaf(px, cx, cy, variant); break;
             }
 
-            return Cache[key] = ToSprite(px, $"iso_clutter_{clutter}");
+            return Cache[key] = ToSprite(px, $"iso_clutter_{clutter}_{variant}");
+        }
+
+        /// <summary>
+        /// A low bush. Country outside the town is otherwise unbroken green, and the reference
+        /// has no unbroken anything - the eye needs something at ground level to hold onto or
+        /// the grass reads as an empty backdrop the town was pasted onto.
+        /// </summary>
+        private static void Shrub(Color32[] px, int cx, int cy, int variant)
+        {
+            var dark = new Color32(0x2E, 0x4A, 0x28, 0xFF);
+            var mid = new Color32(0x3E, 0x5E, 0x30, 0xFF);
+            var lit = new Color32(0x54, 0x74, 0x3A, 0xFF);
+
+            int lobes = 2 + variant % 2;
+            for (int lobe = 0; lobe < lobes; lobe++)
+            {
+                int ox = (lobe - lobes / 2) * 5 + (Hash(lobe, variant, 61) % 3) - 1;
+                int oy = Hash(lobe, variant, 149) % 3;
+                int radius = 4 + Hash(lobe, variant, 227) % 3;
+
+                for (int dy = -1; dy <= radius + 2; dy++)
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    float fx = dx / (float)radius;
+                    float fy = (dy - radius * 0.4f) / (radius + 1f);
+                    if (fx * fx + fy * fy > 1f) continue;
+
+                    var tone = dy > radius - 1 ? lit : dx > radius / 3 ? dark : mid;
+                    Plot(px, cx + ox + dx, cy + oy + dy, tone);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A broadleaf, built from overlapping clumps of foliage rather than a cone. Every tree
+        /// in the scene was the same conifer, and the reference plants both, with the rounder
+        /// crowns near water and along the field edges.
+        /// </summary>
+        private static void Broadleaf(Color32[] px, int cx, int cy, int variant)
+        {
+            var dark = C(0x2C, 0x44, 0x1E);
+            var mid = C(0x3E, 0x5C, 0x26);
+            var lit = C(0x5E, 0x7E, 0x34);
+            var trunk = C(0x46, 0x34, 0x20);
+            var trunkLit = C(0x5E, 0x48, 0x2E);
+            var shadow = new Color32(0x14, 0x18, 0x0A, 0x4C);
+
+            for (int dy = -4; dy <= 3; dy++)
+            for (int dx = 0; dx <= 13; dx++)
+                if (dx + Mathf.Abs(dy) * 3 < 15) Blend(px, cx + dx, cy + dy, shadow);
+
+            int bole = 9 + variant % 3;
+            for (int dy = 0; dy < bole; dy++)
+            {
+                Plot(px, cx, cy + dy, trunkLit);
+                Plot(px, cx + 1, cy + dy, trunk);
+                if (dy > bole - 4) Plot(px, cx + 2 + (dy - bole + 4), cy + dy, trunk);
+            }
+
+            int clumps = 4 + variant % 2;
+            for (int i = 0; i < clumps; i++)
+            {
+                int ox = (Hash(i, variant, 37) % 19) - 9;
+                int oy = bole + 2 + (Hash(i, variant, 131) % 9);
+                int radius = 6 + Hash(i, variant, 283) % 4;
+
+                for (int dy = -radius; dy <= radius; dy++)
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    float fx = dx / (float)radius;
+                    float fy = dy / (float)radius;
+                    if (fx * fx + fy * fy > 1f) continue;
+
+                    var tone = dy > radius / 3 && dx < 0 ? lit : dx > radius / 3 ? dark : mid;
+                    if (Hash(dx + i * 11, dy, variant + 5) % 11 == 0) tone = dark;
+                    Plot(px, cx + ox + dx, cy + oy + dy, tone);
+                }
+            }
+        }
+
+        private static void TallGrass(Color32[] px, int cx, int cy, int variant)
+        {
+            var blade = new Color32(0x5C, 0x72, 0x36, 0xFF);
+            var bladeLit = new Color32(0x74, 0x8A, 0x44, 0xFF);
+
+            for (int i = 0; i < 9; i++)
+            {
+                int bx = cx - 8 + Hash(i, variant, 313) % 17;
+                int lean = (Hash(i, variant, 71) % 3) - 1;
+                int tall = 4 + Hash(i, variant, 199) % 5;
+                for (int k = 0; k < tall; k++)
+                    Plot(px, bx + lean * k / 3, cy + k, k > tall - 3 ? bladeLit : blade);
+            }
+        }
+
+        private static void Stones(Color32[] px, int cx, int cy, int variant)
+        {
+            // Warm grey. Neutral stone went blue against this much green and the scatter read
+            // as litter dropped on the map rather than rock lying in a field.
+            var lit = new Color32(0x8A, 0x86, 0x76, 0xFF);
+            var face = new Color32(0x6A, 0x66, 0x5A, 0xFF);
+            var dark = new Color32(0x4C, 0x4A, 0x42, 0xFF);
+
+            for (int s = 0; s < 3; s++)
+            {
+                int ox = (s - 1) * 6 + Hash(s, variant, 89) % 3;
+                int oy = Hash(s, variant, 173) % 4;
+                int radius = 2 + Hash(s, variant, 251) % 3;
+
+                for (int dy = -1; dy <= radius + 1; dy++)
+                for (int dx = -radius - 1; dx <= radius + 1; dx++)
+                {
+                    float fx = dx / (float)(radius + 1);
+                    float fy = (dy - radius * 0.3f) / (radius + 1f);
+                    if (fx * fx + fy * fy > 1f) continue;
+                    Plot(px, cx + ox + dx, cy + oy + dy,
+                        dx < -radius / 2 ? lit : dx > radius / 2 ? dark : face);
+                }
+            }
         }
 
         public static Sprite For(TileKind kind, int variant)
@@ -65,10 +197,16 @@ namespace Undertown.Game.Presentation
             switch (kind)
             {
                 case TileKind.Forest:
-                    // Two trees per cell at different heights, jittered by variant, so a wood
-                    // has an uneven canopy instead of a repeated stamp.
-                    Conifer(px, cx - 9 + variant * 2, cy - 2, 13 + (variant & 1) * 4);
-                    Conifer(px, cx + 8 - variant, cy + 3, 16 - (variant & 1) * 3);
+                    // Three trees per cell, at different heights and jittered by variant, so a
+                    // wood has an uneven canopy rather than a repeated stamp.
+                    //
+                    // They are drawn back to front within the cell, and they are big: at the
+                    // old size a tree covered about a quarter of the cell it stood on, so a
+                    // forest was a green field with dots on it, and the country around the town
+                    // read as empty. A conifer should roughly fill its cell.
+                    Conifer(px, cx - 3 + variant, cy - 5, 20 + (variant & 1) * 5, 10);
+                    Conifer(px, cx - 14 + variant * 2, cy + 1, 17 + (variant & 1) * 4, 9);
+                    Conifer(px, cx + 11 - variant, cy + 4, 22 - (variant & 1) * 4, 10);
                     break;
 
                 case TileKind.Rock:
@@ -88,19 +226,19 @@ namespace Undertown.Game.Presentation
             return Cache[key] = ToSprite(px, $"iso_prop_{kind}_{variant}");
         }
 
-        private static void Conifer(Color32[] px, int cx, int baseY, int canopy)
+        private static void Conifer(Color32[] px, int cx, int baseY, int canopy, int spread)
         {
-            var dark = C(0x25, 0x38, 0x1A);
-            var mid = C(0x33, 0x4C, 0x22);
-            var lit = C(0x4C, 0x6B, 0x2E);
+            var dark = C(0x23, 0x36, 0x19);
+            var mid = C(0x31, 0x4A, 0x21);
+            var lit = C(0x4E, 0x6E, 0x30);
             var trunk = C(0x3C, 0x2C, 0x1A);
             var shadow = new Color32(0x14, 0x18, 0x0A, 0x4C);
 
-            for (int dy = -3; dy <= 2; dy++)
-            for (int dx = 0; dx <= 9; dx++)
-                if (dx + Mathf.Abs(dy) * 3 < 11) Blend(px, cx + dx, baseY + dy, shadow);
+            for (int dy = -4; dy <= 3; dy++)
+            for (int dx = 0; dx <= spread + 3; dx++)
+                if (dx + Mathf.Abs(dy) * 3 < spread + 5) Blend(px, cx + dx, baseY + dy, shadow);
 
-            for (int dy = 0; dy < 5; dy++)
+            for (int dy = 0; dy < 6; dy++)
             {
                 Plot(px, cx, baseY + dy, trunk);
                 Plot(px, cx + 1, baseY + dy, trunk);
@@ -108,11 +246,11 @@ namespace Undertown.Game.Presentation
 
             for (int row = 0; row < canopy; row++)
             {
-                int half = Mathf.Max(0, 7 - row * 7 / canopy);
-                int y = baseY + 4 + row;
+                int half = Mathf.Max(0, spread - row * spread / canopy);
+                int y = baseY + 5 + row;
 
-                // A slight notch every few rows reads as separate boughs rather than a cone.
-                if (row % 4 == 3) half = Mathf.Max(0, half - 1);
+                // A notch every few rows reads as separate boughs rather than one smooth cone.
+                if (row % 4 == 3) half = Mathf.Max(0, half - 2);
 
                 for (int dx = -half; dx <= half + 1; dx++)
                     Plot(px, cx + dx, y, dx < -half / 3 ? lit : dx > half / 3 ? dark : mid);
@@ -320,6 +458,16 @@ namespace Undertown.Game.Presentation
         }
 
         private static Color32 C(byte r, byte g, byte b) => new Color32(r, g, b, 0xFF);
+
+        private static int Hash(int a, int b, int salt)
+        {
+            unchecked
+            {
+                int h = a * 374761393 + b * 668265263 + salt * 1103515245;
+                h = (h ^ (h >> 13)) * 1274126177;
+                return (h ^ (h >> 16)) & 0x7FFFFFFF;
+            }
+        }
 
         private static void Plot(Color32[] px, int x, int y, Color32 color)
         {
