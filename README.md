@@ -4,11 +4,11 @@
 
 ## 当前阶段
 
-**已选定方案 A《金雾猎场》**，M1 画面基线与 M2 玩法系统完成，可产出 Windows 可执行文件。
+**已选定方案 A《金雾猎场》**。M1 画面基线、M2 玩法系统、M3 AI 行动与 HUD 完成，可产出 Windows 可执行文件。
 
 黑暗奇幻的单人 PvE 搜打撤动作 RPG：带着可能永久失去的装备进入金雾笼罩的遗迹，与同样在搜刮的 AI 猎金人竞速抢夺，在雾中主宰追上你之前摇铃撤离。
 
-![当前画面](screenshots/M1/compare-M1-target-vs-current.png)
+![当前画面](screenshots/M3/compare-M3-target-vs-current.png)
 
 左为概念图目标，右为 Unity 实时渲染。场景内所有几何、纹理、光照均由代码生成，无外部美术资产。
 
@@ -22,6 +22,7 @@
 | [`docs/03-milestone-M0.md`](docs/03-milestone-M0.md) | 开发链路验证实录：Windows 构建产物校验、三轮自检截图迭代、与概念图的差距清单 |
 | [`docs/04-milestone-M1.md`](docs/04-milestone-M1.md) | 渲染管线与画面基线：自研体积光、程序化几何与材质、26 轮画面迭代、三个根因级问题的排查过程 |
 | [`docs/05-milestone-M2.md`](docs/05-milestone-M2.md) | 玩法系统：搜刮撤离循环、近战手感、AI 猎金人、雾中主宰、73 项测试与变异验证 |
+| [`docs/06-milestone-M3.md`](docs/06-milestone-M3.md) | AI 真的动手、HUD、水洼镜面反射、叙事道具、尘埃、程序化角色动画 |
 
 ## 五个候选方案速览
 
@@ -71,7 +72,7 @@ HunterGame/Assets/Tests/               EditMode 逻辑测试与 PlayMode 场景�
 | 项 | 状态 |
 | --- | --- |
 | EditMode 测试 | 63 项通过 |
-| PlayMode 冒烟测试 | 10 项通过 |
+| PlayMode 测试 | 13 项通过 |
 | 变异验证 | 5 项，每项都只让预期的测试变红 |
 | Windows 构建 | `PE32+ executable (GUI) x86-64`，107 MB，0 错误 0 警告 |
 

@@ -50,6 +50,14 @@ namespace Hunter.EditorTools
             }
             var cam = camGo.GetComponent<Camera>();
 
+            foreach (var particles in UnityEngine.Object.FindObjectsByType<ParticleSystem>(
+                         FindObjectsSortMode.None))
+            {
+                // A freshly loaded system has emitted nothing, so a single rendered frame
+                // would show an empty volume.
+                particles.Simulate(14f, withChildren: true, restart: true);
+            }
+
             var animator = UnityEngine.Object.FindFirstObjectByType<
                 Hunter.Gameplay.Actors.ProceduralHunterAnimator>();
             if (animator != null)

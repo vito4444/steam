@@ -329,6 +329,7 @@ namespace Hunter.EditorTools
             var handles = new RuinSiteGenerator(20260813, palette).Generate(root);
 
             BuildLighting(root);
+            BuildAtmosphere(root);
             BuildReflectionProbe(root);
             var camera = BuildCamera(root);
             BuildPostProcessing(root);
@@ -412,6 +413,82 @@ namespace Hunter.EditorTools
             mistCore.intensity = 7f;
             mistCore.range = 70f;
             mistCore.shadows = LightShadows.None;
+        }
+
+        /// Airborne dust. A volumetric shaft with nothing floating in it reads as a flat
+        /// gradient; motes crossing the beam are what tell the eye the light has substance
+        /// and that the air itself is thick.
+        static void BuildAtmosphere(Transform root)
+        {
+            var dustTexture = ProceduralTextures.RadialGlow(64, power: 2.2f);
+            AssetDatabase.CreateAsset(dustTexture, "Assets/Textures/DustMote.asset");
+
+            var material = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"))
+            {
+                name = "DustMote",
+            };
+            material.SetTexture("_BaseMap", dustTexture);
+            material.SetColor("_BaseColor", new Color(1f, 0.86f, 0.58f, 0.55f));
+            material.SetFloat("_Surface", 1f);          // transparent
+            material.SetFloat("_Blend", 1f);            // additive
+            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            material.SetFloat("_ZWrite", 0f);
+            material.renderQueue = 3000;
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            AssetDatabase.CreateAsset(material, MaterialsDir + "/DustMote.mat");
+
+            var go = new GameObject("AirborneDust");
+            go.transform.SetParent(root, false);
+            go.transform.position = new Vector3(0f, 4.5f, 20f);
+
+            var particles = go.AddComponent<ParticleSystem>();
+            var main = particles.main;
+            main.duration = 20f;
+            main.loop = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(9f, 20f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.02f, 0.14f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.006f, 0.022f);
+            main.startColor = new ParticleSystem.MinMaxGradient(
+                new Color(1f, 0.88f, 0.62f, 0.16f), new Color(1f, 0.80f, 0.48f, 0.42f));
+            main.maxParticles = 2600;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.gravityModifier = 0.006f;   // drifting down, not falling
+
+            var emission = particles.emission;
+            emission.rateOverTime = 190f;
+
+            var shape = particles.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(22f, 11f, 46f);
+
+            // Slow turbulence keeps the motes from marching in parallel lines.
+            var noise = particles.noise;
+            noise.enabled = true;
+            noise.strength = 0.16f;
+            noise.frequency = 0.22f;
+            noise.scrollSpeed = 0.09f;
+            noise.damping = true;
+
+            var colorOverLifetime = particles.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.18f),
+                    new GradientAlphaKey(1f, 0.78f), new GradientAlphaKey(0f, 1f),
+                });
+            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
+
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.sortingFudge = -8f;
         }
 
         static void BuildReflectionProbe(Transform root)
