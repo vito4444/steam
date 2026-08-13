@@ -112,7 +112,9 @@ namespace Maner.Tests
         [Test]
         public void 脚本化序列的状态哈希与黄金值一致()
         {
-            const ulong Golden = 0x8165C41E07A3A28BUL;
+            // 最近一次更新原因：卷扬机的电机加速度从「推力除以质量」（约 44 m/s²）
+            // 改为受规程上限约束的 1.15 m/s²，仿真数值行为随之改变。
+            const ulong Golden = 0x5A9C434AEA95610FUL;
             ulong actual = RunScriptedSequence(0x4D414E4552UL, out _);
             Assert.AreEqual(Golden, actual,
                 "仿真数值行为发生了变化。若为有意调整，请在确认新行为正确后更新此黄金值。");

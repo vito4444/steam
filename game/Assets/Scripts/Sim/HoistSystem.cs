@@ -15,6 +15,13 @@ namespace Maner.Sim
         public const double MaxSpeed = 12.0;              // m/s
         public const double OverspeedLimit = 13.2;
         public const double MotorMaxForceN = 320000.0;
+        /// <summary>
+        /// 电机能给出的最大加减速度。这个数字直接决定「提前减速」是不是一项真本事：
+        /// 定得太高（早期版本按电机推力除以质量算出来 44 m/s²）罐笼就能在两米内急停，
+        /// 减速曲线形同虚设。矿井提升机载人时的规程加速度在 1 m/s² 量级，
+        /// 取 1.15 之后，从满速 12 m/s 停下来需要走六十多米，玩家必须提前判断。
+        /// </summary>
+        public const double MaxAcceleration = 1.15;       // m/s²
         public const double BrakeDeceleration = 2.6;      // m/s²
         public const double RopeBreakingLoadN = 1_150_000.0;
         public const double RopeSafeLoadN = 620_000.0;
@@ -121,9 +128,10 @@ namespace Maner.Sim
                 targetVelocity = input.Direction * MaxSpeed * Clamp01(input.Throttle) * voltageScale * trim;
             }
 
-            // 电机能提供的最大加速度受额定推力限制；电压不足会同比削弱。
-            double maxAccel = MotorMaxForceN * Math.Max(voltageScale, OverspeedTripped ? 0.0 : voltageScale) / totalMass;
-            maxAccel = Math.Max(0.35, maxAccel);
+            // 电机能提供的加速度同时受规程上限与母线电压制约。
+            // 推力充足并不意味着可以随便加速——罐笼里坐着人。
+            double thrustLimited = MotorMaxForceN / totalMass;
+            double maxAccel = Math.Min(MaxAcceleration, thrustLimited) * Math.Max(0.15, voltageScale);
 
             double desiredAccel = (targetVelocity - Velocity) / Math.Max(dt, 1e-6);
             double accel = Math.Max(-maxAccel, Math.Min(maxAccel, desiredAccel));
