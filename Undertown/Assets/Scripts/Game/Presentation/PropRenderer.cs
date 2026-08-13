@@ -44,6 +44,9 @@ namespace Undertown.Game.Presentation
                 var cell = new Coord(x, y, depth);
                 var kind = _map.Get(cell);
 
+                var verge = VergeOn(cell, kind);
+                if (verge != null) Place(ref used, cell, verge, offset: -3);
+
                 var bed = GardenOn(cell, kind);
                 if (bed != null) Place(ref used, cell, bed, offset: -2);
 
@@ -268,6 +271,36 @@ namespace Undertown.Game.Presentation
             if (h % 7 == 0) return null;
 
             return IsoGardenArt.For((clump / 5) % IsoGardenArt.Variants);
+        }
+
+        /// <summary>
+        /// Whether this cell borders ground of the other sort, and so wants a ragged margin
+        /// drawn along that border. Both sides draw their own, which is what makes the join
+        /// several pixels wide instead of a line.
+        /// </summary>
+        private Sprite VergeOn(Coord cell, TileKind kind)
+        {
+            bool turf = kind == TileKind.Grass || kind == TileKind.Forest;
+            bool worn = kind == TileKind.Dirt || kind == TileKind.Road;
+            if (!turf && !worn) return null;
+
+            int edges = 0;
+            if (Contrasts(cell.Offset(0, -1), turf)) edges |= IsoShoreArt.South;
+            if (Contrasts(cell.Offset(1, 0), turf)) edges |= IsoShoreArt.East;
+            if (Contrasts(cell.Offset(0, 1), turf)) edges |= IsoShoreArt.North;
+            if (Contrasts(cell.Offset(-1, 0), turf)) edges |= IsoShoreArt.West;
+            if (edges == 0) return null;
+
+            return IsoVergeArt.For(edges, turf, Hash(cell.X, cell.Y * 3) % IsoVergeArt.Variants);
+        }
+
+        private bool Contrasts(Coord neighbour, bool turf)
+        {
+            if (!_map.InBounds(neighbour)) return false;
+            var kind = _map.Get(neighbour);
+            return turf
+                ? kind == TileKind.Dirt || kind == TileKind.Road
+                : kind == TileKind.Grass || kind == TileKind.Forest;
         }
 
         private bool NearALane(Coord cell, int radius = 2)
