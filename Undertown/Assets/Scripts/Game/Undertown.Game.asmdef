@@ -3,7 +3,8 @@
     "rootNamespace": "Undertown.Game",
     "references": [
         "Undertown.Core",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

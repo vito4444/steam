@@ -5,15 +5,26 @@ using Undertown.Core.World;
 namespace Undertown.Game.Presentation
 {
     /// <summary>
-    /// Draws the map onto two tilemaps: the layer the player is looking at, and a dimmed
-    /// ghost of the other one. The ghost is not decoration - deciding where to dig means
-    /// knowing what sits directly above or below, and the two layers share an X/Y grid
-    /// precisely so that relationship can be read off the screen.
+    /// Draws the map as two stacked tilemaps: the layer being looked at, and an overlay
+    /// carrying the information the player needs from the other one.
+    ///
+    /// The overlay is load-bearing, not decoration. Deciding where to dig means knowing
+    /// what sits directly above the chamber, and the two layers share an X/Y grid precisely
+    /// so that relationship can be read off the screen. The two directions need different
+    /// things, though: looking underground you want the whole town above you, while looking
+    /// at the surface you only want to see where your own tunnels already run.
     /// </summary>
     public sealed class WorldRenderer : MonoBehaviour
     {
+        private const float SurfaceOverlayAlpha = 0.42f;
+
+        // Kept low deliberately. The town above is context for siting a chamber, not the
+        // subject of the shot; at higher values the green of the surface swamps the earth
+        // tones underground and the player loses track of which layer they are looking at.
+        private const float UndergroundOverlayAlpha = 0.14f;
+
         [SerializeField] private Tilemap _primary;
-        [SerializeField] private Tilemap _ghost;
+        [SerializeField] private Tilemap _overlay;
 
         private GridMap _map;
         private int _activeDepth;
@@ -28,11 +39,7 @@ namespace Undertown.Game.Presentation
             Redraw();
         }
 
-        /// <summary>Surface and the first underground layer are the two views the player toggles between.</summary>
-        public void ToggleLayer()
-        {
-            SetDepth(ViewingSurface ? 1 : GridMap.SurfaceDepth);
-        }
+        public void ToggleLayer() => SetDepth(ViewingSurface ? 1 : GridMap.SurfaceDepth);
 
         public void SetDepth(int depth)
         {
@@ -43,16 +50,12 @@ namespace Undertown.Game.Presentation
 
         public void Redraw()
         {
-            if (_map == null || _primary == null || _ghost == null) return;
+            if (_map == null || _primary == null || _overlay == null) return;
 
-            _primary.ClearAllTiles();
-            _ghost.ClearAllTiles();
-
-            int ghostDepth = ViewingSurface ? 1 : GridMap.SurfaceDepth;
-
-            var positions = new Vector3Int[_map.Width * _map.Height];
-            var primaryTiles = new TileBase[positions.Length];
-            var ghostTiles = new TileBase[positions.Length];
+            int count = _map.Width * _map.Height;
+            var positions = new Vector3Int[count];
+            var primaryTiles = new TileBase[count];
+            var overlayTiles = new TileBase[count];
 
             int i = 0;
             for (int y = 0; y < _map.Height; y++)
@@ -60,20 +63,45 @@ namespace Undertown.Game.Presentation
             {
                 positions[i] = new Vector3Int(x, y, 0);
                 primaryTiles[i] = ProceduralTileArt.TileFor(_map.Get(new Coord(x, y, _activeDepth)));
-                ghostTiles[i] = ProceduralTileArt.TileFor(_map.Get(new Coord(x, y, ghostDepth)));
+                overlayTiles[i] = OverlayTileAt(x, y);
             }
 
+            _primary.ClearAllTiles();
+            _overlay.ClearAllTiles();
             _primary.SetTiles(positions, primaryTiles);
-            _ghost.SetTiles(positions, ghostTiles);
+            _overlay.SetTiles(positions, overlayTiles);
 
             _primary.color = Color.white;
-            _ghost.color = new Color(1f, 1f, 1f, 0.22f);
+            _overlay.color = new Color(1f, 1f, 1f, ViewingSurface ? SurfaceOverlayAlpha : UndergroundOverlayAlpha);
         }
 
-        public void Configure(Tilemap primary, Tilemap ghost)
+        private TileBase OverlayTileAt(int x, int y)
+        {
+            if (ViewingSurface)
+            {
+                // Only mark ground that is hollow underneath. Everything else stays clear so
+                // the surface reads normally; the marks are the player's own tunnel network
+                // seen from above, which is exactly what an inspector would find by sounding.
+                for (int depth = 1; depth < _map.DepthCount; depth++)
+                {
+                    var probe = new Coord(x, y, depth);
+                    if (!Tiles.SoundsHollow(_map.Get(probe))) continue;
+                    return _map.IsDeclared(probe)
+                        ? ProceduralTileArt.DeclaredHollowMarker
+                        : ProceduralTileArt.HiddenHollowMarker;
+                }
+                return null;
+            }
+
+            // Underground, show the whole town overhead so chambers can be sited away from
+            // roads and buildings, which is where inspectors actually walk and tap.
+            return ProceduralTileArt.TileFor(_map.Get(new Coord(x, y, GridMap.SurfaceDepth)));
+        }
+
+        public void Configure(Tilemap primary, Tilemap overlay)
         {
             _primary = primary;
-            _ghost = ghost;
+            _overlay = overlay;
         }
     }
 }

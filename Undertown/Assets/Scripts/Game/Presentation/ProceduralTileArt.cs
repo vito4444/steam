@@ -36,8 +36,64 @@ namespace Undertown.Game.Presentation
 
         private static readonly Dictionary<TileKind, Tile> Cache = new Dictionary<TileKind, Tile>();
 
+        private static Tile _hiddenHollowMarker;
+        private static Tile _declaredHollowMarker;
+
+        /// <summary>Seen from the surface: ground that is hollow underneath and not on the tax roll.</summary>
+        public static Tile HiddenHollowMarker =>
+            _hiddenHollowMarker != null
+                ? _hiddenHollowMarker
+                : _hiddenHollowMarker = MarkerTile("hollow_hidden", new Color32(0xC4, 0x4A, 0x3A, 0xFF), hatched: true);
+
+        /// <summary>Seen from the surface: a cellar or shaft the empire already knows about.</summary>
+        public static Tile DeclaredHollowMarker =>
+            _declaredHollowMarker != null
+                ? _declaredHollowMarker
+                : _declaredHollowMarker = MarkerTile("hollow_declared", new Color32(0x5E, 0x8C, 0x6A, 0xFF), hatched: false);
+
         public static Color32 ColorOf(TileKind kind) =>
             Palette.TryGetValue(kind, out var c) ? c : new Color32(0xFF, 0x00, 0xFF, 0xFF);
+
+        /// <summary>
+        /// A translucent hatch drawn over the surface. Hatching rather than a solid fill so
+        /// the terrain underneath the mark stays readable.
+        /// </summary>
+        private static Tile MarkerTile(string name, Color32 color, bool hatched)
+        {
+            var texture = new Texture2D(PixelsPerTile, PixelsPerTile, TextureFormat.RGBA32, mipChain: false)
+            {
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+                name = name,
+            };
+
+            var clear = new Color32(0, 0, 0, 0);
+            var pixels = new Color32[PixelsPerTile * PixelsPerTile];
+            for (int i = 0; i < pixels.Length; i++) pixels[i] = clear;
+
+            // Border only, plus sparse diagonals. A denser mark would read as terrain and
+            // bury the buildings underneath it; this has to say "hollow below" while leaving
+            // the ground itself legible.
+            for (int y = 0; y < PixelsPerTile; y++)
+            for (int x = 0; x < PixelsPerTile; x++)
+            {
+                bool onEdge = x < 2 || y < 2 || x >= PixelsPerTile - 2 || y >= PixelsPerTile - 2;
+                bool onHatch = hatched && (x + y) % 11 == 0;
+                if (onEdge || onHatch) pixels[y * PixelsPerTile + x] = color;
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+
+            var tile = ScriptableObject.CreateInstance<Tile>();
+            tile.sprite = Sprite.Create(
+                texture,
+                new Rect(0, 0, PixelsPerTile, PixelsPerTile),
+                new Vector2(0.5f, 0.5f),
+                PixelsPerTile, 0, SpriteMeshType.FullRect);
+            tile.colliderType = Tile.ColliderType.None;
+            return tile;
+        }
 
         public static Tile TileFor(TileKind kind)
         {
@@ -127,8 +183,26 @@ namespace Undertown.Game.Presentation
                     Rect(pixels, 6, 14, 20, 3, new Color32(0x46, 0x7C, 0x94, 0xFF));
                     break;
                 case TileKind.Cavity:
-                    // A faint floor edge so an empty chamber does not read as a hole in the render.
-                    Rect(pixels, 2, 2, PixelsPerTile - 4, 1, new Color32(0x33, 0x2A, 0x22, 0xFF));
+                    // A dug-out chamber needs to read as floor rather than as a hole in the
+                    // render, so it gets a swept floor and a lip of loose rubble at the wall.
+                    Rect(pixels, 3, 3, PixelsPerTile - 6, PixelsPerTile - 6, new Color32(0x2C, 0x25, 0x1D, 0xFF));
+                    Rect(pixels, 3, 3, PixelsPerTile - 6, 2, new Color32(0x3A, 0x31, 0x26, 0xFF));
+                    Blob(pixels, 9, 22, 2, new Color32(0x3E, 0x35, 0x2A, 0xFF));
+                    Blob(pixels, 23, 11, 2, new Color32(0x3E, 0x35, 0x2A, 0xFF));
+                    break;
+
+                case TileKind.Earth:
+                    // Bedding planes and the odd pebble. Without them a whole screen of
+                    // undug earth is one flat brown rectangle and the eye has nothing to hold.
+                    Rect(pixels, 0, 7, PixelsPerTile, 1, new Color32(0x41, 0x36, 0x2A, 0xFF));
+                    Rect(pixels, 0, 21, PixelsPerTile, 1, new Color32(0x41, 0x36, 0x2A, 0xFF));
+                    Blob(pixels, 12, 15, 2, new Color32(0x57, 0x4A, 0x3A, 0xFF));
+                    Blob(pixels, 26, 27, 1, new Color32(0x57, 0x4A, 0x3A, 0xFF));
+                    break;
+
+                case TileKind.Bedrock:
+                    Blob(pixels, 10, 10, 6, new Color32(0x26, 0x29, 0x2E, 0xFF));
+                    Blob(pixels, 24, 22, 5, new Color32(0x36, 0x39, 0x3F, 0xFF));
                     break;
             }
         }

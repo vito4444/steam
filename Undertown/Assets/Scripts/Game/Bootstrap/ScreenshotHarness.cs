@@ -22,9 +22,17 @@ namespace Undertown.Game.Bootstrap
         private int _frames = 3;
         private float _interval = 1.5f;
 
+        private int _width = 1920;
+        private int _height = 1080;
+
         private void Start()
         {
             if (!ParseArguments()) { enabled = false; return; }
+
+            // The player otherwise opens at whatever the window manager hands it, which on a
+            // virtual display is not the resolution the captures are supposed to document.
+            Screen.SetResolution(_width, _height, FullScreenMode.Windowed);
+
             StartCoroutine(CaptureSequence());
         }
 
@@ -46,6 +54,10 @@ namespace Undertown.Game.Bootstrap
                         break;
                     case "-autoshotLabel" when i + 1 < args.Length:
                         _label = args[++i];
+                        break;
+                    case "-autoshotSize" when i + 2 < args.Length:
+                        int.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out _width);
+                        int.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out _height);
                         break;
                 }
             }
@@ -85,10 +97,10 @@ namespace Undertown.Game.Bootstrap
         private void OnFrameCaptured(int frameIndex)
         {
             var bootstrap = FindFirstObjectByType<GameBootstrap>();
-            if (bootstrap == null || bootstrap.Renderer == null) return;
+            if (bootstrap == null) return;
 
             // Alternate between the surface and the tunnels so both views get documented.
-            bootstrap.Renderer.ToggleLayer();
+            bootstrap.SwitchLayer();
         }
     }
 }
