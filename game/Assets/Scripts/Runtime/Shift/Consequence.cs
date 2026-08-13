@@ -148,6 +148,61 @@ namespace Monster.Shift
         /// <summary>Paperwork that refers to nothing. Deterministic from the shift, so a
         /// campaign replays identically, and frequent enough that an envelope on the mat is
         /// not by itself news.</summary>
+        /// <summary>Standing orders, waiting in the tray on the first night.
+        ///
+        /// Nothing else in the booth says what the job is. The switches are unlabelled to a
+        /// newcomer, the binder does not explain that it is the binder, and a player who sits
+        /// down without this has a desk of props and no way in. It goes through the mail slot
+        /// because that is where the office already talks to them, and it is written as an
+        /// order sheet rather than a tutorial because a tutorial would be the only thing in
+        /// the game speaking from outside it.
+        ///
+        /// It says what the post does and where to look. It does not say what any particular
+        /// answer should be -- that stays in the binder, where it can change.</summary>
+        public static IEnumerable<Notice> StandingOrders()
+        {
+            yield return new Notice(NoticeKind.Routine, 0, -1,
+                "STANDING ORDERS - POST 14",
+                new[]
+                {
+                    "YOU HOLD THE NIGHT WATCH AT THIS",
+                    "CROSSING. EVERY VEHICLE STOPS.",
+                    "",
+                    "COMPARE THE PERMIT ON YOUR DESK",
+                    "AGAINST THE SCREENS AND AGAINST",
+                    "THE BINDER. THE BINDER IS THE",
+                    "AUTHORITY. IT IS AMENDED OFTEN.",
+                });
+
+            yield return new Notice(NoticeKind.Routine, 0, -1,
+                "STANDING ORDERS - DISPOSITION",
+                new[]
+                {
+                    "FOUR SWITCHES. THROW ONE.",
+                    "",
+                    "PASS   ADMIT AND RAISE THE BARRIER",
+                    "HOLD   DETAIN FOR THE DAY WATCH",
+                    "REFER  SEND BACK DOWN THE ROAD",
+                    "ALARM  ROUSE THE GARRISON",
+                    "",
+                    "NO VEHICLE LEAVES UNDECIDED.",
+                });
+
+            yield return new Notice(NoticeKind.Routine, 0, -1,
+                "STANDING ORDERS - CONDUCT",
+                new[]
+                {
+                    "THE INTERCOM KEYS PUT A QUESTION",
+                    "TO THE CAB. ANSWERS TAKE TIME AND",
+                    "THE POST CLOSES AT 06:00 WHETHER",
+                    "OR NOT THE QUEUE HAS CLEARED.",
+                    "",
+                    "SIGN THE LOG TO CLOSE A SHIFT.",
+                    "THIS OFFICE DOES NOT CONFIRM",
+                    "DECISIONS. DO NOT WRITE TO ASK.",
+                });
+        }
+
         public static IEnumerable<Notice> RoutineFor(int shiftIndex, int campaignSeed)
         {
             unchecked

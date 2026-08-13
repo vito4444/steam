@@ -397,7 +397,16 @@ namespace Monster.Presentation
             RefreshDesk();
             RefreshManual();
             RefreshLogbook(null);
-            ShowMail(_campaign.MailFor(shiftIndex));
+
+            // On the first night the standing orders are on top of the pile, because nothing
+            // else in the booth says what the job is.
+            var mail = _campaign.MailFor(shiftIndex).ToList();
+            if (shiftIndex == 0)
+            {
+                mail.InsertRange(0, ConsequenceWriter.StandingOrders());
+            }
+
+            ShowMail(mail);
         }
 
         /// <summary>Puts a specific vehicle at the window without deciding anything on the

@@ -328,5 +328,58 @@ namespace Monster.Tests
             Assert.AreEqual(Campaign.TotalShifts, campaign.Completed.Count);
             Assert.Throws<InvalidOperationException>(() => campaign.BeginShift());
         }
+
+        /// <summary>Standing orders have to name every control the player is expected to
+        /// touch. A briefing that leaves one out is worse than none, because the player
+        /// trusts it and then cannot find the thing it forgot.</summary>
+        [Test]
+        public void TheStandingOrdersNameEveryControlOnTheDesk()
+        {
+            var text = string.Join(" ",
+                ConsequenceWriter.StandingOrders().SelectMany(n => n.Lines)).ToUpperInvariant();
+
+            foreach (var verdict in System.Enum.GetNames(typeof(Verdict)))
+            {
+                StringAssert.Contains(verdict.ToUpperInvariant(), text,
+                    $"the briefing never mentions the {verdict} switch");
+            }
+
+            foreach (var control in new[] { "PERMIT", "BINDER", "INTERCOM", "LOG" })
+            {
+                StringAssert.Contains(control, text, $"the briefing never mentions the {control}");
+            }
+        }
+
+        /// <summary>The briefing explains where to look. It must not answer what to find,
+        /// or it becomes a second rulebook that cannot be amended.</summary>
+        [Test]
+        public void TheStandingOrdersDoNotDecideAnythingForThePlayer()
+        {
+            var text = string.Join(" ",
+                ConsequenceWriter.StandingOrders().SelectMany(n => n.Lines)).ToUpperInvariant();
+
+            foreach (var giveaway in new[] { "IF THE", "WHEN THE", "ALWAYS PASS", "ALWAYS REFER" })
+            {
+                StringAssert.DoesNotContain(giveaway, text,
+                    $"the briefing states a rule that belongs in the binder: \"{giveaway}\"");
+            }
+        }
+
+        [Test]
+        public void TheStandingOrdersArriveOnlyOnTheFirstNight()
+        {
+            var campaign = new Campaign(CampaignSeed);
+            var headings = ConsequenceWriter.StandingOrders().Select(n => n.Heading).ToList();
+
+            for (var night = 1; night < Campaign.TotalShifts; night++)
+            {
+                foreach (var notice in campaign.MailFor(night))
+                {
+                    CollectionAssert.DoesNotContain(headings, notice.Heading,
+                        $"standing orders turned up again on night {night + 1}");
+                }
+            }
+        }
+
     }
 }
