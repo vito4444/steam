@@ -9,7 +9,8 @@ cd "$(dirname "$0")/.."
 
 RUNTIME="unity/Decoder/Assets/Scripts/Signal"
 GAMEPLAY="unity/Decoder/Assets/Scripts/Gameplay"
-SOURCES="${RUNTIME} ${GAMEPLAY}"
+UI="unity/Decoder/Assets/Scripts/UI"
+SOURCES="${RUNTIME} ${GAMEPLAY} ${UI}"
 
 # 每条变异的格式: 描述|文件|原文|替换文
 MUTATIONS=(
@@ -51,6 +52,20 @@ MUTATIONS=(
   "第四班的冒充者改回本人的手法|${GAMEPLAY}/ShiftLibrary.cs|fist = M08Impostor,|fist = M08Operator,"
   "档案被后来听到的手法覆盖|${GAMEPLAY}/CampaignState.cs|                var existing = fistArchive[i];\n                existing.timesHeard++;\n                fistArchive[i] = existing;\n                return;|                var existing = FistRecord.From(callsign, shiftId, fist);\n                existing.timesHeard = fistArchive[i].timesHeard + 1;\n                fistArchive[i] = existing;\n                return;"
   "档案在交班时被清空|${GAMEPLAY}/CampaignState.cs|            progress = default;|            progress = default;\n            fistArchive.Clear();"
+  "传真的行同步挪到黑电平以上|${RUNTIME}/FacsimileSignal.cs|public const float SyncHertz = 1200f;|public const float SyncHertz = 1600f;"
+  "传真的亮度极性反转|${RUNTIME}/FacsimileSignal.cs|return Mathf.Lerp(BlackHertz, WhiteHertz, Mathf.Clamp01(luminance));|return Mathf.Lerp(WhiteHertz, BlackHertz, Mathf.Clamp01(luminance));"
+  "传真行长不含同步与消隐|${RUNTIME}/FacsimileSignal.cs|return SyncSeconds + PorchSeconds + width * Mathf.Max(1e-6f, pixelSeconds);|return width * Mathf.Max(1e-6f, pixelSeconds);"
+  "传真扫描的行号取整方向错|${RUNTIME}/FacsimileSignal.cs|var row = Mathf.FloorToInt(intoImage / line);|var row = Mathf.CeilToInt(intoImage / line);"
+  "传真扫完之后继续写像素|${RUNTIME}/FacsimileSignal.cs|            if (row < 0 || row >= image.Height)\n            {\n                return false;\n            }|            if (row < 0)\n            {\n                return false;\n            }\n\n            row %= image.Height;"
+  "传真同步期间也照常写像素|${RUNTIME}/FacsimileSignal.cs|            if (intoLine < SyncSeconds)\n            {\n                phase = LinePhase.Sync;\n                return false;\n            }|            if (intoLine < 0f)\n            {\n                phase = LinePhase.Sync;\n                return false;\n            }"
+  "传真失配不再搬移音频|${RUNTIME}/SignalSynthesizer.cs|var shifted = hertz + detuneKHz * 700f;|var shifted = hertz;"
+  "传真载波在发图期间断续|${RUNTIME}/SignalSynthesizer.cs|                    return progress >= 0d && progress < TotalSeconds;|                    return false;"
+  "传真图的题材种子不起作用|${RUNTIME}/FacsimileImage.cs|                    RenderCoastline(image, seed);|                    RenderCoastline(image, 0);"
+  "传真报告改回比对抄收文本|${GAMEPLAY}/ReportGrader.cs|Accuracy = isFacsimile ? 1f : SimilarityRatio(copied, target),|Accuracy = SimilarityRatio(copied, target),"
+  "抄收文本的豁免漏到所有信号上|${GAMEPLAY}/ReportGrader.cs|var isFacsimile = expected.kind == SignalKind.Facsimile;|var isFacsimile = true;"
+  "示波器迹线改回均匀填充|${UI}/OscilloscopeDisplay.cs|const float interior = 0.13f;|const float interior = 1.0f;"
+  "示波器亮度分布改成线性|${UI}/OscilloscopeDisplay.cs|const float falloff = 3.6f;|const float falloff = 1.0f;"
+  "示波器余辉短于一次扫描|${UI}/OscilloscopeDisplay.cs|public float persistenceHalfLife = 1.1f;|public float persistenceHalfLife = 0.3f;"
 )
 
 restore() {
