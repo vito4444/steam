@@ -41,12 +41,12 @@
       "range": 1.9
     },
     "panelWorkLight": {
-      "intensity": 2.5,
+      "intensity": 1.5,
       "range": 2.8,
       "spotAngle": 72.0
     },
     "grazingSide": {
-      "intensity": 2.6,
+      "intensity": 2.0,
       "range": 3.0,
       "spotAngle": 58.0
     }
