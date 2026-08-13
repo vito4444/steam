@@ -4,7 +4,13 @@
 
 ## 当前阶段
 
-**方案选型中。** 市场调研与五个候选方案已完成，等待确认走哪条路线。
+**已选定方案 A《金雾猎场》**，M1 渲染管线与画面基线完成，进入玩法开发（M2）。
+
+黑暗奇幻的单人 PvE 搜打撤动作 RPG：带着可能永久失去的装备进入金雾笼罩的遗迹，与同样在搜刮的 AI 猎金人竞速抢夺，在雾中主宰追上你之前摇铃撤离。
+
+![当前画面](screenshots/M1/compare-M1-target-vs-current.png)
+
+左为概念图目标，右为 Unity 实时渲染。场景内所有几何、纹理、光照均由代码生成，无外部美术资产。
 
 ## 文档
 
@@ -14,6 +20,7 @@
 | [`docs/01-game-concepts.md`](docs/01-game-concepts.md) | 五个游戏方案，含视角相机参数、Steam 画面参考、美术方向、商业定位、技术路径、可行性评估 |
 | [`docs/02-technical-constraints.md`](docs/02-technical-constraints.md) | 开发环境实况、Unity 配置、Windows 构建链路、自检与截图方案 |
 | [`docs/03-milestone-M0.md`](docs/03-milestone-M0.md) | 开发链路验证实录：Windows 构建产物校验、三轮自检截图迭代、与概念图的差距清单 |
+| [`docs/04-milestone-M1.md`](docs/04-milestone-M1.md) | 渲染管线与画面基线：自研体积光、程序化几何与材质、26 轮画面迭代、三个根因级问题的排查过程 |
 
 ## 五个候选方案速览
 
@@ -43,6 +50,15 @@ tools/         环境安装与构建脚本
 - 开发机：Linux，无 GPU，通过 Xvfb + Mesa 软件渲染做无头运行与截图。单次「改场景 → 截图」循环约 15 秒，Windows 完整构建 33 秒
 
 ```bash
-tools/install_unity.sh    # 安装 Unity 编辑器与 Windows 构建模块
-tools/probe/run_probe.sh  # 验证完整链路：URP 场景 → 无头截图 → Windows 构建
+tools/install_unity.sh          # 安装 Unity 编辑器与 Windows 构建模块
+tools/probe/run_probe.sh        # 验证完整链路：URP 场景 → 无头截图 → Windows 构建
+tools/forge_and_shoot.sh v1     # 重建场景并渲染三个固定机位
+```
+
+## 工程
+
+```
+HunterGame/Assets/Scripts/Rendering/   自研体积光 Renderer Feature 与 shader
+HunterGame/Assets/Scripts/Worldgen/    程序化网格、程序化贴图、废墟场景生成器
+HunterGame/Assets/Editor/              渲染管线装配、固定机位截图、场景诊断
 ```

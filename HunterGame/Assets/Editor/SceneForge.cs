@@ -107,7 +107,7 @@ namespace Hunter.EditorTools
             feature.settings.steps = 48;
             feature.settings.maxDistance = 120f;
             feature.settings.anisotropy = 0.72f;
-            feature.settings.scatterColor = new Color(1f, 0.735f, 0.32f);
+            feature.settings.scatterColor = new Color(1f, 0.90f, 0.62f);
             feature.settings.intensity = 0.5f;
             feature.settings.heightBase = -1f;
             feature.settings.heightFalloff = 0.062f;
@@ -297,10 +297,10 @@ namespace Hunter.EditorTools
             var sky = new Material(Shader.Find("Skybox/Procedural")) { name = "AurumSky" };
             sky.SetFloat("_SunSize", 0.045f);
             sky.SetFloat("_SunSizeConvergence", 3f);
-            sky.SetFloat("_AtmosphereThickness", 1.75f);
-            sky.SetColor("_SkyTint", new Color(0.92f, 0.62f, 0.22f));
-            sky.SetColor("_GroundColor", new Color(0.14f, 0.11f, 0.075f));
-            sky.SetFloat("_Exposure", 0.82f);
+            sky.SetFloat("_AtmosphereThickness", 1.35f);
+            sky.SetColor("_SkyTint", new Color(0.60f, 0.585f, 0.44f));
+            sky.SetColor("_GroundColor", new Color(0.145f, 0.135f, 0.105f));
+            sky.SetFloat("_Exposure", 0.46f);
             AssetDatabase.CreateAsset(sky, SettingsDir + "/AurumSky.mat");
 
             RenderSettings.skybox = sky;
@@ -332,7 +332,7 @@ namespace Hunter.EditorTools
             sunGo.transform.SetParent(root, false);
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.80f, 0.48f);
+            sun.color = new Color(1f, 0.945f, 0.775f);
             sun.intensity = 2.8f;
             sun.shadows = LightShadows.Soft;
             sun.shadowStrength = 0.68f;
@@ -358,7 +358,7 @@ namespace Hunter.EditorTools
             bounceGo.transform.position = new Vector3(0f, 1.4f, 15f);
             var bounce = bounceGo.AddComponent<Light>();
             bounce.type = LightType.Point;
-            bounce.color = new Color(1f, 0.72f, 0.38f);
+            bounce.color = new Color(1f, 0.86f, 0.62f);
             bounce.intensity = 6.5f;
             bounce.range = 38f;
             bounce.shadows = LightShadows.None;
@@ -394,8 +394,8 @@ namespace Hunter.EditorTools
             mistCoreGo.transform.position = new Vector3(1f, 13f, 71f);
             var mistCore = mistCoreGo.AddComponent<Light>();
             mistCore.type = LightType.Point;
-            mistCore.color = new Color(1f, 0.78f, 0.42f);
-            mistCore.intensity = 15f;
+            mistCore.color = new Color(1f, 0.90f, 0.66f);
+            mistCore.intensity = 7f;
             mistCore.range = 70f;
             mistCore.shadows = LightShadows.None;
         }
@@ -455,23 +455,23 @@ namespace Hunter.EditorTools
             tonemap.mode.value = TonemappingMode.Neutral;
 
             var bloom = profile.Add<Bloom>(true);
-            bloom.threshold.overrideState = true; bloom.threshold.value = 1.05f;
+            bloom.threshold.overrideState = true; bloom.threshold.value = 1.25f;
             bloom.intensity.overrideState = true; bloom.intensity.value = 0.62f;
             bloom.scatter.overrideState = true; bloom.scatter.value = 0.72f;
             bloom.tint.overrideState = true; bloom.tint.value = new Color(1f, 0.86f, 0.62f);
             bloom.highQualityFiltering.overrideState = true; bloom.highQualityFiltering.value = true;
 
             var color = profile.Add<ColorAdjustments>(true);
-            color.postExposure.overrideState = true; color.postExposure.value = 0.15f;
+            color.postExposure.overrideState = true; color.postExposure.value = -0.05f;
             color.contrast.overrideState = true; color.contrast.value = 26f;
-            color.saturation.overrideState = true; color.saturation.value = -8f;
+            color.saturation.overrideState = true; color.saturation.value = -14f;
             color.colorFilter.overrideState = true; color.colorFilter.value = new Color(1f, 0.96f, 0.88f);
 
             // Gold highlights against cool shadows: the palette rule from the concept doc.
             var split = profile.Add<SplitToning>(true);
             split.shadows.overrideState = true; split.shadows.value = new Color(0.24f, 0.34f, 0.52f);
-            split.highlights.overrideState = true; split.highlights.value = new Color(1f, 0.72f, 0.30f);
-            split.balance.overrideState = true; split.balance.value = 18f;
+            split.highlights.overrideState = true; split.highlights.value = new Color(1f, 0.87f, 0.55f);
+            split.balance.overrideState = true; split.balance.value = 6f;
 
             var smh = profile.Add<ShadowsMidtonesHighlights>(true);
             smh.shadows.overrideState = true; smh.shadows.value = new Vector4(0.92f, 0.96f, 1.08f, -0.02f);
