@@ -435,15 +435,17 @@ namespace Hunter.EditorTools
                 name = "DustMote",
             };
             material.SetTexture("_BaseMap", dustTexture);
-            material.SetColor("_BaseColor", new Color(1f, 0.86f, 0.58f, 0.55f));
+            material.SetColor("_BaseColor", new Color(1f, 0.88f, 0.62f, 1f));
             material.SetFloat("_Surface", 1f);          // transparent
-            material.SetFloat("_Blend", 1f);            // additive
-            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            // URP recomputes the blend factors from _Blend when the material is validated,
+            // so setting src and dst directly is discarded. Mode 1 is Premultiply, which is
+            // what silently produced hard-edged quads; additive is mode 2. Dust in a light
+            // shaft is emissive, so it should add rather than composite.
+            material.SetFloat("_Blend", 2f);
             material.SetFloat("_ZWrite", 0f);
             material.renderQueue = 3000;
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            material.EnableKeyword("_ALPHAMODULATE_ON");
             AssetDatabase.CreateAsset(material, MaterialsDir + "/DustMote.mat");
 
             var go = new GameObject("AirborneDust");
