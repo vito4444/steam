@@ -167,6 +167,105 @@ namespace Decoder.Tests
         }
 
         [Test]
+        public void EveryTransmissionHasAValidFist()
+        {
+            // 手法是电台身份的一部分。漏配的电台会退回机器手法，
+            // 听起来像自动台，玩家据此认人的那层玩法就漏了一个洞。
+            foreach (var shift in AllShifts())
+            {
+                foreach (var entry in shift.transmissions)
+                {
+                    Assert.IsTrue(entry.fist.IsValid,
+                        $"{shift.shiftId} 的 {entry.callsign} 没有配手法");
+                }
+            }
+        }
+
+        [Test]
+        public void SameCallsignKeepsSameFistAcrossShifts()
+        {
+            // 同一个人在不同班次里必须是同一双手，否则玩家没法积累印象。
+            // 唯一的例外是被标为冒充的那一条——那正是玩法本身。
+            var seen = new Dictionary<string, OperatorFist>();
+
+            foreach (var shift in AllShifts())
+            {
+                foreach (var entry in shift.transmissions)
+                {
+                    if (entry.isImpostor)
+                    {
+                        continue;
+                    }
+
+                    if (seen.TryGetValue(entry.callsign, out var known))
+                    {
+                        Assert.Less(known.DistanceTo(entry.fist), 0.01f,
+                            $"{entry.callsign} 在 {shift.shiftId} 换了一双手");
+                    }
+                    else
+                    {
+                        seen[entry.callsign] = entry.fist;
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void ImpostorFistIsFarEnoughFromTheGenuineOperator()
+        {
+            // 冒充者必须听得出来。差距太小玩家只能靠猜，
+            // 而这一班的正确答案不在电文内容里，猜不中就等于没有提示。
+            foreach (var shift in AllShifts())
+            {
+                foreach (var entry in shift.transmissions)
+                {
+                    if (!entry.isImpostor)
+                    {
+                        continue;
+                    }
+
+                    var genuine = ShiftLibrary.KnownFistFor(entry.callsign);
+                    Assert.IsTrue(genuine.IsValid,
+                        $"{entry.callsign} 被标为冒充，但档案里没有本人的手法可对照");
+                    Assert.Greater(genuine.DistanceTo(entry.fist), 0.12f,
+                        $"{shift.shiftId} 的冒充者手法与本人太接近，玩家听不出来");
+                }
+            }
+        }
+
+        [Test]
+        public void FistSeedsAreUniqueSoRhythmNeverRepeats()
+        {
+            // 同一个人不同班次要用不同种子：手法不变，但节奏不该一模一样，
+            // 否则玩家会发现两条电文的波形完全重合。
+            var seeds = new HashSet<int>();
+
+            foreach (var shift in AllShifts())
+            {
+                foreach (var entry in shift.transmissions)
+                {
+                    Assert.IsTrue(seeds.Add(entry.fistSeed),
+                        $"{shift.shiftId} 的 {entry.callsign} 用了重复的抖动种子 {entry.fistSeed}");
+                }
+            }
+        }
+
+        [Test]
+        public void KnownFistLookupCoversEveryCallsignInPlay()
+        {
+            // 节奏分析面板要拿档案做对照。查不到的呼号会显示成"档案里没有"，
+            // 出现在主线电台上就是内容漏配。
+            foreach (var shift in AllShifts())
+            {
+                foreach (var entry in shift.transmissions)
+                {
+                    Assert.IsTrue(ShiftLibrary.KnownFistFor(entry.callsign).IsValid,
+                        $"档案里查不到 {entry.callsign}");
+                }
+            }
+        }
+
+        [Test]
         public void EveryEncryptedTransmissionSolvesBackToItsPlainText()
         {
             // 加密电文必须能用它自己声明的页码解回原文。解不回来的话，

@@ -66,6 +66,16 @@ namespace Decoder.Gameplay
         /// <summary>是否是本班次的主线信号。主线漏收会推进剧情的失败分支。</summary>
         public bool isPrimary;
 
+        [Header("发报人")]
+        [Tooltip("这个电台的发报人手法。玩家最终要靠它认人")]
+        public OperatorFist fist = OperatorFist.Machine;
+
+        [Tooltip("抖动的种子。同一个电台在不同班次用不同种子，手法不变但节奏不重复")]
+        public int fistSeed;
+
+        [Tooltip("这条电文是不是有人冒充。玩家要靠手法察觉，系统不提示")]
+        public bool isImpostor;
+
         [Header("一次性密码本")]
         [Tooltip("密码本册子的种子。同一册子在整个战役里保持不变")]
         public int padBookSeed = 19851104;
@@ -121,7 +131,9 @@ namespace Decoder.Gameplay
                 frequencyKHz,
                 ResolveAirText(telegraph),
                 wordsPerMinute,
-                strength)
+                strength,
+                fist: fist,
+                fistSeed: fistSeed)
             {
                 StartOffsetSeconds = startOffsetSeconds,
             };

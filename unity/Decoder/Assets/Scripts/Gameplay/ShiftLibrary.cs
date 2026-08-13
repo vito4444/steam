@@ -1,3 +1,4 @@
+using Decoder.Signal;
 namespace Decoder.Gameplay
 {
     /// <summary>
@@ -6,6 +7,58 @@ namespace Decoder.Gameplay
     /// </summary>
     public static class ShiftLibrary
     {
+        /// <summary>
+        /// 常驻电台的发报人手法。
+        ///
+        /// 集中定义是为了让同一个人在不同班次里保持同一双手——
+        /// 玩家要花几个班次熟悉这些节奏，之后才可能察觉出不对。
+        /// 数字来自真实手键发报的常见范围：教科书的三倍划长，
+        /// 实际落在二点四到三点八之间；老手的抖动大约半成到一成。
+        /// </summary>
+        private static OperatorFist M08Operator => new OperatorFist
+        {
+            // 划拖得偏长，字之间赶得紧。是个熟手，但有自己的习惯。
+            dahRatio = 3.35f,
+            charGapRatio = 2.55f,
+            wordGapRatio = 6.8f,
+            jitter = 0.055f,
+        };
+
+        /// <summary>顶替 M08 的那个人。手法和本人差得很远，但呼号一模一样。</summary>
+        private static OperatorFist M08Impostor => new OperatorFist
+        {
+            dahRatio = 2.7f,
+            charGapRatio = 3.5f,
+            wordGapRatio = 7.4f,
+            jitter = 0.13f,
+        };
+
+        private static OperatorFist M14Operator => new OperatorFist
+        {
+            dahRatio = 3.05f,
+            charGapRatio = 3.15f,
+            wordGapRatio = 7.1f,
+            jitter = 0.075f,
+        };
+
+        /// <summary>另一个例行台。发得慢而规整，像在照本宣科。</summary>
+        private static OperatorFist D14Operator => new OperatorFist
+        {
+            dahRatio = 2.85f,
+            charGapRatio = 3.35f,
+            wordGapRatio = 7.2f,
+            jitter = 0.065f,
+        };
+
+        /// <summary>业余台。手很不稳，一听就知道是自己在家练的。</summary>
+        private static OperatorFist AmateurOperator => new OperatorFist
+        {
+            dahRatio = 3.6f,
+            charGapRatio = 3.9f,
+            wordGapRatio = 7.6f,
+            jitter = 0.19f,
+        };
+
         /// <summary>
         /// 第一班。设计意图：
         ///
@@ -32,6 +85,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "M08",
+                fist = M08Operator,
+                fistSeed = 101,
                 frequencyKHz = 6955f,
                 kind = SignalKind.ChineseTelegraph,
                 wordsPerMinute = 9f,
@@ -47,6 +102,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "R7X",
+                fist = AmateurOperator,
+                fistSeed = 301,
                 frequencyKHz = 7042f,
                 kind = SignalKind.PlainMorse,
                 wordsPerMinute = 14f,
@@ -60,6 +117,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "D14",
+                fist = D14Operator,
+                fistSeed = 501,
                 frequencyKHz = 7128f,
                 kind = SignalKind.PlainMorse,
                 wordsPerMinute = 16f,
@@ -100,6 +159,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "M08",
+                fist = M08Operator,
+                fistSeed = 102,
                 frequencyKHz = 7012f,
                 kind = SignalKind.OneTimePad,
                 wordsPerMinute = 11f,
@@ -115,6 +176,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "M14",
+                fist = M14Operator,
+                fistSeed = 201,
                 frequencyKHz = 6862f,
                 kind = SignalKind.OneTimePad,
                 wordsPerMinute = 13f,
@@ -129,6 +192,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "R7X",
+                fist = AmateurOperator,
+                fistSeed = 303,
                 frequencyKHz = 7108f,
                 kind = SignalKind.PlainMorse,
                 wordsPerMinute = 15f,
@@ -167,6 +232,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "M08",
+                fist = M08Operator,
+                fistSeed = 103,
                 frequencyKHz = 7043f,
                 kind = SignalKind.OneTimePad,
                 wordsPerMinute = 12f,
@@ -183,6 +250,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "V13",
+                fist = M14Operator,
+                fistSeed = 401,
                 frequencyKHz = 7047f,
                 kind = SignalKind.ChineseTelegraph,
                 wordsPerMinute = 14f,
@@ -196,6 +265,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "M14",
+                fist = M14Operator,
+                fistSeed = 202,
                 frequencyKHz = 6884f,
                 kind = SignalKind.OneTimePad,
                 wordsPerMinute = 13f,
@@ -210,6 +281,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "R7X",
+                fist = AmateurOperator,
+                fistSeed = 304,
                 frequencyKHz = 7132f,
                 kind = SignalKind.PlainMorse,
                 wordsPerMinute = 16f,
@@ -222,6 +295,8 @@ namespace Decoder.Gameplay
             shift.transmissions.Add(new TransmissionEntry
             {
                 callsign = "B02",
+                fist = M14Operator,
+                fistSeed = 402,
                 frequencyKHz = 6821f,
                 kind = SignalKind.ChineseTelegraph,
                 wordsPerMinute = 10f,
@@ -235,10 +310,112 @@ namespace Decoder.Gameplay
             return shift;
         }
 
+        /// <summary>
+        /// 第四班。设计意图：
+        ///
+        /// 前三班里玩家已经听了 M08 三次，那双手的节奏应该开始熟悉了：
+        /// 划拖得偏长、字之间赶得紧、手很稳。这一班 M08 还在老频率上，
+        /// 呼号对得上，密码本页码也是对的——但发报的不是他。
+        ///
+        /// 游戏不提示。不弹窗，不高亮，不在日志里写"注意异常"。
+        /// 节奏分析面板会照常给出这次的手法描述，玩家要自己想起来
+        /// 上次听到的不是这样。察觉不到就只是照常上报，
+        /// 而这条电文的内容本身没有任何问题——问题在于发它的人。
+        ///
+        /// 这是整个战役里第一次，正确答案不在电文内容里。
+        /// </summary>
+        public static ShiftDefinition FourthShift()
+        {
+            var shift = new ShiftDefinition
+            {
+                shiftId = "shift-04",
+                title = "第四班 · 另一双手",
+                inGameDate = "1985-11-14",
+                noiseSeed = 19851114,
+                bandLowKHz = 6800f,
+                bandHighKHz = 7200f,
+            };
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "M08",
+                fist = M08Impostor,
+                fistSeed = 104,
+                isImpostor = true,
+                frequencyKHz = 6955f,
+                kind = SignalKind.OneTimePad,
+                wordsPerMinute = 12f,
+                strength = 0.9f,
+                startOffsetSeconds = 4f,
+                plainText = "计划不变",
+                padPage = 61,
+                correctLevel = ThreatLevel.Flash,
+                isPrimary = true,
+                debriefNote = "电文说计划不变。你报的不是电文说了什么，是发它的人不对。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "M14",
+                fist = M14Operator,
+                fistSeed = 203,
+                frequencyKHz = 6903f,
+                kind = SignalKind.OneTimePad,
+                wordsPerMinute = 13f,
+                strength = 0.62f,
+                startOffsetSeconds = 10f,
+                plainText = "等待指示",
+                padPage = 34,
+                correctLevel = ThreatLevel.Attention,
+                debriefNote = "邻站也在等。他们大概也发现了什么。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "R7X",
+                fist = AmateurOperator,
+                fistSeed = 302,
+                frequencyKHz = 7108f,
+                kind = SignalKind.PlainMorse,
+                wordsPerMinute = 15f,
+                strength = 0.76f,
+                plainText = "CQ DE R7X QSL PSE",
+                correctLevel = ThreatLevel.Routine,
+                debriefNote = "业余台还在。今晚你听他听得比平时久。",
+            });
+
+            return shift;
+        }
+
         /// <summary>按顺序返回全部班次。存档与班次推进用它。</summary>
         public static ShiftDefinition[] All()
         {
-            return new[] { FirstShift(), SecondShift(), ThirdShift() };
+            return new[] { FirstShift(), SecondShift(), ThirdShift(), FourthShift() };
+        }
+
+        /// <summary>
+        /// 档案里记着的某个呼号的手法。
+        ///
+        /// 这是玩家过去几班积累下来的印象，节奏分析面板拿它做对照。
+        /// 查不到就返回无效值，面板会说"档案里没有这个呼号"。
+        /// </summary>
+        public static OperatorFist KnownFistFor(string callsign)
+        {
+            switch (callsign)
+            {
+                case "M08":
+                    return M08Operator;
+                case "M14":
+                case "V13":
+                case "B02":
+                    return M14Operator;
+                case "R7X":
+                    return AmateurOperator;
+                case "D14":
+                    return D14Operator;
+                default:
+                    return default;
+            }
         }
     }
 }

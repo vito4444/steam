@@ -289,7 +289,7 @@ namespace Decoder.Signal
 
             public Station(string callsign, float frequencyKHz, string message,
                 float wordsPerMinute, float strength = 1f, bool loop = true,
-                float loopGapSeconds = 2f)
+                float loopGapSeconds = 2f, OperatorFist fist = default, int fistSeed = 0)
             {
                 Callsign = callsign ?? string.Empty;
                 FrequencyKHz = frequencyKHz;
@@ -297,8 +297,13 @@ namespace Decoder.Signal
                 WordsPerMinute = wordsPerMinute;
                 Strength = strength;
                 Loop = loop;
+                Fist = fist.IsValid ? fist : OperatorFist.Machine;
 
-                var timeline = MorseCode.BuildTimeline(MorseCode.Encode(Message), wordsPerMinute);
+                // 时序按发报人的手法展开。手法是这个电台身份的一部分，
+                // 玩家最终要靠它认人。
+                var timeline = MorseCode.BuildTimeline(
+                    MorseCode.Encode(Message), wordsPerMinute, Fist, fistSeed);
+                Timeline = timeline;
                 _cumulativeSeconds = new float[timeline.Count];
                 _keyStates = new bool[timeline.Count];
 
@@ -314,6 +319,12 @@ namespace Decoder.Signal
                 _loopSeconds = accumulated + Math.Max(0f, loopGapSeconds);
                 TotalSeconds = accumulated;
             }
+
+            /// <summary>这个电台的发报人手法。冒充者的呼号可以是假的，这个不行。</summary>
+            public OperatorFist Fist { get; }
+
+            /// <summary>展开后的键控时序。节奏分析面板拿它来量手法。</summary>
+            public System.Collections.Generic.IReadOnlyList<MorseCode.Element> Timeline { get; }
 
             public string Callsign { get; }
             public float FrequencyKHz { get; }

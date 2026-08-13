@@ -56,6 +56,9 @@ namespace Decoder.UI
         private CopyAssist _assist = CopyAssist.Characters;
         private string _lastStationCallsign;
 
+        private Text _fistText;
+        private Text _fistArchiveText;
+        private string _fistCallsign;
         private Text _padPageText;
         private Text _padDigitsText;
         private Text _solvedText;
@@ -206,6 +209,7 @@ namespace Decoder.UI
             RefreshReadouts();
             AdvanceMorseReceiver();
             HandleTypedInput();
+            RefreshFistPanel();
             HandleHotkeys();
 
             // 定时落盘。玩家抄了十分钟才崩溃或断电的话，
@@ -457,6 +461,48 @@ namespace Decoder.UI
             AppendLog(found
                 ? $"{group} 查得「{character}」"
                 : $"{group} 在码表里查不到。");
+        }
+
+        /// <summary>
+        /// 更新节奏分析。
+        ///
+        /// 只描述听到的东西，不下结论：面板不会说"这不是本人"，
+        /// 它只把这次的手法和档案里的手法并排放着。判断是玩家的事。
+        /// </summary>
+        private void RefreshFistPanel()
+        {
+            if (_fistText == null || receiver == null)
+            {
+                return;
+            }
+
+            var station = receiver.Synthesizer.CurrentStation;
+            if (station == null || receiver.Synthesizer.CurrentSignalLevel < 0.35f)
+            {
+                if (_fistCallsign != null)
+                {
+                    _fistCallsign = null;
+                    _fistText.text = "没有可分析的信号。";
+                    _fistArchiveText.text = string.Empty;
+                }
+
+                return;
+            }
+
+            // 同一个台不用每帧重算，手法在一条电文里是不变的。
+            if (_fistCallsign == station.Callsign)
+            {
+                return;
+            }
+
+            _fistCallsign = station.Callsign;
+            var measured = FistAnalyzer.Measure(station.Timeline);
+            _fistText.text = measured.Describe();
+
+            var archived = ShiftLibrary.KnownFistFor(station.Callsign);
+            _fistArchiveText.text = archived.IsValid
+                ? archived.Describe()
+                : "档案里没有这个呼号。";
         }
 
         private void RefreshPad()
@@ -865,6 +911,19 @@ namespace Decoder.UI
 
             _verdictText = Label(reportPanel, "", 24, Phosphor, TextAnchor.UpperRight,
                 new Vector2(-28f, -16f), new Vector2(280f, 150f), anchorRight: true);
+
+            // 左下：节奏分析。手法是这个电台身份的一部分，
+            // 呼号可以伪造，手伪造不了。面板只描述听到的东西，不下结论。
+            var fistPanel = Panel(root, "FistPanel",
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -530f), new Vector2(470f, 152f));
+            Label(fistPanel, "节奏分析", 22, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(20f, -14f), new Vector2(260f, 30f));
+            _fistText = Label(fistPanel, "没有可分析的信号。", 20, Phosphor, TextAnchor.UpperLeft,
+                new Vector2(20f, -44f), new Vector2(430f, 48f));
+            Label(fistPanel, "档案", 20, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(20f, -94f), new Vector2(120f, 26f));
+            _fistArchiveText = Label(fistPanel, "", 20, Amber, TextAnchor.UpperLeft,
+                new Vector2(20f, -118f), new Vector2(430f, 30f));
 
             // 左中：密码本。玩家要自己从报头读页码再翻到那一页。
             var padPanel = Panel(root, "PadPanel",
