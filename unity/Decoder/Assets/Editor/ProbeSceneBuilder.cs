@@ -130,6 +130,8 @@ namespace Decoder.EditorTools
         private static Material _bakelite;
         private static Material _concrete;
         private static Material _paper;
+        private static Material _dialFace;
+        private static Material _namePlate;
         private static Material _brassKnob;
         private static Material _deskSurface;
 
@@ -317,6 +319,19 @@ namespace Decoder.EditorTools
                          ?? MakeMaterial(dir, "Brass", new Color(0.52f, 0.40f, 0.16f), 0.85f, 0.32f);
             _deskSurface = LoadBaked("DeskSurface")
                            ?? MakeMaterial(dir, "DeskSurface", new Color(0.09f, 0.10f, 0.09f), 0.02f, 0.70f);
+
+            // 这两张不是可平铺的表面材质，是画好的图案，整块贴一次。
+            // 它们是画面细节密度的主要来源：一整片均匀的金属面无论多大，
+            // 梯度上都贡献不了几个像素，而一圈刻度或一块铭牌在巴掌大的地方
+            // 就能贡献几百个。
+            _dialFace = LoadBaked("DialFace") ?? _steelDark;
+            _namePlate = LoadBaked("NamePlate") ?? _steelDark;
+        }
+
+        /// <summary>贴图是一整幅图案而非可平铺表面，不能按尺寸重复。</summary>
+        private static bool IsSingleTile(Material material)
+        {
+            return material == _dialFace || material == _namePlate;
         }
 
         private static Material LoadBaked(string name)
@@ -544,27 +559,34 @@ namespace Decoder.EditorTools
                         new Vector3(0.022f, 0.22f, 0.018f), _brassKnob);
                 }
 
-                // 铭牌：每台设备的型号牌
-                AddBox(root, $"NamePlate_{row}", new Vector3(-0.90f, y + 0.168f, panelZ + 0.003f),
-                    new Vector3(0.30f, 0.042f, 0.003f), _brassKnob);
+                // 铭牌：每台设备的型号牌，蚀刻着几行看不清的规格
+                AddBox(root, $"NamePlate_{row}", new Vector3(-0.90f, y + 0.166f, panelZ + 0.003f),
+                    new Vector3(0.30f, 0.072f, 0.003f), _namePlate);
+
+                // 面板右侧的操作规程牌。两块牌子分列两端，
+                // 把面板上那片最空的横向区域切开。
+                AddBox(root, $"ProcedurePlate_{row}", new Vector3(0.62f, y + 0.158f, panelZ + 0.003f),
+                    new Vector3(0.26f, 0.088f, 0.003f), _namePlate);
 
                 // 每层面板上的旋钮阵列
                 var knobCount = row == 1 ? 7 : 5;
                 for (var i = 0; i < knobCount; i++)
                 {
                     var x = Mathf.Lerp(-1.12f, 1.12f, knobCount == 1 ? 0.5f : i / (float)(knobCount - 1));
-                    // 旋钮底座刻度环
+                    // 旋钮底座刻度环。刻度是蚀刻在盘面上的，不是几何——
+                    // 一圈十几根细线做成几何会让物件数翻好几倍，贴图一样读得出来。
                     AddCylinder(root, $"KnobRing_{row}_{i}",
                         new Vector3(x, y - 0.13f, 0.269f),
-                        new Vector3(0.072f, 0.004f, 0.072f),
-                        Quaternion.Euler(90, 0, 0), _steelDark);
+                        new Vector3(0.105f, 0.004f, 0.105f),
+                        Quaternion.Euler(90, 0, 0), _dialFace);
+                    // 旋钮要明显小于刻度盘，否则把刻度整圈盖住，只在下沿露出一道。
                     AddCylinder(root, $"Knob_{row}_{i}",
                         new Vector3(x, y - 0.13f, 0.275f),
-                        new Vector3(0.052f, 0.022f, 0.052f),
+                        new Vector3(0.042f, 0.022f, 0.042f),
                         Quaternion.Euler(90, 0, 0), _bakelite);
                     AddBox(root, $"KnobMark_{row}_{i}",
-                        new Vector3(x, y - 0.09f, 0.298f),
-                        new Vector3(0.006f, 0.028f, 0.004f), _brassKnob);
+                        new Vector3(x, y - 0.098f, 0.298f),
+                        new Vector3(0.005f, 0.024f, 0.004f), _brassKnob);
                     // 旋钮下方的标签牌
                     AddBox(root, $"KnobLabel_{row}_{i}",
                         new Vector3(x, y - 0.196f, 0.271f),
@@ -1111,7 +1133,9 @@ namespace Decoder.EditorTools
             UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
 
             // 自发光件（屏幕、指示灯、标签）是纯色的，铺贴图只会把它们弄脏。
-            if (mat != null && !mat.IsKeywordEnabled("_EMISSION"))
+            // 有构图的贴图（刻度盘、铭牌）也不能铺：它们画的是一整幅图案，
+            // 铺两遍就成了两圈刻度、两块牌子叠在一起。
+            if (mat != null && !mat.IsKeywordEnabled("_EMISSION") && !IsSingleTile(mat))
             {
                 ApplyUvTiling(go, size, TilesPerMeterFor(mat));
             }

@@ -133,6 +133,96 @@ namespace Decoder.EditorTools
         /// 采样时对坐标取模而不是钳制，这样生成的法线图可以无缝平铺——
         /// 边缘钳制会在贴图接缝处留下一圈可见的硬边。
         /// </summary>
+        // ---------- 印刷图案 ----------
+
+        /// <summary>
+        /// 仪表盘的放射刻度。返回 1 表示落在刻度线上。
+        ///
+        /// 半径与角度都用归一化坐标：uv 的中心是盘心，半径 1 是贴图边缘的内切圆。
+        /// 长刻度每 <paramref name="majorEvery"/> 格一根，画得更宽也伸得更深，
+        /// 这是所有刻度盘的通用读数结构——没有长短之分的话，一圈等长细线
+        /// 在画面上只是一团摩尔纹，读不出角度。
+        /// </summary>
+        public static float RadialTicks(float u, float v, int count,
+            float innerRadius, float outerRadius, int majorEvery)
+        {
+            var dx = (u - 0.5f) * 2f;
+            var dy = (v - 0.5f) * 2f;
+            var radius = Mathf.Sqrt(dx * dx + dy * dy);
+            if (radius < innerRadius || radius > outerRadius)
+            {
+                return 0f;
+            }
+
+            var angle = Mathf.Atan2(dy, dx) / (2f * Mathf.PI);
+            if (angle < 0f)
+            {
+                angle += 1f;
+            }
+
+            var position = angle * count;
+            var index = Mathf.RoundToInt(position);
+            var offset = Mathf.Abs(position - index);
+            var isMajor = majorEvery > 0 && index % majorEvery == 0;
+
+            // 刻度线的角宽度按格距的比例给，这样格数变了线也不会挤在一起。
+            if (offset > (isMajor ? 0.13f : 0.07f))
+            {
+                return 0f;
+            }
+
+            var reach = isMajor ? innerRadius : Mathf.Lerp(innerRadius, outerRadius, 0.42f);
+            return radius >= reach ? 1f : 0f;
+        }
+
+        /// <summary>
+        /// 假印刷文字。返回 1 表示落在字块上。
+        ///
+        /// 不渲染真字形：这些铭牌在画面里只有几十像素高，字形细节根本分辨不出来，
+        /// 分辨得出来的只有"有几行、每行多长、词之间的空档在哪"。一排排小方块
+        /// 在这个尺度上和真文字是一回事，而且不需要字库、不需要排版、可平铺。
+        /// </summary>
+        public static float FakeText(float u, float v, int rows, float margin, int seed)
+        {
+            if (u < margin || u > 1f - margin || v < margin || v > 1f - margin)
+            {
+                return 0f;
+            }
+
+            var span = 1f - 2f * margin;
+            var rowPosition = (v - margin) / span * rows;
+            var row = Mathf.Clamp(Mathf.FloorToInt(rowPosition), 0, rows - 1);
+
+            // 字高占行高的一半多一点，其余是行距。挨太紧会糊成实心块。
+            var withinRow = rowPosition - row;
+            if (withinRow < 0.22f || withinRow > 0.78f)
+            {
+                return 0f;
+            }
+
+            var column = (u - margin) / span;
+
+            // 每行长度不同，行尾留空。整齐等长的几行看着像色带不像文字。
+            if (column > 0.52f + 0.46f * Hash(row, 13, seed))
+            {
+                return 0f;
+            }
+
+            var charWidth = 0.032f + 0.014f * Hash(row, 7, seed);
+            var position = column / charWidth;
+            var index = Mathf.FloorToInt(position);
+
+            // 词间空格
+            if (Hash(row, index, seed) < 0.17f)
+            {
+                return 0f;
+            }
+
+            // 每个字块的宽度也要抖一下。等宽字块排出来是条形码不是文字。
+            var glyph = 0.52f + 0.34f * Hash(row * 31 + index, 5, seed);
+            return position - index > glyph ? 0f : 1f;
+        }
+
         public static Color[] HeightToNormal(float[] height, int size, float strength)
         {
             var normals = new Color[size * size];

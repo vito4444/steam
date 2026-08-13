@@ -50,6 +50,8 @@ namespace Decoder.EditorTools
                     ["Paper"] = BakeAgedPaper,
                     ["Brass"] = BakeBrass,
                     ["DeskSurface"] = BakeDeskSurface,
+                    ["DialFace"] = BakeDialFace,
+                    ["NamePlate"] = BakeNamePlate,
                 };
 
                 foreach (var recipe in recipes)
@@ -433,6 +435,121 @@ namespace Decoder.EditorTools
                 MetallicSmoothness = mask,
                 Height = height,
                 NormalStrength = 0.42f,
+            };
+        }
+
+        // ---------- 刻度盘面 ----------
+
+        /// <summary>
+        /// 旋钮外圈的刻度盘。
+        ///
+        /// 这类高频小结构是画面"信息密度"的主要来源：自检的细节密度指标量的是
+        /// 梯度超过阈值的像素占比，一整片均匀的金属面无论多大都贡献不了几个，
+        /// 而一圈刻度在同样面积里能贡献几百个。房间里有八个旋钮，
+        /// 每个都套上刻度环，比再加几十个小零件划算得多。
+        /// </summary>
+        private static Maps BakeDialFace()
+        {
+            var albedo = new Color[Size * Size];
+            var mask = new Color[Size * Size];
+            var height = new float[Size * Size];
+            const int seed = 5501;
+
+            for (var y = 0; y < Size; y++)
+            {
+                for (var x = 0; x < Size; x++)
+                {
+                    var u = x / (float)Size;
+                    var v = y / (float)Size;
+                    var i = y * Size + x;
+
+                    var ticks = ProceduralTexture.RadialTicks(u, v, 24, 0.52f, 0.94f, 6);
+                    var grain = ProceduralTexture.Fbm(u, v, 30, 30, 3, 0.5f, seed);
+                    var wear = ProceduralTexture.Blotches(u, v, 6, 0.72f, 0.18f, seed + 19);
+
+                    // 刻度是蚀刻进去的，所以在高度图上是凹的。
+                    height[i] = grain * 0.35f - ticks * 0.55f;
+
+                    var plate = new Color(0.055f, 0.058f, 0.052f);
+                    var etched = new Color(0.62f, 0.60f, 0.50f);
+                    var color = Color.Lerp(plate, etched, ticks);
+                    color = Color.Lerp(color, plate * 1.4f, wear * 0.3f);
+                    color *= Mathf.Lerp(0.93f, 1.07f, grain);
+                    albedo[i] = color;
+
+                    // 蚀刻沟槽里积灰，比周围哑。
+                    mask[i] = ProceduralTexture.MetallicSmoothness(
+                        Mathf.Lerp(0.68f, 0.15f, ticks),
+                        Mathf.Lerp(0.52f, 0.22f, ticks));
+                }
+            }
+
+            return new Maps
+            {
+                Albedo = albedo,
+                MetallicSmoothness = mask,
+                Height = height,
+                NormalStrength = 0.85f,
+            };
+        }
+
+        // ---------- 铭牌 ----------
+
+        /// <summary>
+        /// 设备铭牌：深色底板上蚀刻几行字，四周一圈边框。
+        ///
+        /// 内容是假文字（见 ProceduralTexture.FakeText）。真渲染字形要字库和排版，
+        /// 而这些牌子在画面里只有几十像素高，字形分辨不出来，
+        /// 分辨得出来的只有行数、行长和词间距。
+        /// </summary>
+        private static Maps BakeNamePlate()
+        {
+            var albedo = new Color[Size * Size];
+            var mask = new Color[Size * Size];
+            var height = new float[Size * Size];
+            const int seed = 6203;
+
+            for (var y = 0; y < Size; y++)
+            {
+                for (var x = 0; x < Size; x++)
+                {
+                    var u = x / (float)Size;
+                    var v = y / (float)Size;
+                    var i = y * Size + x;
+
+                    var text = ProceduralTexture.FakeText(u, v, 5, 0.10f, seed);
+
+                    // 边框：离边缘一小圈的方环。
+                    const float inset = 0.055f;
+                    const float thickness = 0.016f;
+                    var edge = Mathf.Min(Mathf.Min(u, 1f - u), Mathf.Min(v, 1f - v));
+                    var frame = edge >= inset && edge <= inset + thickness ? 1f : 0f;
+
+                    var ink = Mathf.Max(text, frame);
+                    var grain = ProceduralTexture.Fbm(u, v, 34, 34, 3, 0.5f, seed + 5);
+                    var grime = ProceduralTexture.Blotches(u, v, 5, 0.74f, 0.16f, seed + 41);
+
+                    height[i] = grain * 0.30f - ink * 0.50f;
+
+                    var plate = new Color(0.070f, 0.072f, 0.062f);
+                    var etched = new Color(0.66f, 0.64f, 0.54f);
+                    var color = Color.Lerp(plate, etched, ink);
+                    color = Color.Lerp(color, plate * 0.7f, grime * 0.35f);
+                    color *= Mathf.Lerp(0.94f, 1.06f, grain);
+                    albedo[i] = color;
+
+                    mask[i] = ProceduralTexture.MetallicSmoothness(
+                        Mathf.Lerp(0.60f, 0.12f, ink),
+                        Mathf.Lerp(0.46f, 0.20f, ink));
+                }
+            }
+
+            return new Maps
+            {
+                Albedo = albedo,
+                MetallicSmoothness = mask,
+                Height = height,
+                NormalStrength = 0.80f,
             };
         }
 
