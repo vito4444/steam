@@ -62,6 +62,7 @@ namespace Decoder.EditorTools
             public float frostedGlass = 0.85f;
             public float labelPlate = 0.16f;
             public float indicatorLamp = 2f;
+            public float lampBulb = 2.6f;
         }
 
         [Serializable]
@@ -108,6 +109,21 @@ namespace Decoder.EditorTools
         private static readonly Color CrtGreen = new(0.52f, 0.92f, 0.58f);
         private static readonly Color ColdWindow = new(0.45f, 0.62f, 1.0f);
         private static readonly Color NeonAmber = new(1.0f, 0.45f, 0.12f);
+
+        // 台灯的朝向。灯罩的几何在 BuildDesk 里，聚光灯在 BuildLights 里，
+        // 两处各写一个欧拉角的话，改了一处忘了另一处，就会得到一盏罩口朝左、
+        // 光却往右打的灯——这个错已经在场景里存在过一版。从同一个朝向推导两边。
+        private static readonly Quaternion DeskLampAim = Quaternion.Euler(44f, 104f, 0f);
+        private static readonly Vector3 DeskLampShadeCenter = new(-0.88f, 1.038f, -0.775f);
+        private const float DeskLampShadeRadius = 0.078f;
+        private const float DeskLampShadeHalfHeight = 0.072f;
+
+        /// <summary>灯罩自身的旋转。圆柱的轴是局部 +Y，罩口在 −Y 端，所以要让 −Y 对上光的方向。</summary>
+        private static Quaternion DeskLampShadeRotation => DeskLampAim * Quaternion.Euler(-90f, 0f, 0f);
+
+        /// <summary>罩口平面的中心，聚光灯就坐在这里。</summary>
+        private static Vector3 DeskLampMouth =>
+            DeskLampShadeCenter + DeskLampAim * Vector3.forward * DeskLampShadeHalfHeight;
 
         private static Material _steelDark;
         private static Material _steelOlive;
@@ -332,7 +348,7 @@ namespace Decoder.EditorTools
         }
 
         private static Material MakeEmissive(
-            string name, Color color, float intensity, bool needsEmissionMap = false)
+            string name, Color color, float intensity, Texture2D emissionMap = null)
         {
             const string dir = "Assets/Materials/Probe";
             var mat = new Material(Shader.Find("Standard"));
@@ -343,49 +359,56 @@ namespace Decoder.EditorTools
             mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             mat.SetColor("_EmissionColor", color * intensity);
 
-            if (needsEmissionMap)
+            if (emissionMap != null)
             {
-                // 示波器在运行时通过 MaterialPropertyBlock 把波形塞进 _EmissionMap。
-                // 但 Standard 的着色器变体是编译期按材质有没有这张贴图选定的：
-                // 材质创建时槽是空的，选中的变体压根不采样自发光贴图，
-                // 运行时再塞也没用，屏幕就是一片黑。预置一张白图把变体固定下来。
-                mat.SetTexture("_EmissionMap", WhitePixel());
-                mat.SetTexture("_MainTex", WhitePixel());
+                // 示波器在运行时把波形贴图塞进 _EmissionMap。但 Standard 的着色器变体
+                // 是编译期按材质有没有这张贴图选定的：材质创建时槽是空的，
+                // 选中的变体压根不采样自发光贴图，运行时再塞也没用，屏幕就是一片黑。
+                // 这里预置的待机画面既固定了变体，也让没运行时的屏幕看着像台示波器
+                // 而不是一块过曝的绿方块。自发光颜色相应改为白色，
+                // 否则贴图的颜色会被再乘一遍屏幕的绿，变成一块死绿。
+                mat.SetTexture("_EmissionMap", emissionMap);
+                mat.SetTexture("_MainTex", emissionMap);
+                mat.SetColor("_Color", Color.white);
+                mat.SetColor("_EmissionColor", Color.white * intensity);
             }
 
             AssetDatabase.CreateAsset(mat, $"{dir}/{name}.mat");
             return mat;
         }
 
-        private static Texture2D _whitePixel;
+        private static Texture2D _scopeStandby;
 
-        private static Texture2D WhitePixel()
+        /// <summary>示波器的待机画面，见 OscilloscopeDisplay.CreateStandbyTexture。</summary>
+        private static Texture2D ScopeStandby()
         {
-            if (_whitePixel != null)
+            if (_scopeStandby != null)
             {
-                return _whitePixel;
+                return _scopeStandby;
             }
 
-            const string path = "Assets/Materials/Probe/WhitePixel.asset";
-            _whitePixel = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-            if (_whitePixel != null)
+            const string path = "Assets/Materials/Probe/ScopeStandby.asset";
+            _scopeStandby = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (_scopeStandby != null)
             {
-                return _whitePixel;
+                return _scopeStandby;
             }
 
-            _whitePixel = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            _whitePixel.SetPixel(0, 0, Color.white);
-            _whitePixel.Apply();
-            AssetDatabase.CreateAsset(_whitePixel, path);
-            return _whitePixel;
+            _scopeStandby = OscilloscopeDisplay.CreateStandbyTexture();
+            AssetDatabase.CreateAsset(_scopeStandby, path);
+            return _scopeStandby;
         }
 
         // ---------- 环境 ----------
 
         private static void BuildLightingEnvironment()
         {
-            // 环境光压到接近零。目标参考图（IRON NEST）有近 40% 的像素低于亮度 0.06，
+            // 环境光压得很低。目标参考图（IRON NEST）有近 40% 的像素低于亮度 0.06，
             // 那种"只有光源照到的地方才亮"的层次感来自极低的环境光，而不是后期调色。
+            //
+            // 但"低"有个下限。这三个属性收的是 gamma 空间的颜色值，引擎自己转线性，
+            // 0.05 以下的写法转过去只剩万分之几，比后处理里那个 0.004 的暗部抬升还小，
+            // 于是无论怎么改都看不出区别——本项目在这上面白调过好几轮。
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = Rgb(_cfg.ambientSky, new Color(0.0016f, 0.0020f, 0.0028f));
             RenderSettings.ambientEquatorColor = Rgb(_cfg.ambientEquator, new Color(0.0010f, 0.0012f, 0.0016f));
@@ -429,8 +452,7 @@ namespace Decoder.EditorTools
             var root = new GameObject("InstrumentWall").transform;
             root.position = new Vector3(0, 0, -1.7f);
 
-            var crtMat = MakeEmissive("CrtScreen", CrtGreen, _cfg.emission.crtScreen,
-                needsEmissionMap: true);
+            var crtMat = MakeEmissive("CrtScreen", CrtGreen, _cfg.emission.crtScreen, ScopeStandby());
             var meterMat = MakeEmissive("MeterFace", new Color(0.75f, 0.85f, 0.55f), _cfg.emission.meterFace);
             var neonMat = MakeEmissive("NeonLamp", NeonAmber, _cfg.emission.neonLamp);
 
@@ -717,13 +739,32 @@ namespace Decoder.EditorTools
                 }
             }
 
-            // 台灯：暖黄光源的物理载体
+            // 台灯：暖黄光源的物理载体。
+            //
+            // 它离眼睛只有一米，任何尺寸误差都会被放大。原先罩体半径 11cm、罩顶
+            // 抬到眼高，结果罩顶那块没有任何细节的平圆盘正对镜头，占掉画面右侧
+            // 十分之一宽，看上去像一根凭空截断的管子。罩体收小、整体压到视线以下，
+            // 再给罩顶加一段接头、罩口加一圈发亮的内壁，才像一盏亮着的灯。
             AddCylinder(root, "LampBase", new Vector3(-1.00f, 0.785f, -0.72f), new Vector3(0.09f, 0.012f, 0.09f),
                 Quaternion.identity, _steelDark);
-            AddCylinder(root, "LampArm", new Vector3(-0.96f, 0.98f, -0.75f), new Vector3(0.012f, 0.20f, 0.012f),
+            AddCylinder(root, "LampArm", new Vector3(-0.97f, 0.905f, -0.75f), new Vector3(0.012f, 0.135f, 0.012f),
                 Quaternion.Euler(0, 0, 12f), _steelDark);
-            AddCylinder(root, "LampShade", new Vector3(-0.86f, 1.18f, -0.78f), new Vector3(0.11f, 0.09f, 0.11f),
-                Quaternion.Euler(64f, 104f, 0f), _steelOlive);
+
+            var shadeRotation = DeskLampShadeRotation;
+            AddCylinder(root, "LampShade", DeskLampShadeCenter,
+                new Vector3(DeskLampShadeRadius, DeskLampShadeHalfHeight, DeskLampShadeRadius),
+                shadeRotation, _steelOlive);
+
+            // 罩顶的球头接头，把那块平圆盘的轮廓打断。
+            var shadeAxis = shadeRotation * Vector3.up;
+            AddSphere(root, "LampSwivel", DeskLampShadeCenter + shadeAxis * (DeskLampShadeHalfHeight + 0.008f),
+                Vector3.one * 0.030f, _brassKnob);
+
+            // 罩口内壁。灯亮着，罩子里必须是亮的，否则开口是个黑洞。
+            // 略微缩进罩口，让罩壁自己挡住侧面看过去的直射，只在正对时才露出来。
+            AddCylinder(root, "LampBulbGlow", DeskLampMouth - DeskLampAim * Vector3.forward * 0.014f,
+                new Vector3(DeskLampShadeRadius * 0.86f, 0.006f, DeskLampShadeRadius * 0.86f), shadeRotation,
+                MakeEmissive("LampBulb", WarmLamp, _cfg.emission.lampBulb));
 
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-noProps") < 0)
             {
@@ -872,8 +913,11 @@ namespace Decoder.EditorTools
             // 1. 台灯：暖黄，锥形，画面的视觉中心。锥角收紧，让光斑只落在桌面纸张上。
             var lampCfg = _cfg.lights.keyLampWarm;
             var lamp = NewLight(root, "KeyLamp_Warm", LightType.Spot, WarmLamp, lampCfg.intensity, lampCfg.range);
-            lamp.transform.localPosition = new Vector3(-0.84f, 1.16f, -0.78f);
-            lamp.transform.localRotation = Quaternion.Euler(26f, 104f, 0f);
+            // 光源坐在罩口平面上，朝向与灯罩同源，见 DeskLampAim。
+            // 俯角比早先大得多：灯压到视线以下之后，原来那个 26 度的俯角会让光锥
+            // 越过桌沿打在仪表墙下半段上，画面里凭空多出一块三角形亮斑。光要落在纸上。
+            lamp.transform.localPosition = DeskLampMouth;
+            lamp.transform.localRotation = DeskLampAim;
             lamp.spotAngle = lampCfg.spotAngle;
             lamp.innerSpotAngle = 26f;
             lamp.shadows = LightShadows.Soft;
@@ -898,6 +942,10 @@ namespace Decoder.EditorTools
 
             // 桌面反弹光：真实房间里台灯照亮桌面后会把暖色反射到面前的设备上。
             // 没有这一盏，机架下半部分会完全被 CRT 的绿色吃掉，画面失去冷暖对比。
+            //
+            // 但它必须弥散。强度和锥角调高之后，它会在仪表墙下半段切出一块边界清晰的
+            // 半圆亮斑，看上去像有第二盏聚光灯在照墙——反弹光不可能有这种边界。
+            // 锥角开到远大于视野、强度压到台灯的四分之一，才是一层看不出光源的底光。
             var bounceCfg = _cfg.lights.bounceDeskWarm;
             var bounce = NewLight(root, "Bounce_DeskWarm", LightType.Spot, WarmLamp, bounceCfg.intensity, bounceCfg.range);
             bounce.transform.localPosition = new Vector3(-0.30f, 0.86f, -1.05f);
