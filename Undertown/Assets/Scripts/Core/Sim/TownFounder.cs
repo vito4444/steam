@@ -28,17 +28,28 @@ namespace Undertown.Core.Sim
             // pasture on either side of it. Spreading the same buildings over equal spans of
             // x and y makes a compact diamond, which is what a town is supposed to look like
             // from here.
-            Pave(map, cx - 10, roadY - 1, cx + 11, roadY, TileKind.Road);
-            Pave(map, cx - 1, roadY - 8, cx, roadY + 11, TileKind.Road);
-            Pave(map, cx + 5, roadY, cx + 6, roadY + 11, TileKind.Dirt);
-            Pave(map, cx - 6, roadY + 6, cx + 9, roadY + 6, TileKind.Dirt);
-            Pave(map, cx - 7, roadY + 3, cx + 4, roadY + 3, TileKind.Dirt);
-            Pave(map, cx - 9, roadY - 5, cx + 9, roadY - 5, TileKind.Dirt);
+            // Lanes are one cell wide, and there are more of them.
+            //
+            // The previous pass paved in bands two and three cells across and then beat a ring
+            // of bare earth around every building, which left the whole settlement standing on
+            // one continuous sheet of mud. In the reference, ground is grass and crop and the
+            // roads are thin lines drawn between them; the lanes are what divide the place into
+            // plots, and they can only divide it if there is something on either side to
+            // divide. Everything the lanes enclose is fenced, which is handled in the renderer
+            // by deriving fencing from where enclosed ground meets a lane.
+            Pave(map, cx - 10, roadY, cx + 11, roadY, TileKind.Road);
+            Pave(map, cx - 1, roadY - 8, cx - 1, roadY + 11, TileKind.Road);
+            Pave(map, cx + 5, roadY, cx + 5, roadY + 11, TileKind.Road);
+            Pave(map, cx - 7, roadY - 8, cx - 7, roadY + 11, TileKind.Road);
+            Pave(map, cx - 10, roadY + 6, cx + 11, roadY + 6, TileKind.Road);
+            Pave(map, cx - 10, roadY - 5, cx + 11, roadY - 5, TileKind.Road);
 
-            // The civic block, north of the street.
-            PlaceNear(town, BuildingKind.TownHall, cx - 6, roadY + 1);
-            PlaceNear(town, BuildingKind.Warehouse, cx + 1, roadY + 1);
-            PlaceNear(town, BuildingKind.Brewery, cx + 7, roadY + 1);
+            // The civic block, north of the street, set back a cell so there is a yard between
+            // each frontage and the fence along the lane. Built hard against the fence line the
+            // rails cut across the bottom of every wall, and the town reads as a stockade.
+            PlaceNear(town, BuildingKind.TownHall, cx - 6, roadY + 2);
+            PlaceNear(town, BuildingKind.Warehouse, cx + 1, roadY + 2);
+            PlaceNear(town, BuildingKind.Brewery, cx + 7, roadY + 2);
 
             // Dwellings behind it, off the lane, packed close the way a village is.
             PlaceNear(town, BuildingKind.House, cx - 6, roadY + 4);
@@ -51,12 +62,12 @@ namespace Undertown.Core.Sim
             PlaceNear(town, BuildingKind.Sawpit, cx + 7, roadY + 10);
 
             // Working ground south of the street, where the fields have room.
-            PlaceNear(town, BuildingKind.House, cx - 6, roadY - 4);
-            PlaceNear(town, BuildingKind.House, cx - 3, roadY - 4);
-            PlaceNear(town, BuildingKind.ClayPit, cx - 8, roadY - 7);
-            PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 4);
-            PlaceNear(town, BuildingKind.Field, cx + 6, roadY - 4);
-            PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 7);
+            PlaceNear(town, BuildingKind.House, cx - 6, roadY - 3);
+            PlaceNear(town, BuildingKind.House, cx - 3, roadY - 3);
+            PlaceNear(town, BuildingKind.ClayPit, cx - 9, roadY - 3);
+            PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 3);
+            PlaceNear(town, BuildingKind.Field, cx + 6, roadY - 3);
+            PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 8);
 
             // Yards: trodden earth around everything that was built, which is what stops the
             // buildings looking as though they were dropped onto untouched pasture.
@@ -86,7 +97,14 @@ namespace Undertown.Core.Sim
             }
         }
 
-        /// <summary>Beats a ring of bare earth around every building above ground.</summary>
+        /// <summary>
+        /// Wears a patch of bare earth at each doorway, and nowhere else.
+        ///
+        /// Beating a full ring around every building is what turned the settlement into a mud
+        /// flat: with buildings a cell or two apart the rings merge and there is no grass left
+        /// between them. Traffic in and out of a door does wear the ground, but only in front
+        /// of the door.
+        /// </summary>
         private static void TreadYards(TownState town)
         {
             var map = town.Map;
@@ -95,10 +113,9 @@ namespace Undertown.Core.Sim
                 var def = building.Def;
                 if (def == null || def.Underground) continue;
 
-                Pave(map,
-                    building.Origin.X - 1, building.Origin.Y - 1,
-                    building.Origin.X + def.Width, building.Origin.Y + def.Height,
-                    TileKind.Dirt);
+                int doorX = building.Origin.X + def.Width / 2;
+                int doorY = building.Origin.Y - 1;
+                Pave(map, doorX - 1, doorY, doorX + 1, doorY, TileKind.Dirt);
             }
         }
 

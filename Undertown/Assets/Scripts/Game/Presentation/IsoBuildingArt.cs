@@ -43,6 +43,9 @@ namespace Undertown.Game.Presentation
             public bool Thatch;
             public bool HalfTimbered;
             public bool Chimney;
+
+            /// <summary>A single-pitch outshot along the east wall, or none.</summary>
+            public bool LeanTo;
         }
 
         /// <summary>
@@ -71,7 +74,8 @@ namespace Undertown.Game.Presentation
             int across = ridgeAlongX ? ch : cw;
             int peak = across * Iso.HalfHeight / 2 + scheme.Pitch;
 
-            int marginX = Mathf.CeilToInt(Overhang * Iso.TileWidth) + 4;
+            // Enough room for the eaves, and for an outshot standing clear of the east wall.
+            int marginX = Mathf.CeilToInt(Overhang * Iso.TileWidth) + (scheme.LeanTo ? 30 : 4);
             int footW = Iso.FootprintWidth(cw, ch) + marginX * 2;
             int footH = Iso.FootprintHeight(cw, ch);
             int total = footH + scheme.WallHeight + peak + marginX + 12;
@@ -106,6 +110,7 @@ namespace Undertown.Game.Presentation
             Openings(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX);
             Brackets(px, w, h, cw, ch, ox, oy, scheme);
             Roof(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
+            if (scheme.LeanTo) LeanTo(px, w, h, cw, ch, ox, oy, scheme);
             if (scheme.Chimney) Chimney(px, w, h, cw, ch, ox, oy, scheme, peak);
 
             // Landmarks last, over the roof they stand on.
@@ -272,6 +277,67 @@ namespace Undertown.Game.Presentation
 
             // A mullion, which is what stops a window reading as a glowing sticker.
             for (int lift = bottom; lift <= top; lift++) Plot(px, w, h, x, y + lift, frame);
+        }
+
+        /// <summary>
+        /// A single-pitch outshot leaning against the east wall: a lower roof sloping away
+        /// from the main one, on posts, open at the front.
+        ///
+        /// Every building here is otherwise a box, and a row of boxes is the remaining reason
+        /// the settlement still looks assembled from parts rather than built. An outshot costs
+        /// one extra shape and breaks the silhouette of whatever it is attached to, which is
+        /// what the reference gets from having no two buildings the same plan.
+        /// </summary>
+        private static void LeanTo(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme)
+        {
+            var roof = Darken(scheme.Roof, 16);
+            var roofLit = Lighten(scheme.Roof, 8);
+            var post = scheme.Timber;
+            var postLit = Lighten(scheme.Timber, 26);
+            var floor = Darken(scheme.Plinth, 12);
+
+            const float depth = 0.62f;
+            int highSide = scheme.WallHeight - 6;
+            int lowSide = highSide - 13;
+            int steps = Mathf.Max(2, ch) * 130;
+
+            // Floor of the outshot, on the ground outside the east wall.
+            for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
+            {
+                float u = cw + i / (float)steps * depth;
+                float v = 0.15f + j / (float)steps * (ch - 0.3f);
+                var p = Iso.Project(u, v, ox, oy);
+                Plot(px, w, h, p.x, p.y + 1, floor);
+            }
+
+            // Two posts carrying the outer edge.
+            for (int end = 0; end < 2; end++)
+            {
+                var p = Iso.Project(cw + depth, end == 0 ? 0.15f : ch - 0.15f, ox, oy);
+                for (int lift = 0; lift < lowSide; lift++)
+                {
+                    Plot(px, w, h, p.x, p.y + lift, postLit);
+                    Plot(px, w, h, p.x + 1, p.y + lift, post);
+                }
+            }
+
+            // The sloping roof, from the main wall down to the posts.
+            for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
+            {
+                float across = i / (float)steps;
+                float u = cw - 0.08f + across * (depth + 0.16f);
+                float v = -0.08f + j / (float)steps * (ch + 0.16f);
+                int lift = Mathf.RoundToInt(Mathf.Lerp(highSide, lowSide, across));
+
+                var p = Iso.Project(u, v, ox, oy);
+                var tone = across < 0.12f ? Darken(roof, 20) : across > 0.94f ? Darken(roof, 30) : roof;
+                if (scheme.Thatch && (i + j) % 9 == 0) tone = roofLit;
+                if (!scheme.Thatch && Mathf.RoundToInt(across * 40f) % 5 == 0) tone = Darken(tone, 14);
+                Plot(px, w, h, p.x, p.y + lift, tone);
+            }
         }
 
         /// <summary>
@@ -703,6 +769,7 @@ namespace Undertown.Game.Presentation
                         Timber = C(0x59, 0x3E, 0x28), Plinth = C(0x64, 0x5E, 0x54),
                         WallHeight = 24 + variant * 2, Pitch = 13 + (variant & 1) * 3,
                         Thatch = true, HalfTimbered = true, Chimney = true,
+                        LeanTo = variant == 1 || variant == 2,
                     };
                 }
                 case BuildingKind.TownHall:
@@ -725,6 +792,7 @@ namespace Undertown.Game.Presentation
                         Wall = C(0x9C, 0x76, 0x48), Roof = C(0x4C, 0x62, 0x48),
                         Timber = C(0x4E, 0x36, 0x22), Plinth = C(0x60, 0x5A, 0x50),
                         WallHeight = 32, Pitch = 14, HalfTimbered = true, Chimney = true,
+                        LeanTo = true,
                     };
                 case BuildingKind.Still:
                     return new Scheme

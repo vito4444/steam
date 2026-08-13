@@ -49,7 +49,7 @@ namespace Undertown.Game.Bootstrap
             _renderer = BuildRenderer();
             _renderer.Bind(map, _town.Digs);
 
-            _props = BuildPropRenderer(map, _renderer);
+            _props = BuildPropRenderer(_town, _renderer);
             _buildings = BuildBuildingRenderer(_town, _renderer, _renderer.ActiveDepth);
             _agents = BuildAgentRenderer(_town, _renderer, _renderer.ActiveDepth);
 
@@ -191,11 +191,11 @@ namespace Undertown.Game.Bootstrap
             return tilemap;
         }
 
-        private static PropRenderer BuildPropRenderer(GridMap map, WorldRenderer world)
+        private static PropRenderer BuildPropRenderer(TownState town, WorldRenderer world)
         {
             var go = new GameObject("Props");
             var renderer = go.AddComponent<PropRenderer>();
-            renderer.Bind(map, world);
+            renderer.Bind(town, world);
             return renderer;
         }
 
@@ -224,8 +224,17 @@ namespace Undertown.Game.Bootstrap
 
             var controller = gameObject.AddComponent<PlayerController>();
             controller.Bind(town, world, buildings, camera, ghost);
-            controller.WorldChanged += () => world.Redraw();
             controller.LayerToggleRequested += SwitchLayer;
+            ghost.Bind(world);
+
+            // Scenery has to follow the world as well as the tilemaps do: fencing is derived
+            // from where plots meet lanes and from what is built on them, so paving a cell or
+            // putting a shed on one changes which edges are fenced.
+            controller.WorldChanged += () =>
+            {
+                world.Redraw();
+                _props.Rebuild(world.ActiveDepth);
+            };
 
             // uGUI buttons need an event system, and nothing else in a script-built scene
             // creates one.

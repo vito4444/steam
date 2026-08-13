@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Undertown.Core.Sim;
 using Undertown.Core.World;
 
 namespace Undertown.Game.Presentation
@@ -11,13 +12,16 @@ namespace Undertown.Game.Presentation
     public sealed class PropRenderer : MonoBehaviour
     {
         private readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
+        private readonly HashSet<Coord> _built = new HashSet<Coord>();
+        private TownState _town;
         private GridMap _map;
         private WorldRenderer _world;
         private int _depth = -1;
 
-        public void Bind(GridMap map, WorldRenderer world)
+        public void Bind(TownState town, WorldRenderer world)
         {
-            _map = map;
+            _town = town;
+            _map = town.Map;
             _world = world;
             Rebuild(world.ActiveDepth);
         }
@@ -26,6 +30,7 @@ namespace Undertown.Game.Presentation
         {
             if (_map == null || _world == null) return;
             _depth = depth;
+            NoteWhatIsBuilt();
 
             int used = 0;
             for (int y = 0; y < _map.Height; y++)
@@ -37,20 +42,89 @@ namespace Undertown.Game.Presentation
                 Sprite art = IsoPropArt.HasProp(kind)
                     ? IsoPropArt.For(kind, IsoTileArt.VariantAt(x, y))
                     : ClutterOn(cell, kind);
-                if (art == null) continue;
 
-                var sprite = Take(used++);
-                sprite.sprite = art;
-                sprite.transform.position = _world.CellCentre(cell);
+                if (art != null) Place(ref used, cell, art, offset: -1);
 
-                // One below the building on the same cell: scenery is behind anything the
-                // player builds there, in front of anything further north.
-                sprite.sortingOrder = WorldRenderer.SortingOrderFor(cell) - 1;
-                sprite.enabled = true;
+                var fence = IsoFenceArt.For(FenceEdgesAt(cell, kind));
+                if (fence != null) Place(ref used, cell, fence, offset: 1);
             }
 
             for (int i = used; i < _pool.Count; i++)
                 if (_pool[i] != null) _pool[i].enabled = false;
+        }
+
+        /// <summary>
+        /// Records which cells are built on. Scenery and fencing both have to keep off them:
+        /// a building does not change the tile underneath it, so without this a fence line
+        /// runs straight through the walls and out over the roof.
+        /// </summary>
+        private void NoteWhatIsBuilt()
+        {
+            _built.Clear();
+            if (_town == null) return;
+
+            foreach (var building in _town.Buildings)
+            {
+                var def = building.Def;
+                if (def == null) continue;
+
+                for (int dy = 0; dy < def.Height; dy++)
+                for (int dx = 0; dx < def.Width; dx++)
+                    _built.Add(building.Origin.Offset(dx, dy));
+            }
+        }
+
+        private void Place(ref int used, Coord cell, Sprite art, int offset)
+        {
+            var sprite = Take(used++);
+            sprite.sprite = art;
+            sprite.transform.position = _world.CellCentre(cell);
+
+            // Scenery goes behind whatever the player builds on the cell; fencing goes in
+            // front of it, since a fence along the near edge of a plot stands between the
+            // viewer and the building inside it.
+            sprite.sortingOrder = WorldRenderer.SortingOrderFor(cell) + offset;
+            sprite.enabled = true;
+        }
+
+        /// <summary>
+        /// Which edges of a cell carry fencing: every edge where enclosed ground meets a lane.
+        ///
+        /// Derived rather than authored. Fencing every plot boundary by hand would mean the
+        /// layout and the fences could drift apart the moment either changed, and the player
+        /// can pave and build at runtime, so the rule has to hold for ground the town founder
+        /// never saw.
+        /// </summary>
+        private int FenceEdgesAt(Coord cell, TileKind kind)
+        {
+            if (!IsEnclosed(kind) || _built.Contains(cell)) return 0;
+
+            int mask = 0;
+            if (IsLane(_map.Get(cell.Offset(0, -1)))) mask |= IsoFenceArt.South;
+            if (IsLane(_map.Get(cell.Offset(1, 0)))) mask |= IsoFenceArt.East;
+            if (IsLane(_map.Get(cell.Offset(0, 1)))) mask |= IsoFenceArt.North;
+            if (IsLane(_map.Get(cell.Offset(-1, 0)))) mask |= IsoFenceArt.West;
+            return mask;
+        }
+
+        /// <summary>
+        /// Ground worth fencing: someone's plot rather than open country or a way through.
+        ///
+        /// Trodden earth is excluded on purpose. It is worn where people walk, which means a
+        /// patch of it against a lane is a gateway, and fencing across a gateway would wall
+        /// every door in the town off from the road it opens onto.
+        /// </summary>
+        private static bool IsEnclosed(TileKind kind) =>
+            kind == TileKind.Grass || kind == TileKind.ClayDeposit;
+
+        private static bool IsLane(TileKind kind) => kind == TileKind.Road;
+
+        private bool NearALane(Coord cell)
+        {
+            for (int dy = -2; dy <= 2; dy++)
+            for (int dx = -2; dx <= 2; dx++)
+                if (IsLane(_map.Get(cell.Offset(dx, dy)))) return true;
+            return false;
         }
 
         /// <summary>
@@ -63,12 +137,20 @@ namespace Undertown.Game.Presentation
         /// loosely, since a building sprite covers its own footprint anyway and a crate poking
         /// out from behind a wall reads as a yard rather than as a mistake.
         /// </summary>
-        private static Sprite ClutterOn(Coord cell, TileKind kind)
+        private Sprite ClutterOn(Coord cell, TileKind kind)
         {
-            if (kind != TileKind.Dirt && kind != TileKind.Road) return null;
+            if (_built.Contains(cell)) return null;
+
+            bool yard = kind == TileKind.Dirt || kind == TileKind.Road;
+
+            // Grass counts too, but only inside the town, or the whole map ends up strewn with
+            // barrels. Proximity to a lane is the test: open country has no lanes in it, and
+            // any grass within a cell or two of one is somebody's plot.
+            bool plot = kind == TileKind.Grass && NearALane(cell);
+            if (!yard && !plot) return null;
 
             int h = Hash(cell.X, cell.Y);
-            if (h % 5 != 0) return null;
+            if (h % (yard ? 5 : 9) != 0) return null;
 
             var choices = new[]
             {
