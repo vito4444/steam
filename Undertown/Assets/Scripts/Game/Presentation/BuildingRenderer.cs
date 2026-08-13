@@ -15,10 +15,12 @@ namespace Undertown.Game.Presentation
     {
         private readonly Dictionary<Building, SpriteRenderer> _sprites = new Dictionary<Building, SpriteRenderer>();
         private TownState _town;
+        private WorldRenderer _world;
 
-        public void Bind(TownState town)
+        public void Bind(TownState town, WorldRenderer world)
         {
             _town = town;
+            _world = world;
             Rebuild();
         }
 
@@ -34,15 +36,22 @@ namespace Undertown.Game.Presentation
         private void Spawn(Building building)
         {
             var def = building.Def;
-            if (def == null) return;
+            if (def == null || _world == null) return;
 
             var go = new GameObject($"{building.Kind}@{building.Origin}");
             go.transform.SetParent(transform, worldPositionStays: false);
-            go.transform.position = new Vector3(building.Origin.X, building.Origin.Y, 0f);
+            go.transform.position = _world.CellCentre(building.Origin);
 
             var sprite = go.AddComponent<SpriteRenderer>();
-            sprite.sprite = ProceduralBuildingArt.For(building.Kind);
-            sprite.sortingOrder = def.Underground ? 4 : 6;
+            sprite.sprite = IsoBuildingArt.For(building.Kind);
+
+            // A building sorts by its nearest corner - the origin, which is the cell lowest on
+            // screen. Sorting by the far corner instead puts the whole structure deeper than it
+            // is, and anything standing on the cells it covers draws on top of it: workers
+            // inside a workshop appear to be standing on its roof. With the near corner, a
+            // figure in front of the door is drawn over the wall and a figure inside is hidden
+            // by it, which is what being indoors should look like.
+            sprite.sortingOrder = WorldRenderer.SortingOrderFor(building.Origin);
 
             _sprites[building] = sprite;
         }
@@ -51,11 +60,6 @@ namespace Undertown.Game.Presentation
         public void ApplyLayerVisibility(int activeDepth)
         {
             _activeDepth = activeDepth;
-            foreach (var pair in _sprites)
-            {
-                if (pair.Value == null) continue;
-                pair.Value.sortingOrder = pair.Key.Origin.Depth == activeDepth ? 6 : 4;
-            }
             RefreshTint();
         }
 

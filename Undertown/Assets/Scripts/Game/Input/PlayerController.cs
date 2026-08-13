@@ -201,10 +201,14 @@ namespace Undertown.Game.InputHandling
             _ghost.Hide();
         }
 
+        /// <summary>
+        /// Under an isometric projection the cell under the cursor is not a floor of the
+        /// world position; the grid owns that inverse transform, so it does it.
+        /// </summary>
         private Coord CellUnderPointer()
         {
             var world = _camera.ScreenToWorldPoint(Input.mousePosition);
-            return new Coord(Mathf.FloorToInt(world.x), Mathf.FloorToInt(world.y), _world.ActiveDepth);
+            return _world.CellAt(world);
         }
     }
 }

@@ -18,13 +18,15 @@ namespace Undertown.Game.Presentation
         private static readonly Color32 DisloyalTrim = new Color32(0xC9, 0x8B, 0x3A, 0xFF);
 
         private TownState _town;
+        private WorldRenderer _world;
         private readonly Dictionary<Villager, SpriteRenderer> _villagers = new Dictionary<Villager, SpriteRenderer>();
         private SpriteRenderer _inspector;
         private int _activeDepth;
 
-        public void Bind(TownState town)
+        public void Bind(TownState town, WorldRenderer world)
         {
             _town = town;
+            _world = world;
             foreach (var pair in _villagers) if (pair.Value != null) Destroy(pair.Value.gameObject);
             _villagers.Clear();
         }
@@ -33,7 +35,7 @@ namespace Undertown.Game.Presentation
 
         private void LateUpdate()
         {
-            if (_town == null) return;
+            if (_town == null || _world == null) return;
 
             foreach (var villager in _town.Villagers) SyncVillager(villager);
             SyncInspector();
@@ -44,11 +46,11 @@ namespace Undertown.Game.Presentation
             if (!_villagers.TryGetValue(villager, out var sprite) || sprite == null)
             {
                 var coat = villager.Role == VillagerRole.Digger ? DiggerCoat : TownsfolkCoat;
-                sprite = Spawn($"villager_{villager.Name}", ProceduralAgentArt.Person(coat, villager.WillTalk ? DisloyalTrim : coat));
+                sprite = Spawn($"villager_{villager.Name}", IsoAgentArt.Person(coat, villager.WillTalk ? DisloyalTrim : coat));
                 _villagers[villager] = sprite;
             }
 
-            Position(sprite, villager.Position.X, villager.Position.Y, villager.Position.Depth);
+            Position(sprite, villager.Position);
         }
 
         private void SyncInspector()
@@ -61,10 +63,10 @@ namespace Undertown.Game.Presentation
             }
 
             if (_inspector == null)
-                _inspector = Spawn("inspector", ProceduralAgentArt.Person(InspectorCoat, new Color32(0xF0, 0xE0, 0xC0, 0xFF), tall: true));
+                _inspector = Spawn("inspector", IsoAgentArt.Person(InspectorCoat, new Color32(0xF0, 0xE0, 0xC0, 0xFF), tall: true));
 
             _inspector.gameObject.SetActive(true);
-            Position(_inspector, inspector.Position.X, inspector.Position.Y, inspector.Position.Depth);
+            Position(_inspector, inspector.Position);
         }
 
         private SpriteRenderer Spawn(string name, Sprite sprite)
@@ -77,13 +79,16 @@ namespace Undertown.Game.Presentation
             return renderer;
         }
 
-        private void Position(SpriteRenderer sprite, int x, int y, int depth)
+        private void Position(SpriteRenderer sprite, Undertown.Core.World.Coord cell)
         {
-            sprite.transform.position = new Vector3(x + 0.5f, y + 0.5f, 0f);
+            sprite.transform.position = _world.CellCentre(cell);
 
-            bool onActiveLayer = depth == _activeDepth;
+            bool onActiveLayer = cell.Depth == _activeDepth;
             sprite.color = onActiveLayer ? Color.white : new Color(1f, 1f, 1f, 0.3f);
-            sprite.sortingOrder = onActiveLayer ? 20 : 5;
+
+            // Two above the building on the same cell, so a figure standing in a doorway is
+            // drawn in front of it rather than swallowed by it.
+            sprite.sortingOrder = WorldRenderer.SortingOrderFor(cell) + (onActiveLayer ? 2 : -2);
         }
     }
 }

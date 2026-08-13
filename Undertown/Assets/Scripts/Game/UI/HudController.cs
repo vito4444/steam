@@ -185,15 +185,15 @@ namespace Undertown.Game.UI
             _bribeButton.onClick.AddListener(() => BookCooking.BribeTheClerk(_town));
 
             var header = UiFactory.Label(section.transform, "Header",
-                Row("MATERIAL", "MADE", "USED", "LOSS", "STOCK", "GAP"), 16, ProceduralUiArt.InkDim);
-            UiFactory.Place((RectTransform)header.transform, 16f, 150f, 558f, 22f);
+                Row("MATERIAL", "MADE", "USED", "LOSS", "STOCK", "GAP"), 15, ProceduralUiArt.InkDim);
+            UiFactory.Place((RectTransform)header.transform, 16f, 150f, 470f, 22f);
 
             float y = 126f;
             foreach (var id in Materials.All)
             {
                 if (!Materials.IsAudited(id)) continue;
 
-                var row = UiFactory.Label(section.transform, $"Row_{id}", "", 16, ProceduralUiArt.Ink);
+                var row = UiFactory.Label(section.transform, $"Row_{id}", "", 15, ProceduralUiArt.Ink);
                 UiFactory.Place((RectTransform)row.transform, 16f, y, 470f, 19f);
                 _ledgerRows[id] = row;
 
@@ -556,12 +556,12 @@ namespace Undertown.Game.UI
         private static string Row(string a, string b, string c, string d, string e, string f)
         {
             var sb = new StringBuilder();
-            sb.Append(a.PadRight(14));
-            sb.Append(b.PadLeft(9));
-            sb.Append(c.PadLeft(9));
-            sb.Append(d.PadLeft(9));
-            sb.Append(e.PadLeft(12));
-            sb.Append(f.PadLeft(10));
+            sb.Append(a.PadRight(12));
+            sb.Append(b.PadLeft(8));
+            sb.Append(c.PadLeft(8));
+            sb.Append(d.PadLeft(8));
+            sb.Append(e.PadLeft(11));
+            sb.Append(f.PadLeft(9));
             return sb.ToString();
         }
     }

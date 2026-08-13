@@ -15,13 +15,16 @@ namespace Undertown.Game.Presentation
         private static readonly Color Refused = new Color(1f, 0.35f, 0.3f, 0.5f);
 
         private SpriteRenderer _renderer;
+        private WorldRenderer _world;
 
         private void Awake()
         {
             _renderer = gameObject.AddComponent<SpriteRenderer>();
-            _renderer.sortingOrder = 30;
+            _renderer.sortingOrder = 5000;
             _renderer.enabled = false;
         }
+
+        public void Bind(WorldRenderer world) => _world = world;
 
         public void Hide()
         {
@@ -30,21 +33,23 @@ namespace Undertown.Game.Presentation
 
         public void ShowBuilding(BuildingKind kind, Coord cell, bool allowed)
         {
-            var sprite = ProceduralBuildingArt.For(kind);
-            if (sprite == null) { Hide(); return; }
+            var sprite = IsoBuildingArt.For(kind);
+            if (sprite == null || _world == null) { Hide(); return; }
 
             _renderer.enabled = true;
             _renderer.sprite = sprite;
             _renderer.color = allowed ? Allowed : Refused;
-            transform.position = new Vector3(cell.X, cell.Y, 0f);
+            transform.position = _world.CellCentre(cell);
         }
 
         public void ShowCell(Coord cell, bool allowed)
         {
+            if (_world == null) { Hide(); return; }
+
             _renderer.enabled = true;
-            _renderer.sprite = ProceduralTileArt.SelectionSprite;
+            _renderer.sprite = IsoTileArt.SelectionSprite;
             _renderer.color = allowed ? Allowed : Refused;
-            transform.position = new Vector3(cell.X + 0.5f, cell.Y + 0.5f, 0f);
+            transform.position = _world.CellCentre(cell);
         }
     }
 }

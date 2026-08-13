@@ -24,6 +24,7 @@ namespace Undertown.Game.Bootstrap
 
         private TownState _town;
         private WorldRenderer _renderer;
+        private PropRenderer _props;
         private BuildingRenderer _buildings;
         private AgentRenderer _agents;
         private PlayerController _controller;
@@ -48,10 +49,11 @@ namespace Undertown.Game.Bootstrap
             _renderer = BuildRenderer();
             _renderer.Bind(map, _town.Digs);
 
-            _buildings = BuildBuildingRenderer(_town, _renderer.ActiveDepth);
-            _agents = BuildAgentRenderer(_town, _renderer.ActiveDepth);
+            _props = BuildPropRenderer(map, _renderer);
+            _buildings = BuildBuildingRenderer(_town, _renderer, _renderer.ActiveDepth);
+            _agents = BuildAgentRenderer(_town, _renderer, _renderer.ActiveDepth);
 
-            _camera = BuildCamera(settings, _town);
+            _camera = BuildCamera(_town, _renderer);
             _controller = BuildController(_town, _renderer, _buildings, _camera);
             _hud = BuildHud(_town, _controller.Tools);
             UpdateLayerBadge();
@@ -81,6 +83,7 @@ namespace Undertown.Game.Bootstrap
         public void SwitchLayer()
         {
             _renderer.ToggleLayer();
+            _props.Rebuild(_renderer.ActiveDepth);
             _buildings.ApplyLayerVisibility(_renderer.ActiveDepth);
             _agents.SetActiveDepth(_renderer.ActiveDepth);
             UpdateLayerBadge();
@@ -156,13 +159,17 @@ namespace Undertown.Game.Bootstrap
         {
             var gridObject = new GameObject("Grid");
             var grid = gridObject.AddComponent<Grid>();
-            grid.cellSize = new Vector3(1f, 1f, 0f);
 
-            var primary = CreateTilemapLayer(gridObject.transform, "Tilemap_Primary", sortingOrder: 0);
-            var overlay = CreateTilemapLayer(gridObject.transform, "Tilemap_Overlay", sortingOrder: 10);
+            // 2:1 diamonds, the projection the concept art is drawn to.
+            grid.cellLayout = GridLayout.CellLayout.Isometric;
+            grid.cellSize = Iso.CellSize;
+            grid.cellSwizzle = GridLayout.CellSwizzle.XYZ;
+
+            var primary = CreateTilemapLayer(gridObject.transform, "Tilemap_Primary", sortingOrder: -20);
+            var overlay = CreateTilemapLayer(gridObject.transform, "Tilemap_Overlay", sortingOrder: -10);
 
             var renderer = gridObject.AddComponent<WorldRenderer>();
-            renderer.Configure(primary, overlay);
+            renderer.Configure(grid, primary, overlay);
             return renderer;
         }
 
@@ -171,25 +178,41 @@ namespace Undertown.Game.Bootstrap
             var go = new GameObject(name);
             go.transform.SetParent(parent, worldPositionStays: false);
             var tilemap = go.AddComponent<Tilemap>();
+
+            tilemap.orientation = Tilemap.Orientation.XY;
+            tilemap.tileAnchor = new Vector3(0f, 0f, 0f);
+
+            // Ground diamonds are exactly one cell and never overlap, so the tilemap needs no
+            // internal ordering and can be batched. Everything that does overlap - scenery,
+            // buildings, people - is a sprite ordered by WorldRenderer.SortingOrderFor.
             var tilemapRenderer = go.AddComponent<TilemapRenderer>();
+            tilemapRenderer.mode = TilemapRenderer.Mode.Chunk;
             tilemapRenderer.sortingOrder = sortingOrder;
             return tilemap;
         }
 
-        private static BuildingRenderer BuildBuildingRenderer(TownState town, int activeDepth)
+        private static PropRenderer BuildPropRenderer(GridMap map, WorldRenderer world)
+        {
+            var go = new GameObject("Props");
+            var renderer = go.AddComponent<PropRenderer>();
+            renderer.Bind(map, world);
+            return renderer;
+        }
+
+        private static BuildingRenderer BuildBuildingRenderer(TownState town, WorldRenderer world, int activeDepth)
         {
             var go = new GameObject("Buildings");
             var renderer = go.AddComponent<BuildingRenderer>();
-            renderer.Bind(town);
+            renderer.Bind(town, world);
             renderer.ApplyLayerVisibility(activeDepth);
             return renderer;
         }
 
-        private static AgentRenderer BuildAgentRenderer(TownState town, int activeDepth)
+        private static AgentRenderer BuildAgentRenderer(TownState town, WorldRenderer world, int activeDepth)
         {
             var go = new GameObject("Agents");
             var renderer = go.AddComponent<AgentRenderer>();
-            renderer.Bind(town);
+            renderer.Bind(town, world);
             renderer.SetActiveDepth(activeDepth);
             return renderer;
         }
@@ -224,7 +247,7 @@ namespace Undertown.Game.Bootstrap
             return hud;
         }
 
-        private static Camera BuildCamera(MapSettings settings, TownState town)
+        private static Camera BuildCamera(TownState town, WorldRenderer world)
         {
             var go = new GameObject("MainCamera");
             go.tag = "MainCamera";
@@ -236,21 +259,29 @@ namespace Undertown.Game.Bootstrap
             cam.backgroundColor = new Color32(0x14, 0x12, 0x10, 0xFF);
             cam.clearFlags = CameraClearFlags.SolidColor;
 
-            // Frame the settlement rather than the middle of the map. Terrain is generated,
-            // so the town lands somewhere different every seed, and the bottom of the view is
-            // covered by the HUD bar - both have to be solved by measurement, not by a
-            // hand-tuned offset that only looks right on one map.
-            FrameTown(cam, settings, town);
+            // Frame the settlement rather than the middle of the map. Terrain is generated, so
+            // the town lands somewhere different every seed, and the bottom of the view is
+            // covered by the HUD bar - both have to be solved by measurement.
+            //
+            // The bounds have to be taken in world space, not in cells: under an isometric
+            // projection a compact block of cells becomes a wide, shallow diamond, and sizing
+            // the camera off cell extents frames it badly in both directions.
+            FrameTown(cam, town, world);
             return cam;
         }
 
-        private static void FrameTown(Camera cam, MapSettings settings, TownState town)
+        private static void FrameTown(Camera cam, TownState town, WorldRenderer world)
         {
             const float hudFraction = 232f / 1080f;
-            const float margin = 3f;
 
-            float minX = settings.Width / 2f, maxX = minX;
-            float minY = settings.Height / 2f, maxY = minY;
+            // In world units, and world units are cheaper under this projection than they
+            // look: a cell is one unit wide but only half a unit tall, so a margin generous
+            // enough on the vertical axis is enormous on the horizontal one. Two and a half
+            // units of padding left the settlement occupying a third of the frame.
+            const float margin = 1.2f;
+
+            var min = new Vector2(float.MaxValue, float.MaxValue);
+            var max = new Vector2(float.MinValue, float.MinValue);
             bool any = false;
 
             foreach (var building in town.Buildings)
@@ -258,30 +289,35 @@ namespace Undertown.Game.Bootstrap
                 var def = building.Def;
                 if (def == null || def.Underground) continue;
 
-                float x0 = building.Origin.X, y0 = building.Origin.Y;
-                if (!any) { minX = x0; maxX = x0; minY = y0; maxY = y0; any = true; }
-
-                minX = Mathf.Min(minX, x0);
-                minY = Mathf.Min(minY, y0);
-                maxX = Mathf.Max(maxX, x0 + def.Width);
-                maxY = Mathf.Max(maxY, y0 + def.Height);
+                // Every corner of the footprint, since a diamond's extremes are its corners.
+                for (int dy = 0; dy <= def.Height; dy += Mathf.Max(1, def.Height))
+                for (int dx = 0; dx <= def.Width; dx += Mathf.Max(1, def.Width))
+                {
+                    var p = world.CellCentre(building.Origin.Offset(dx, dy));
+                    min = Vector2.Min(min, p);
+                    max = Vector2.Max(max, p);
+                    any = true;
+                }
             }
 
-            float spanX = maxX - minX + margin * 2f;
-            float spanY = maxY - minY + margin * 2f;
+            if (!any)
+            {
+                var centre = world.CellCentre(new Coord(town.Map.Width / 2, town.Map.Height / 2));
+                min = max = centre;
+            }
 
-            // The HUD hides the lower band of the viewport, so the usable height is smaller
-            // than the viewport height and the size has to be inflated to compensate.
+            float spanX = max.x - min.x + margin * 2f;
+            float spanY = max.y - min.y + margin * 2f;
+
             float aspect = cam.aspect > 0.1f ? cam.aspect : 16f / 9f;
             float sizeForHeight = spanY / (2f * (1f - hudFraction));
             float sizeForWidth = spanX / (2f * aspect);
-            cam.orthographicSize = Mathf.Max(9f, Mathf.Max(sizeForHeight, sizeForWidth));
+            cam.orthographicSize = Mathf.Max(3.5f, Mathf.Max(sizeForHeight, sizeForWidth));
 
-            // Push the centre up by half the hidden band so the town sits in the visible part.
             float hiddenWorldHeight = cam.orthographicSize * 2f * hudFraction;
             cam.transform.position = new Vector3(
-                (minX + maxX) / 2f,
-                (minY + maxY) / 2f + hiddenWorldHeight / 2f,
+                (min.x + max.x) / 2f,
+                (min.y + max.y) / 2f + hiddenWorldHeight / 2f,
                 -10f);
         }
     }
