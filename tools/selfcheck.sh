@@ -6,6 +6,7 @@
 #   MANER_ORBIT=0 tools/selfcheck.sh          关闭相机环绕
 #   MANER_RES=2560x1440 tools/selfcheck.sh    自定义分辨率
 
+set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 SHOTS="${1:-1.0,2.5,4.0}"

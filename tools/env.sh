@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # 项目 maner 的公共构建环境变量。其他脚本通过 source 引入。
-
-set -euo pipefail
+#
+# 这里刻意不设置 set -e：本文件也会被交互式 shell 直接 source，
+# 在调用者身上打开 errexit 会让后续任何一条返回非零的命令（例如没有命中的 grep）
+# 直接终止整串命令。需要严格模式的脚本自己在开头声明。
 
 MANER_UNITY_VERSION="${MANER_UNITY_VERSION:-6000.3.22f1}"
 MANER_UNITY="${MANER_UNITY:-$HOME/Unity/Hub/Editor/$MANER_UNITY_VERSION/Editor/Unity}"

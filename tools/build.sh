@@ -5,6 +5,7 @@
 #   tools/build.sh linux      构建 Linux 64 位（供本机自检运行使用）
 #   tools/build.sh all        两个都构建
 
+set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 build_one() {

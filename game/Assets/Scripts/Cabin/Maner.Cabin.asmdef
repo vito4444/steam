@@ -1,0 +1,19 @@
+{
+    "name": "Maner.Cabin",
+    "rootNamespace": "Maner.Cabin",
+    "references": [
+        "Maner.Sim",
+        "Maner.Controls",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

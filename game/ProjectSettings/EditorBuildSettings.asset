@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Cabin.unity
+    guid: e45ac6464517359be96d912055385f80
+  - enabled: 1
     path: Assets/Scenes/RenderValidation.unity
     guid: 98c738454f1f3f48382e3bcc19ca095f
   m_configObjects: {}
