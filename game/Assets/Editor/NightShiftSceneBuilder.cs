@@ -57,6 +57,19 @@ namespace Monster.EditorTools
 
         private static readonly Dictionary<string, Material> Materials = new();
 
+        // Collected while the geometry is built and handed to BoothContentBuilder, which
+        // needs to know which cube is the permit and which cylinder is the ALARM switch.
+        // Text is parented to these unscaled anchors rather than to the scaled props it
+        // appears on, because a rotated child of a non-uniformly scaled parent is sheared.
+        private static readonly List<Transform> ScreenAnchors = new();
+        private static readonly List<Transform> Switches = new();
+        private static readonly List<Transform> SwitchLabelAnchors = new();
+        private static Transform _permitPaper;
+        private static Transform _permitAnchor;
+        private static Transform _manualPages;
+        private static Transform _manualAnchor;
+        private static Transform _logAnchor;
+
         [MenuItem("MONSTER/Build Night Shift Booth Scene")]
         public static void Build()
         {
@@ -64,6 +77,14 @@ namespace Monster.EditorTools
             MonsterSetup.EnsureFolder(ScenesFolder);
             MonsterSetup.EnsureFolder(MaterialsFolder);
             Materials.Clear();
+            ScreenAnchors.Clear();
+            Switches.Clear();
+            SwitchLabelAnchors.Clear();
+            _permitPaper = null;
+            _permitAnchor = null;
+            _manualPages = null;
+            _manualAnchor = null;
+            _logAnchor = null;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -78,6 +99,12 @@ namespace Monster.EditorTools
             BuildOutside(outside);
 
             var camera = BuildCamera();
+            BoothContentBuilder.Populate(new BoothContentBuilder.Handles(
+                _permitPaper, _permitAnchor,
+                _manualPages, _manualAnchor,
+                _logAnchor,
+                ScreenAnchors, Switches, SwitchLabelAnchors,
+                camera.gameObject));
             BuildSelfCheck(camera);
 
             EditorSceneManager.MarkSceneDirty(scene);
@@ -236,10 +263,6 @@ namespace Monster.EditorTools
             // to be the key light. The CRTs are a secondary source, not the subject.
             var crtScreen = Mat("CRTScreen", new Color(0.010f, 0.020f, 0.014f), 0.50f, 0f,
                 new Color(0.036f, 0.180f, 0.076f));
-            var crtFeedBright = Mat("CRTFeedBright", new Color(0.010f, 0.020f, 0.014f), 0.50f, 0f,
-                new Color(0.070f, 0.320f, 0.132f));
-            var crtFeedDim = Mat("CRTFeedDim", new Color(0.010f, 0.020f, 0.014f), 0.50f, 0f,
-                new Color(0.020f, 0.105f, 0.045f));
             var brass = Mat("Brass", new Color(0.62f, 0.47f, 0.19f), 0.66f, 0.85f);
             var paper = Mat("Paper", new Color(0.660f, 0.636f, 0.552f), 0.05f, 0f, null,
                 Grunge("Grunge_Paper", 256, 3.0f, 0.55f, 0.0f, 2231), 1f);
@@ -255,9 +278,9 @@ namespace Monster.EditorTools
             // the chunky separated CRTs of the previous pass did not.
             var placements = new[]
             {
-                (x: -0.62f, yaw: 21f),
+                (x: -0.70f, yaw: 22f),
                 (x: 0.02f, yaw: 0f),
-                (x: 0.66f, yaw: -21f),
+                (x: 0.74f, yaw: -22f),
             };
 
             for (var i = 0; i < placements.Length; i++)
@@ -267,16 +290,15 @@ namespace Monster.EditorTools
                 pivot.SetParent(monitors, false);
                 pivot.SetPositionAndRotation(new Vector3(x, DeskTopY, 1.40f), Quaternion.Euler(0f, yaw, 0f));
 
-                Box("Shell", pivot, new Vector3(0f, 0.165f, 0f), new Vector3(0.56f, 0.33f, 0.26f), crtShell);
-                Box("Hood", pivot, new Vector3(0f, 0.327f, -0.07f), new Vector3(0.58f, 0.026f, 0.15f), crtShell);
-                Box("Bezel", pivot, new Vector3(0f, 0.170f, -0.132f), new Vector3(0.500f, 0.252f, 0.010f), darkPlastic);
-                Box("Screen", pivot, new Vector3(0f, 0.170f, -0.140f), new Vector3(0.450f, 0.205f, 0.008f), crtScreen);
+                Box("Shell", pivot, new Vector3(0f, 0.200f, 0f), new Vector3(0.62f, 0.40f, 0.26f), crtShell);
+                Box("Hood", pivot, new Vector3(0f, 0.395f, -0.07f), new Vector3(0.64f, 0.026f, 0.15f), crtShell);
+                Box("Bezel", pivot, new Vector3(0f, 0.205f, -0.132f), new Vector3(0.560f, 0.310f, 0.010f), darkPlastic);
+                Box("Screen", pivot, new Vector3(0f, 0.205f, -0.140f),
+                    new Vector3(0.520f, 0.280f, 0.008f), crtScreen);
+                ScreenAnchors.Add(Anchor($"ScreenText_{i}", pivot,
+                    new Vector3(0f, 0.205f, -0.150f), Quaternion.identity));
 
-                // A crude camera feed rather than a flat green rectangle: a horizon band,
-                // the road surface below it, and one shape that could be a vehicle. At this
-                // size the eye reads "there is an image on that screen", which is all it
-                // needs to do, and it costs three quads.
-                BuildFeedImage(pivot, i, crtFeedBright, crtFeedDim, darkPlastic);
+                BuildScanlines(pivot, darkPlastic);
 
                 var glow = new GameObject("Glow").AddComponent<Light>();
                 glow.transform.SetParent(pivot, false);
@@ -299,18 +321,17 @@ namespace Monster.EditorTools
             mainForm.SetParent(forms, false);
             mainForm.SetPositionAndRotation(new Vector3(0.06f, DeskTopY + 0.004f, 0.52f),
                 Quaternion.Euler(0f, -6f, 0f));
-            Box("Sheet", mainForm, Vector3.zero, new Vector3(0.300f, 0.003f, 0.400f), paper);
-            Box("Header", mainForm, new Vector3(0f, 0.003f, 0.165f), new Vector3(0.270f, 0.002f, 0.022f), ink);
-            for (var line = 0; line < 9; line++)
-            {
-                Box($"Rule_{line}", mainForm, new Vector3(0f, 0.003f, 0.115f - line * 0.034f),
-                    new Vector3(0.264f, 0.002f, 0.0035f), ink);
-            }
+            _permitPaper = Box("Sheet", mainForm, Vector3.zero,
+                new Vector3(0.300f, 0.003f, 0.400f), paper).transform;
+            _permitAnchor = Anchor("PermitText", mainForm, new Vector3(0f, 0.003f, 0f),
+                Quaternion.Euler(90f, 0f, 0f));
 
             Box("Form_Stack_A", forms, new Vector3(-0.34f, DeskTopY + 0.003f, 0.70f),
                 new Vector3(0.230f, 0.006f, 0.320f), paper, new Vector3(0f, 14f, 0f));
-            Box("Form_Stack_B", forms, new Vector3(-0.30f, DeskTopY + 0.010f, 0.73f),
+            Box("Form_Stack_B", forms, new Vector3(-0.30f, DeskTopY + 0.012f, 0.73f),
                 new Vector3(0.225f, 0.005f, 0.315f), paper, new Vector3(0f, 6f, 0f));
+            _logAnchor = Anchor("LogText", forms, new Vector3(-0.30f, DeskTopY + 0.016f, 0.73f),
+                Quaternion.Euler(0f, 6f, 0f) * Quaternion.Euler(90f, 0f, 0f));
 
             Cylinder("Pencil", forms, new Vector3(0.28f, DeskTopY + 0.008f, 0.42f),
                 new Vector3(0.011f, 0.088f, 0.011f), Mat("Pencil", new Color(0.42f, 0.30f, 0.07f), 0.30f),
@@ -322,12 +343,10 @@ namespace Monster.EditorTools
             binder.SetParent(parent, false);
             binder.SetPositionAndRotation(new Vector3(0.86f, DeskTopY, 0.88f), Quaternion.Euler(0f, -22f, 0f));
             Box("Cover", binder, new Vector3(0f, 0.012f, 0f), new Vector3(0.290f, 0.024f, 0.360f), darkPlastic);
-            Box("Pages", binder, new Vector3(0f, 0.029f, 0f), new Vector3(0.272f, 0.016f, 0.344f), paper);
-            for (var line = 0; line < 5; line++)
-            {
-                Box($"Text_{line}", binder, new Vector3(0f, 0.038f, 0.120f - line * 0.056f),
-                    new Vector3(0.230f, 0.002f, 0.006f), ink);
-            }
+            _manualPages = Box("Pages", binder, new Vector3(0f, 0.029f, 0f),
+                new Vector3(0.272f, 0.016f, 0.344f), paper).transform;
+            _manualAnchor = Anchor("ManualText", binder, new Vector3(0f, 0.038f, 0f),
+                Quaternion.Euler(90f, 0f, 0f));
 
             // Classification panel: the dial and switches that decide whether a subject
             // passes. Moved to the centre, directly under the monitors, where the concept
@@ -341,10 +360,13 @@ namespace Monster.EditorTools
             Cylinder("DialHub", panel, new Vector3(-0.135f, 0.032f, 0f), new Vector3(0.048f, 0.014f, 0.048f), darkPlastic);
             for (var i = 0; i < 4; i++)
             {
-                Cylinder($"Switch_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.030f, 0.010f),
-                    new Vector3(0.032f, 0.028f, 0.032f), brass);
+                Switches.Add(Cylinder($"Switch_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.030f, 0.010f),
+                    new Vector3(0.032f, 0.028f, 0.032f), brass).transform);
                 Box($"Label_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.016f, -0.070f),
-                    new Vector3(0.052f, 0.003f, 0.024f), paper);
+                    new Vector3(0.058f, 0.003f, 0.026f), darkPlastic);
+                SwitchLabelAnchors.Add(Anchor($"LabelText_{i}", panel,
+                    new Vector3(0.020f + i * 0.075f, 0.019f, -0.070f),
+                    Quaternion.Euler(90f, 0f, 0f)));
             }
 
             // Stamp and ink pad.
@@ -431,45 +453,22 @@ namespace Monster.EditorTools
             }
         }
 
-        /// <summary>Fakes a grainy CCTV image on a CRT face out of a handful of flat
-        /// quads. Each screen shows a different framing so the three do not read as
-        /// copies of each other.</summary>
-        private static void BuildFeedImage(Transform pivot, int index, Material bright, Material dim,
-            Material dark)
+        /// <summary>Scanlines across a CRT face. The readout text is drawn by
+        /// BoothContentBuilder; this is only the phosphor banding over the top of it.
+        ///
+        /// An earlier version also drew a faked CCTV image out of flat quads here. Once
+        /// the monitors carried real readouts those quads sat in front of the text and hid
+        /// it, so they are gone.</summary>
+        private static void BuildScanlines(Transform pivot, Material dark)
         {
-            const float z = -0.146f;
-            var feed = new GameObject("Feed").transform;
-            feed.SetParent(pivot, false);
-            feed.localPosition = new Vector3(0f, 0.170f, 0f);
+            var lines = new GameObject("Scanlines").transform;
+            lines.SetParent(pivot, false);
+            lines.localPosition = new Vector3(0f, 0.205f, 0f);
 
-            switch (index)
+            for (var line = 0; line < 11; line++)
             {
-                case 0: // Approach road: horizon high, headlights in the distance.
-                    Box("Sky", feed, new Vector3(0f, 0.052f, z), new Vector3(0.450f, 0.100f, 0.004f), dim);
-                    Box("Road", feed, new Vector3(0f, -0.062f, z), new Vector3(0.450f, 0.080f, 0.004f), bright);
-                    Box("Headlight", feed, new Vector3(-0.055f, 0.010f, z - 0.002f),
-                        new Vector3(0.030f, 0.016f, 0.004f), bright);
-                    break;
-                case 1: // Under-vehicle: a dark chassis mass with a bright gap under it.
-                    Box("Chassis", feed, new Vector3(0f, 0.034f, z), new Vector3(0.400f, 0.110f, 0.004f), dark);
-                    Box("Gap", feed, new Vector3(0f, -0.054f, z), new Vector3(0.450f, 0.062f, 0.004f), bright);
-                    Box("Axle", feed, new Vector3(0.090f, -0.012f, z - 0.002f),
-                        new Vector3(0.170f, 0.018f, 0.004f), dim);
-                    break;
-                default: // Rear cabin: a seated occupant, off centre.
-                    Box("Cabin", feed, new Vector3(0f, 0f, z), new Vector3(0.450f, 0.205f, 0.004f), dim);
-                    Box("Occupant", feed, new Vector3(0.080f, -0.024f, z - 0.002f),
-                        new Vector3(0.085f, 0.125f, 0.004f), dark);
-                    Box("Head", feed, new Vector3(0.080f, 0.062f, z - 0.002f),
-                        new Vector3(0.048f, 0.048f, 0.004f), dark);
-                    break;
-            }
-
-            // Scanlines last so they sit over the image.
-            for (var line = 0; line < 7; line++)
-            {
-                Box($"Scanline_{line}", feed, new Vector3(0f, -0.088f + line * 0.035f, z - 0.004f),
-                    new Vector3(0.450f, 0.006f, 0.003f), dark);
+                Box($"Scanline_{line}", lines, new Vector3(0f, -0.125f + line * 0.025f, -0.156f),
+                    new Vector3(0.520f, 0.004f, 0.002f), dark);
             }
         }
 
@@ -687,16 +686,35 @@ namespace Monster.EditorTools
             var go = new GameObject("SelfCheck");
             var runner = go.AddComponent<SelfCheckRunner>();
 
-            // The camera is fixed in this scene, so a single checkpoint is enough for now.
-            // Concept E's later checkpoints (document inspect, camera feed, morning report)
-            // attach here as they are built.
+            // Four fixed poses over three different subjects. Each is captured from the
+            // home pose so the images stay comparable run to run, and each shows a
+            // different part of the loop, so a regression in the paperwork, the monitors
+            // or the manual all get caught rather than only whatever the idle shot happens
+            // to include.
+            var poses = new (string name, Transform lookAt, int subject, bool leanIn)[]
+            {
+                ("booth_idle", null, 0, false),
+                ("permit", _permitPaper, 2, true),
+                ("monitors", ScreenAnchors.Count > 1 ? ScreenAnchors[1] : null, 2, false),
+                ("manual", _manualPages, 5, true),
+            };
+
             var serialized = new SerializedObject(runner);
             var list = serialized.FindProperty("checkpoints");
-            list.arraySize = 1;
-            var entry = list.GetArrayElementAtIndex(0);
-            entry.FindPropertyRelative("name").stringValue = "booth_idle";
-            entry.FindPropertyRelative("settleSeconds").floatValue = 0.75f;
-            entry.FindPropertyRelative("camera").objectReferenceValue = camera;
+            list.arraySize = poses.Length;
+
+            for (var i = 0; i < poses.Length; i++)
+            {
+                var entry = list.GetArrayElementAtIndex(i);
+                entry.FindPropertyRelative("name").stringValue = poses[i].name;
+                entry.FindPropertyRelative("settleSeconds").floatValue = 0.6f;
+                entry.FindPropertyRelative("camera").objectReferenceValue = camera;
+                entry.FindPropertyRelative("lookAt").objectReferenceValue = poses[i].lookAt;
+                entry.FindPropertyRelative("subjectIndex").intValue = poses[i].subject;
+                entry.FindPropertyRelative("leanIn").boolValue = poses[i].leanIn;
+            }
+
+            serialized.FindProperty("reportAnchor").objectReferenceValue = _logAnchor;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -722,6 +740,20 @@ namespace Monster.EditorTools
             }
 
             return go;
+        }
+
+        /// <summary>An empty, unit-scaled child used as a parent for text. Everything in
+        /// this scene is a scaled primitive, and text parented to one of those is sheared
+        /// by the parent's non-uniform scale once it is rotated to lie on the surface.</summary>
+        private static Transform Anchor(string name, Transform parent, Vector3 localPosition,
+            Quaternion localRotation)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localRotation = localRotation;
+            go.transform.localScale = Vector3.one;
+            return go.transform;
         }
 
         private static GameObject Box(string name, Transform parent, Vector3 position, Vector3 size,

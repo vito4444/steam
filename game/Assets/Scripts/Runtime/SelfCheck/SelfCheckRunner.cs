@@ -5,6 +5,10 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Monster.Interaction;
+using Monster.Presentation;
+using Monster.Rules;
+using Monster.Shift;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -34,12 +38,24 @@ namespace Monster.SelfCheck
 
             [Tooltip("Optional camera to capture from. Falls back to Camera.main.")]
             public Camera camera;
+
+            [Tooltip("Optional point in the booth to turn towards before capturing.")]
+            public Transform lookAt;
+
+            [Tooltip("Queue position to put at the window, or -1 to leave the shift alone.")]
+            public int subjectIndex = -1;
+
+            [Tooltip("Lean over the target, as the player does when reading a document.")]
+            public bool leanIn;
         }
 
         [SerializeField] private List<Checkpoint> checkpoints = new();
 
         [Tooltip("Frames sampled for the frame-time statistic at each checkpoint.")]
         [SerializeField] private int frameSampleCount = 30;
+
+        [Tooltip("What to lean over when photographing the morning report.")]
+        [SerializeField] private Transform reportAnchor;
 
         private string _outputDirectory;
         private readonly List<string> _logLines = new();
@@ -97,9 +113,35 @@ namespace Monster.SelfCheck
             }
 
             var records = new List<string>();
+            var boothCamera = FindFirstObjectByType<BoothCamera>();
+            var presenter = FindFirstObjectByType<BoothPresenter>();
 
             foreach (var checkpoint in checkpoints)
             {
+                // Each checkpoint starts from the home pose and a known subject, so no
+                // capture depends on the one before it and the images stay comparable
+                // between runs even if a checkpoint is inserted or removed.
+                if (presenter != null && checkpoint.subjectIndex >= 0)
+                {
+                    presenter.ShowSubject(checkpoint.subjectIndex);
+                }
+
+                if (boothCamera != null)
+                {
+                    boothCamera.ResetToHome();
+                    if (checkpoint.lookAt != null)
+                    {
+                        if (checkpoint.leanIn)
+                        {
+                            boothCamera.SnapFocus(checkpoint.lookAt, 0.46f, new Vector3(0f, 1f, -0.34f));
+                        }
+                        else
+                        {
+                            boothCamera.SnapLookAt(checkpoint.lookAt.position);
+                        }
+                    }
+                }
+
                 var settleUntil = Time.realtimeSinceStartup + Mathf.Max(0f, checkpoint.settleSeconds);
                 while (Time.realtimeSinceStartup < settleUntil)
                 {
@@ -149,10 +191,87 @@ namespace Monster.SelfCheck
                           $"{stats.triangles} tris, {stats.renderers} renderers -> {imagePath}");
             }
 
+            yield return PlayOutAShift(presenter, boothCamera, records);
+
             WriteReport(records);
 
             Debug.Log($"[SelfCheck] done, {_logLines.Count} error(s) logged");
             Application.Quit(_logLines.Count == 0 ? 0 : 3);
+        }
+
+        /// <summary>Plays an entire night to its end by throwing switches directly, then
+        /// photographs the morning report.
+        ///
+        /// This is the only end-to-end exercise of the decision loop that runs in a real
+        /// build on this machine. It caught the switches being dead in the build: the
+        /// scene generator had subscribed to their events at edit time, and event
+        /// subscriptions do not serialise.</summary>
+        private IEnumerator PlayOutAShift(BoothPresenter presenter, BoothCamera boothCamera,
+            ICollection<string> records)
+        {
+            if (presenter == null || presenter.Director == null)
+            {
+                _logLines.Add("Error: no booth presenter in the scene, the shift loop was not exercised");
+                yield break;
+            }
+
+            presenter.BeginShift(0);
+            var guard = 0;
+            var submitted = 0;
+
+            while (!presenter.Director.IsFinished && guard++ < 200)
+            {
+                // Deliberately the correct answer every time. The point is to prove the
+                // loop runs to completion in a build, not to test the rules -- the edit
+                // mode suite already does that far more thoroughly.
+                var correct = RuleEvaluator.Evaluate(presenter.Director.Current.Attributes,
+                    presenter.Director.Manual).CorrectVerdict;
+                if (!presenter.Submit(correct))
+                {
+                    break;
+                }
+
+                submitted++;
+            }
+
+            if (!presenter.Director.IsFinished)
+            {
+                _logLines.Add($"Error: the shift did not finish after {submitted} decisions");
+            }
+
+            var report = presenter.Director.BuildReport();
+            if (report.Correct != report.Processed)
+            {
+                _logLines.Add($"Error: playing every correct verdict scored {report.Correct} " +
+                              $"of {report.Processed}");
+            }
+
+            Debug.Log($"[SelfCheck] played a full shift: {report.Processed} processed, " +
+                      $"{report.Correct} correct, {report.NetPay} credits");
+
+            if (boothCamera != null)
+            {
+                boothCamera.ResetToHome();
+                if (reportAnchor != null)
+                {
+                    boothCamera.SnapFocus(reportAnchor, 0.40f, new Vector3(0f, 1f, -0.34f));
+                }
+            }
+
+            yield return new WaitForSecondsRealtime(0.4f);
+
+            var path = Path.Combine(_outputDirectory, "morning_report.png");
+            yield return CaptureTo(Camera.main, path);
+
+            records.Add(string.Format(CultureInfo.InvariantCulture,
+                "    {{\n" +
+                "      \"name\": \"morning_report\",\n" +
+                "      \"image\": \"morning_report.png\",\n" +
+                "      \"processed\": {0},\n" +
+                "      \"correct\": {1},\n" +
+                "      \"net_pay\": {2}\n" +
+                "    }}",
+                report.Processed, report.Correct, report.NetPay));
         }
 
         private static IEnumerator CaptureTo(Camera camera, string path)
