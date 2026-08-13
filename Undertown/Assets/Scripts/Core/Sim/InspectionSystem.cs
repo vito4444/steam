@@ -162,7 +162,7 @@ namespace Undertown.Core.Sim
         /// Flood-fills the connected cavity so that every cell of the same chamber counts as
         /// already found, not just the one that happened to be tapped.
         /// </summary>
-        private static void MarkChamberDiscovered(TownState town, Coord seed)
+        public static void MarkChamberDiscovered(TownState town, Coord seed)
         {
             var frontier = new Queue<Coord>();
             frontier.Enqueue(seed);
