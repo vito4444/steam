@@ -17,6 +17,11 @@ MUTATIONS=(
   "PARIS 单位公式的分子改错|${RUNTIME}/MorseCode.cs|return 1.2f / wordsPerMinute;|return 1.5f / wordsPerMinute;"
   "电码分组长度从 4 改成 3|${RUNTIME}/ChineseTelegraphCode.cs|public const int CodeLength = 4;|public const int CodeLength = 3;"
   "电码表解析的汉字偏移错一位|${RUNTIME}/ChineseTelegraphCode.cs|var character = line[CodeLength];|var character = line[CodeLength - 1];"
+  "差频音调的方向反转|${RUNTIME}/SignalSynthesizer.cs|var tone = NominalToneHz + detuneKHz * 700f;|var tone = NominalToneHz - detuneKHz * 700f;"
+  "带通响应换成矩形窗|${RUNTIME}/SignalSynthesizer.cs|return 0.5f * (1f + (float)Math.Cos(Math.PI * t));|return 1f - t * 0f;"
+  "去掉键控软化，恢复硬开关|${RUNTIME}/SignalSynthesizer.cs|var rampStep = KeyRampSeconds > 0f ? 1f / (KeyRampSeconds * _sampleRate) : 1f;|var rampStep = 1f;"
+  "噪声源忽略种子，破坏确定性|${RUNTIME}/NoiseSource.cs|_state = seed == 0 ? 0x9E3779B9u : unchecked((uint)seed);|_state = 0x9E3779B9u;"
+  "带外信号不再截断|${RUNTIME}/SignalSynthesizer.cs|if (d >= BandwidthKHz)\n            {\n                return 0f;\n            }|if (d >= BandwidthKHz * 100f)\n            {\n                return 0f;\n            }"
 )
 
 restore() {
@@ -43,20 +48,25 @@ KILLED=0
 for entry in "${MUTATIONS[@]}"; do
     IFS='|' read -r desc file original replacement <<< "${entry}"
 
-    if ! grep -qF -- "${original}" "${file}"; then
+    # 变异定义里的 \n 是字面两字符，这里统一还原成真换行，
+    # 这样跨行的代码片段也能作为变异目标。
+    if ! python3 - "${file}" "${original}" "${replacement}" <<'PY'
+import sys
+path, original, replacement = sys.argv[1], sys.argv[2], sys.argv[3]
+original = original.replace("\\n", "\n")
+replacement = replacement.replace("\\n", "\n")
+with open(path, encoding="utf-8") as f:
+    text = f.read()
+if original not in text:
+    sys.exit(3)
+with open(path, "w", encoding="utf-8") as f:
+    f.write(text.replace(original, replacement, 1))
+PY
+    then
         echo "  [跳过] ${desc}：在 ${file} 里找不到目标代码，变异用例已过期"
         SURVIVED=$((SURVIVED + 1))
         continue
     fi
-
-    python3 - "${file}" "${original}" "${replacement}" <<'PY'
-import sys
-path, original, replacement = sys.argv[1], sys.argv[2], sys.argv[3]
-with open(path, encoding="utf-8") as f:
-    text = f.read()
-with open(path, "w", encoding="utf-8") as f:
-    f.write(text.replace(original, replacement, 1))
-PY
 
     if ./tools/run-tests.sh EditMode > /tmp/mutation-run.log 2>&1; then
         echo "  [存活] ${desc} —— 测试仍然全绿，这段逻辑没有被守护"
