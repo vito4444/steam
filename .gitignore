@@ -1,0 +1,50 @@
+/HunterGame/[Ll]ibrary/
+/HunterGame/[Tt]emp/
+/HunterGame/[Oo]bj/
+/HunterGame/[Bb]uild/
+/HunterGame/[Bb]uilds/
+/HunterGame/[Ll]ogs/
+/HunterGame/[Uu]ser[Ss]ettings/
+/HunterGame/[Mm]emoryCaptures/
+/HunterGame/[Rr]ecordings/
+
+# Never commit build output; it is large and regenerable.
+/Builds/
+/renders/
+
+# Auto-generated IDE files
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.idea/
+.vscode/
+
+# Unity crash/asset store artifacts
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+crashlytics-build.properties
+
+# Credentials must never enter the repo
+*.creds
+.unity_creds
+
+# Unity project transient dirs (paths relative to HunterGame)
+HunterGame/Library/
+HunterGame/Temp/
+HunterGame/Logs/
+HunterGame/UserSettings/
