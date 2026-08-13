@@ -648,7 +648,11 @@ namespace Decoder.EditorTools
                 new Vector3(0.014f, 0.58f, 0.072f), _steelDark, Quaternion.Euler(0, 26f, 0));
             AddBox(root, "CrtHoodRight", new Vector3(0.422f, 1.48f, 0.312f),
                 new Vector3(0.014f, 0.58f, 0.072f), _steelDark, Quaternion.Euler(0, -26f, 0));
-            AddBox(root, "CrtScreen", new Vector3(0, 1.48f, 0.273f), new Vector3(0.58f, 0.44f, 0.012f), crtMat);
+            // 屏幕必须探出外壳前脸。外壳中心在 z 0.14、深 0.30，前表面就到 0.29，
+            // 而屏幕原来放在 0.273——整块嵌在钢壳里，被挡得一点不剩。
+            // 之前几轮在材质、着色器变体、批处理上查了半天，全是白费：
+            // 那块面根本没被渲染出来过。
+            AddBox(root, "CrtScreen", new Vector3(0, 1.48f, 0.302f), new Vector3(0.58f, 0.44f, 0.012f), crtMat);
 
             // 两侧模拟表盘
             for (var i = 0; i < 4; i++)

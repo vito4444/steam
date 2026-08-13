@@ -35,16 +35,19 @@ namespace Decoder.UI
         [Tooltip("余辉半衰期。太短像素点，太长糊成一片")]
         public float persistenceHalfLife = 0.45f;
 
-        public Color traceColor = new Color(0.45f, 1f, 0.55f, 1f);
+        public Color traceColor = new Color(0.30f, 0.76f, 0.38f, 1f);
+
+        [Tooltip("自发光倍率。纹理值本身很低，靠这个把屏幕点亮")]
+        [Range(1f, 12f)] public float emissionBoost = 1.25f;
 
         [Tooltip("迹线宽度，单位是纹理列。屏幕在画面里很小，单列的线会被采样丢掉")]
-        [Range(1, 15)] public int traceWidth = 9;
+        [Range(1, 15)] public int traceWidth = 3;
         // 真实示波器的屏幕底色几乎全黑，迹线是很细的一条。照搬到游戏里的结果是
         // 这块屏幕在画面上只有两个像素宽的亮线，截图十有八九抓在余辉衰减的暗区，
         // 而听障玩家要靠它读点划。底光和刻度都往上提，让屏幕先是"亮着的"。
-        public Color gridColor = new Color(0.10f, 0.34f, 0.16f, 1f);
-        public Color axisColor = new Color(0.16f, 0.52f, 0.24f, 1f);
-        public Color backgroundColor = new Color(0.02f, 0.11f, 0.045f, 1f);
+        public Color gridColor = new Color(0.055f, 0.19f, 0.085f, 1f);
+        public Color axisColor = new Color(0.11f, 0.36f, 0.17f, 1f);
+        public Color backgroundColor = new Color(0.010f, 0.045f, 0.020f, 1f);
 
         [Header("噪声")]
         [Tooltip("无信号时基线的抖动幅度，占屏高比例")]
@@ -99,7 +102,11 @@ namespace Decoder.UI
                 // 屏幕自身发光，所以同一张图也喂给自发光通道，
                 // 否则波形在暗房间里会是死的。
                 material.SetTexture("_EmissionMap", _texture);
-                material.SetColor("_EmissionColor", Color.white);
+                // 自发光倍率不能是 1。纹理里的底色只有 0.11、迹线也就到 1.0，
+                // 乘以白色之后在 HDR 加色调映射下几乎全被压没——
+                // 屏幕看起来就是一块没通电的暗玻璃。这个倍率决定屏幕
+                // 在暗房间里是不是"亮着的"。
+                material.SetColor("_EmissionColor", Color.white * emissionBoost);
                 material.SetColor("_Color", Color.white);
             }
         }
@@ -270,10 +277,12 @@ namespace Decoder.UI
                 {
                     var index = row + x;
                     var pixel = _pixels[index];
-                    // 加法混合：迹线重叠处更亮，模拟电子束停留更久的地方磷光更强。
-                    pixel.r = (byte)Mathf.Min(255, pixel.r + trace.r);
-                    pixel.g = (byte)Mathf.Min(255, pixel.g + trace.g);
-                    pixel.b = (byte)Mathf.Min(255, pixel.b + trace.b);
+                    // 取最大值而不是相加。磷光是单色的：电子束在同一处停留再久，
+                    // 也只是那一种绿更亮，不会变白。加法混合下点和划的粗条
+                    // 几帧就累加到饱和，整条迹线变成白色，看着像别的东西。
+                    pixel.r = System.Math.Max(pixel.r, trace.r);
+                    pixel.g = System.Math.Max(pixel.g, trace.g);
+                    pixel.b = System.Math.Max(pixel.b, trace.b);
                     _pixels[index] = pixel;
                 }
             }
