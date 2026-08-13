@@ -4,6 +4,7 @@ using Hunter.Gameplay.AI;
 using Hunter.Gameplay.Actors;
 using Hunter.Gameplay.Combat;
 using Hunter.Gameplay.Run;
+using Hunter.Gameplay.UI;
 using Hunter.Worldgen;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -235,6 +236,14 @@ namespace Hunter.EditorTools
                     smoothness: 0.12f),
                 Cloth = MakeLit("Cloth", new Color(0.36f, 0.35f, 0.38f), stoneAlbedo, stoneNormal, null,
                     normalScale: 0.5f, smoothness: 0.19f, tiling: 2.2f),
+                // Near-black and near-mirror. The colour comes almost entirely from what it
+                // reflects, which is the point.
+                Water = MakeLit("Water", new Color(0.035f, 0.042f, 0.048f), null, null, null,
+                    smoothness: 0.96f),
+                Timber = MakeLit("Timber", new Color(0.62f, 0.46f, 0.30f), stoneAlbedo, stoneNormal, null,
+                    normalScale: 0.9f, smoothness: 0.22f, tiling: 2.6f),
+                Banner = MakeLit("Banner", new Color(1.35f, 0.42f, 0.26f), stoneAlbedo, null, null,
+                    smoothness: 0.30f, tiling: 1.8f),
             };
 
             return palette;
@@ -276,12 +285,12 @@ namespace Hunter.EditorTools
         static Material MakeGold()
         {
             var mat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "Gold" };
-            mat.SetColor("_BaseColor", new Color(1f, 0.72f, 0.28f));
+            mat.SetColor("_BaseColor", new Color(0.78f, 0.55f, 0.19f));
             mat.SetFloat("_Metallic", 0.92f);
             mat.SetFloat("_Smoothness", 0.62f);
             mat.EnableKeyword("_EMISSION");
             mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-            mat.SetColor("_EmissionColor", new Color(1f, 0.62f, 0.18f) * 0.5f);
+            mat.SetColor("_EmissionColor", new Color(1f, 0.62f, 0.18f) * 0.28f);
             AssetDatabase.CreateAsset(mat, $"{MaterialsDir}/Gold.mat");
             return mat;
         }
@@ -514,6 +523,8 @@ namespace Hunter.EditorTools
                 collider.radius = 0.4f;
                 collider.center = new Vector3(0f, 0.9f, 0f);
 
+                rival.gameObject.AddComponent<MeleeCombatant>();
+
                 var so = new SerializedObject(agent);
                 so.FindProperty("aggression").floatValue = aggressions[i % aggressions.Length];
                 so.ApplyModifiedPropertiesWithoutUndo();
@@ -523,6 +534,15 @@ namespace Hunter.EditorTools
             }
 
             sovereign.Bind(run, player.transform);
+
+            var hudGo = new GameObject("RaidHud");
+            hudGo.transform.SetParent(gameplayRoot.transform, false);
+            var hud = hudGo.AddComponent<RaidHud>();
+            var hudSo = new SerializedObject(hud);
+            hudSo.FindProperty("run").objectReferenceValue = run;
+            hudSo.FindProperty("hudCamera").objectReferenceValue = camera.GetComponent<Camera>();
+            hudSo.FindProperty("playerHealth").objectReferenceValue = player.GetComponent<Damageable>();
+            hudSo.ApplyModifiedPropertiesWithoutUndo();
 
             var bootstrapGo = new GameObject("RunBootstrap");
             bootstrapGo.transform.SetParent(gameplayRoot.transform, false);
@@ -547,9 +567,19 @@ namespace Hunter.EditorTools
             controller.stepOffset = 0.4f;
 
             go.AddComponent<Damageable>();
-            go.AddComponent<HunterController>();
+            var locomotion = go.AddComponent<HunterController>();
             var combat = go.AddComponent<MeleeCombatant>();
             combat.BindCamera(camera);
+
+            // Procedural walk cycle. The hunter's mesh and lantern are separate children
+            // of the anchor, which is exactly the split the animator needs.
+            var animator = go.AddComponent<ProceduralHunterAnimator>();
+            var animSo = new SerializedObject(animator);
+            animSo.FindProperty("body").objectReferenceValue = go.transform.Find("Hunter");
+            animSo.FindProperty("lantern").objectReferenceValue = go.transform.Find("Lantern");
+            animSo.FindProperty("locomotion").objectReferenceValue = locomotion;
+            animSo.FindProperty("combat").objectReferenceValue = combat;
+            animSo.ApplyModifiedPropertiesWithoutUndo();
 
             camera.Target = go.transform;
             camera.SnapToTarget();

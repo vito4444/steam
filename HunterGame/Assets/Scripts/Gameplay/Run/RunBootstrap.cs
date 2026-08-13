@@ -97,7 +97,8 @@ namespace Hunter.Gameplay.Run
 
             // Ringing the bell takes priority: it is never ambiguous what the player meant
             // when they are standing under it.
-            foreach (var collider in Physics.OverlapSphere(position, bellRange))
+            foreach (var collider in Physics.OverlapSphere(position, bellRange, ~0,
+                         QueryTriggerInteraction.Collide))
             {
                 var bell = collider.GetComponentInParent<BellTower>();
                 if (bell == null || bell.Rung) continue;
@@ -131,7 +132,8 @@ namespace Hunter.Gameplay.Run
             Lootable best = null;
             float bestDistance = float.MaxValue;
 
-            foreach (var collider in Physics.OverlapSphere(position, interactRange))
+            foreach (var collider in Physics.OverlapSphere(position, interactRange, ~0,
+                         QueryTriggerInteraction.Collide))
             {
                 var lootable = collider.GetComponentInParent<Lootable>();
                 if (lootable == null || lootable.Emptied) continue;

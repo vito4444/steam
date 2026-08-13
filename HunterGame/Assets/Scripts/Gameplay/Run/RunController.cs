@@ -29,8 +29,13 @@ namespace Hunter.Gameplay.Run
         public RunDirector Director { get; private set; }
         public Inventory Inventory { get; private set; }
 
-        void Awake()
+        void Awake() => EnsureInitialised();
+
+        /// Safe to call from editor tooling; play mode calls it from Awake.
+        public void EnsureInitialised()
         {
+            if (Director != null) return;
+
             Inventory = new Inventory(carryWeightLimit, carrySlots);
             Director = new RunDirector(Inventory, new RunDirector.Settings
             {
@@ -41,7 +46,7 @@ namespace Hunter.Gameplay.Run
             });
 
             if (player != null) player.Inventory = Inventory;
-            if (playerHealth != null) playerHealth.Died += OnPlayerDied;
+            if (playerHealth != null && Application.isPlaying) playerHealth.Died += OnPlayerDied;
         }
 
         void OnDestroy()

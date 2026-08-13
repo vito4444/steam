@@ -33,8 +33,13 @@ namespace Hunter.Gameplay.Actors
         public event Action<float, Vector3> Damaged;
         public event Action Died;
 
-        void Awake()
+        void Awake() => EnsureInitialised();
+
+        /// Callable from editor tooling so a captured frame shows real bars.
+        public void EnsureInitialised()
         {
+            if (_block != null) return;
+
             Health = maxHealth;
             Stamina = maxStamina;
             _renderers = GetComponentsInChildren<Renderer>();

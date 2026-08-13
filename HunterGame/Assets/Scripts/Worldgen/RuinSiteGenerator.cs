@@ -15,6 +15,9 @@ namespace Hunter.Worldgen
             public Material Gold;
             public Material Silhouette;
             public Material Cloth;
+            public Material Water;
+            public Material Timber;
+            public Material Banner;
         }
 
         readonly System.Random _rng;
@@ -52,6 +55,8 @@ namespace Hunter.Worldgen
             BuildRoofBeams(root);
             BuildFarTower(root);
             BuildRubbleField(root);
+            BuildPuddles(root);
+            BuildProps(root);
 
             handles.LootCaches.Add(BuildLootCache(root, new Vector3(2.75f, 0f, 9.6f)).transform);
             handles.LootCaches.Add(BuildLootCache(root, new Vector3(-5.4f, 0f, 22.5f)).transform);
@@ -132,6 +137,11 @@ namespace Hunter.Worldgen
             var marker = new GameObject("BellAnchor");
             marker.transform.SetParent(tower.transform, false);
             marker.transform.position = pos;
+
+            var trigger = marker.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = 2.2f;
+            trigger.center = new Vector3(0f, 1.4f, 0f);
             return marker;
         }
 
@@ -349,6 +359,188 @@ namespace Hunter.Worldgen
         /// Surviving roof beams spanning the colonnade. They are the reason the key light
         /// breaks into discrete shafts instead of washing the whole nave evenly; without
         /// an occluder overhead there is nothing for a steep light to cut against.
+        /// Narrative props. The concept frame is full of evidence that people were here
+        /// and left in a hurry; bare architecture reads as a level, not as a place.
+        void BuildProps(Transform root)
+        {
+            var timber = new MeshBuilder();
+            var banners = new MeshBuilder();
+            var wood = new Color(0.34f, 0.24f, 0.15f);
+            var cloth = new Color(0.52f, 0.16f, 0.11f);
+
+            // Scaffolds abandoned mid-repair, leaning against the colonnade.
+            for (int i = 0; i < 7; i++)
+            {
+                float z = Range(9f, 44f);
+                int side = _rng.NextDouble() < 0.5 ? -1 : 1;
+                float x = side * Range(3.4f, 6.2f);
+                float height = Range(2.2f, 4.1f);
+
+                for (int leg = 0; leg < 2; leg++)
+                {
+                    float lx = x + (leg == 0 ? -0.5f : 0.5f);
+                    timber.AddChamferedBox(new Vector3(lx, height * 0.5f, z),
+                        new Vector3(0.19f, height, 0.19f), 0.028f, wood * Range(0.8f, 1.15f),
+                        jitter: 0.03f, seed: NextSeed(), uvScale: 2.4f);
+                }
+                for (int rung = 1; rung <= 3; rung++)
+                {
+                    float ry = height * rung / 4f;
+                    timber.AddChamferedBox(new Vector3(x, ry, z), new Vector3(1.3f, 0.15f, 0.16f),
+                        0.025f, wood * Range(0.75f, 1.1f), jitter: 0.02f, seed: NextSeed(), uvScale: 2.4f);
+                }
+                AddRotatedSlab(timber,
+                    new Vector3(x, height * 0.5f, z + 0.16f),
+                    new Vector3(Mathf.Sqrt(1f + height * height) * 0.98f, 0.11f, 0.13f),
+                    Quaternion.Euler(0f, 0f, Mathf.Atan2(height, 1f) * Mathf.Rad2Deg),
+                    wood * Range(0.72f, 0.95f));
+
+                // A plank that has slipped and now hangs at an angle.
+                if (_rng.NextDouble() < 0.6)
+                {
+                    AddRotatedSlab(timber, new Vector3(x + side * 0.7f, height * Range(0.4f, 0.8f), z + Range(-0.4f, 0.4f)),
+                        new Vector3(Range(1.4f, 2.4f), 0.08f, 0.28f),
+                        Quaternion.Euler(Range(-25f, 25f), Range(0f, 180f), Range(15f, 55f)), wood * 0.9f);
+                }
+            }
+
+            // Poles with hanging banners, the marks of whoever claimed this ruin first.
+            for (int i = 0; i < 6; i++)
+            {
+                float z = Range(12f, 42f);
+                int side = _rng.NextDouble() < 0.5 ? -1 : 1;
+                float x = side * Range(2.6f, 5.4f);
+                float poleHeight = Range(2.8f, 4.4f);
+
+                timber.AddChamferedBox(new Vector3(x, poleHeight * 0.5f, z),
+                    new Vector3(0.17f, poleHeight, 0.17f), 0.025f, wood * 0.85f,
+                    jitter: 0.02f, seed: NextSeed(), uvScale: 3f);
+
+                // Cloth hangs as a tapered sheet with a torn, uneven hem.
+                float width = Range(1.0f, 1.6f);
+                float drop = Range(1.6f, 2.8f);
+                float top = poleHeight - 0.15f;
+                const int cols = 5, rows = 6;
+
+                for (int r = 0; r < rows; r++)
+                {
+                    for (int c = 0; c < cols; c++)
+                    {
+                        float u0 = (float)c / cols, u1 = (float)(c + 1) / cols;
+                        float v0 = (float)r / rows, v1 = (float)(r + 1) / rows;
+                        banners.AddQuad(
+                            BannerPoint(x, top, z, side, width, drop, u0, v0),
+                            BannerPoint(x, top, z, side, width, drop, u1, v0),
+                            BannerPoint(x, top, z, side, width, drop, u1, v1),
+                            BannerPoint(x, top, z, side, width, drop, u0, v1),
+                            cloth * Range(0.75f, 1.1f), 1.4f);
+                    }
+                }
+            }
+
+            // Coils of rope and dropped tools near the caches.
+            for (int i = 0; i < 12; i++)
+            {
+                float z = Range(6f, 40f);
+                float x = Range(-8f, 8f);
+                timber.AddRock(new Vector3(x, 0.07f, z), Range(0.12f, 0.26f), NextSeed(),
+                    wood * Range(0.7f, 1f), flatten: 0.32f);
+            }
+
+            Emit(root, "Timberwork", timber.ToMesh("Timberwork"), _palette.Timber);
+            Emit(root, "Banners", banners.ToMesh("Banners", recalculateNormals: true), _palette.Banner,
+                castShadows: true);
+        }
+
+        /// Banner sheet with a sag along its length and a ragged lower edge.
+        static Vector3 BannerPoint(float x, float top, float z, int side, float width, float drop,
+            float u, float v)
+        {
+            float sag = Mathf.Sin(u * Mathf.PI) * 0.09f;
+            float tear = v > 0.82f ? ProceduralTextures.Fbm(u * 6f, v * 6f, 2) * 0.28f : 0f;
+            return new Vector3(
+                x + (u - 0.5f) * width + Mathf.Sin(v * 2.4f) * 0.07f,
+                top - v * drop + sag - tear,
+                z + side * 0.06f);
+        }
+
+        /// Standing water in the pavement's low spots.
+        ///
+        /// This is the answer to the foreground reading as a featureless dark mass. In a
+        /// backlit scene a horizontal surface receives almost no diffuse light, so no
+        /// amount of extra lamps recovers detail there. What the concept frame actually
+        /// shows in its foreground is specular: the wet floor mirroring the bright mist.
+        /// Puddles give that reflection something to happen on.
+        void BuildPuddles(Transform root)
+        {
+            var mb = new MeshBuilder();
+            int placed = 0;
+
+            // The hero framing looks down the first few metres of the nave, and that is
+            // precisely the region that has no diffuse light. Guarantee water there rather
+            // than leaving it to where the noise happens to dip.
+            var guaranteed = new[]
+            {
+                new Vector2(-1.9f, 2.6f), new Vector2(1.7f, 4.4f), new Vector2(-0.6f, 6.8f),
+                new Vector2(2.6f, 7.9f), new Vector2(-2.8f, 9.4f),
+            };
+
+            for (int attempt = 0; attempt < 260 && placed < 38; attempt++)
+            {
+                float x, z, radius;
+
+                if (attempt < guaranteed.Length)
+                {
+                    x = guaranteed[attempt].x;
+                    z = guaranteed[attempt].y;
+                    radius = Range(0.9f, 1.8f);
+                }
+                else
+                {
+                    x = Range(-14f, 14f);
+                    z = Range(-6f, 46f);
+                    radius = Range(0.55f, 2.3f);
+
+                    float dip = GroundHeight(x, z);
+                    // Elsewhere, only settle where the pavement actually dips, otherwise
+                    // the water reads as puddles floating on a flat floor.
+                    if (dip > -0.035f) continue;
+                    if (radius > 1.4f && dip > -0.08f) continue;   // big pools need real basins
+                }
+
+                float height = GroundHeight(x, z);
+
+                const int segments = 14;
+                var centre = new Vector3(x, height + 0.028f, z);
+                var previous = Vector3.zero;
+
+                for (int s = 0; s <= segments; s++)
+                {
+                    float phi = 2f * Mathf.PI * s / segments;
+                    // Irregular outline; a perfect circle of water looks placed, not pooled.
+                    float wobble = 0.72f + ProceduralTextures.Fbm(
+                        Mathf.Cos(phi) * 1.7f + x, Mathf.Sin(phi) * 1.7f + z, 3) * 0.62f;
+                    var point = centre + new Vector3(Mathf.Cos(phi), 0f, Mathf.Sin(phi)) * radius * wobble;
+
+                    if (s > 0) mb.AddTriangle(centre, point, previous, new Color(0.05f, 0.055f, 0.06f), 0.7f);
+                    previous = point;
+                }
+                placed++;
+            }
+
+            if (placed == 0) return;
+            Emit(root, "Puddles", mb.ToMesh("Puddles"), _palette.Water, castShadows: false);
+        }
+
+        /// Must match the height function used by BuildGround exactly, or the water will
+        /// float above the pavement or sink into it.
+        static float GroundHeight(float x, float z)
+        {
+            float broad = ProceduralTextures.Fbm(x * 0.045f + 11f, z * 0.045f + 3f, 3) - 0.5f;
+            float fine = ProceduralTextures.Fbm(x * 0.33f, z * 0.33f, 2) - 0.5f;
+            return broad * 0.32f + fine * 0.05f;
+        }
+
         void BuildRoofBeams(Transform root)
         {
             var mb = new MeshBuilder();
@@ -472,6 +664,11 @@ namespace Hunter.Worldgen
             var anchor = new GameObject("CacheAnchor");
             anchor.transform.SetParent(go.transform, false);
             anchor.transform.position = pos;
+
+            var trigger = anchor.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = 1.1f;
+            trigger.center = new Vector3(0f, 0.6f, 0f);
             return anchor;
         }
 

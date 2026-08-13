@@ -49,6 +49,15 @@ namespace Hunter.Gameplay.Run
             _contents.AddRange(table.RollMany(_rng, count, luck));
         }
 
+        /// Puts an item back when a taker turned out not to be able to carry it.
+        public void Restore(ItemInstance item)
+        {
+            if (item == null) return;
+            _contents.Add(item);
+            Emptied = false;
+            if (glow != null) glow.enabled = true;
+        }
+
         public bool TryTake(ItemInstance item)
         {
             EnsureRolled();

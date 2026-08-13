@@ -50,6 +50,25 @@ namespace Hunter.EditorTools
             }
             var cam = camGo.GetComponent<Camera>();
 
+            var animator = UnityEngine.Object.FindFirstObjectByType<
+                Hunter.Gameplay.Actors.ProceduralHunterAnimator>();
+            if (animator != null)
+            {
+                animator.PoseForCapture(phase: 2.1f, speed01: 0.85f);
+                Debug.Log("SHOT_MODE hunter posed mid-stride");
+            }
+
+            if (Environment.GetEnvironmentVariable("HUNTER_NO_HUD") != "1")
+            {
+                var hud = UnityEngine.Object.FindFirstObjectByType<Hunter.Gameplay.UI.RaidHud>();
+                if (hud != null)
+                {
+                    hud.PopulateForCapture();
+                    Canvas.ForceUpdateCanvases();
+                    Debug.Log("SHOT_MODE hud populated");
+                }
+            }
+
             // Control renders for isolating which stage darkened a frame.
             if (Environment.GetEnvironmentVariable("HUNTER_NO_POST") == "1")
             {

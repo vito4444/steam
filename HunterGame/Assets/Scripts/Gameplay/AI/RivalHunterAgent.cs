@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Hunter.Gameplay.Actors;
+using Hunter.Gameplay.Combat;
 using Hunter.Gameplay.Items;
 using Hunter.Gameplay.Run;
 using UnityEngine;
@@ -26,6 +27,13 @@ namespace Hunter.Gameplay.AI
         [SerializeField] float turnSpeed = 6f;
         [SerializeField] float arriveRadius = 1.4f;
 
+        [Header("Acting on decisions")]
+        [Tooltip("How close before a rival commits to a swing.")]
+        [SerializeField] float strikeRange = 2.2f;
+        [Tooltip("How close before a rival starts searching a container.")]
+        [SerializeField] float reachRange = 1.9f;
+        [SerializeField] float searchSeconds = 1.3f;
+
         [Header("Profile")]
         [SerializeField, Range(0f, 1f)] float aggression = 0.5f;
         [SerializeField] float carryWeightLimit = 28f;
@@ -45,6 +53,9 @@ namespace Hunter.Gameplay.AI
         RivalHunterBrain _brain;
         Damageable _self;
         Damageable _playerHealth;
+        MeleeCombatant _combat;
+        Lootable _searchTarget;
+        float _searchProgress;
         int _routeIndex;
         float _decisionTimer;
         Vector3 _destination;
@@ -72,6 +83,7 @@ namespace Hunter.Gameplay.AI
         void Awake()
         {
             _self = GetComponent<Damageable>();
+            _combat = GetComponent<MeleeCombatant>();
             _brain = new RivalHunterBrain(
                 new Inventory(carryWeightLimit, carrySlots),
                 new RivalHunterBrain.Profile { Aggression = aggression });
@@ -104,6 +116,138 @@ namespace Hunter.Gameplay.AI
             }
 
             MoveTowardsDestination(dt);
+            ActOnGoal(dt);
+        }
+
+        /// Turns a decision into an action once the agent is actually in position. The
+        /// brain decides what to want; this decides nothing, it only executes.
+        void ActOnGoal(float dt)
+        {
+            switch (Goal)
+            {
+                case HunterGoal.Fight:
+                case HunterGoal.Ambush:
+                    TryStrike();
+                    break;
+
+                case HunterGoal.Scavenge:
+                case HunterGoal.ContestLoot:
+                    TrySearch(dt);
+                    break;
+
+                default:
+                    _searchTarget = null;
+                    _searchProgress = 0f;
+                    break;
+            }
+        }
+
+        void TryStrike()
+        {
+            if (_combat == null || playerTarget == null) return;
+            if (_playerHealth != null && _playerHealth.IsDead) return;
+
+            var offset = playerTarget.position - transform.position;
+            offset.y = 0f;
+            if (offset.sqrMagnitude > strikeRange * strikeRange) return;
+
+            // Face the target before committing; the swing arc is narrow enough that a
+            // rival flailing at empty air would look broken.
+            transform.rotation = Quaternion.LookRotation(offset.normalized, Vector3.up);
+            _combat.TryAttack();
+        }
+
+        void TrySearch(float dt)
+        {
+            var container = NearestContainer();
+            if (container == null)
+            {
+                _searchTarget = null;
+                _searchProgress = 0f;
+                return;
+            }
+
+            if (Vector3.Distance(transform.position, container.transform.position) > reachRange)
+            {
+                // Walk to it first. Overriding the destination here is what makes a rival
+                // visibly break off its patrol and beeline for a chest.
+                _destination = container.transform.position;
+                _searchProgress = 0f;
+                return;
+            }
+
+            // Hold position while searching; the patrol destination set by Think() would
+            // otherwise walk the rival straight off the chest it is opening.
+            _destination = transform.position;
+
+            if (_searchTarget != container)
+            {
+                _searchTarget = container;
+                _searchProgress = 0f;
+            }
+
+            _searchProgress += dt;
+            if (_searchProgress < searchSeconds) return;
+            _searchProgress = 0f;
+
+            TakeFrom(container);
+        }
+
+        void TakeFrom(Lootable container)
+        {
+            var contents = container.Peek();
+            if (contents.Count == 0) return;
+
+            var context = run.ContextFor(transform.position);
+
+            // Evaluate every item, act on the best call. Same appraisal the player's
+            // pickup path uses, so a rival never grabs something a player would scoff at.
+            ItemInstance chosen = null;
+            LootValuation.Appraisal chosenCall = default;
+            float bestDensity = 0f;
+
+            foreach (var item in contents)
+            {
+                var call = LootValuation.Appraise(item, _brain.Inventory, context);
+                if (call.Decision == LootValuation.Decision.Ignore) continue;
+
+                float density = LootValuation.ValueDensity(item);
+                if (density <= bestDensity) continue;
+
+                bestDensity = density;
+                chosen = item;
+                chosenCall = call;
+            }
+
+            if (chosen == null) return;
+            if (!container.TryTake(chosen)) return;
+
+            if (!_brain.ExecuteLootCall(chosenCall, chosen))
+            {
+                // Refused after the fact: do not let the item evaporate.
+                container.Restore(chosen);
+            }
+        }
+
+        Lootable NearestContainer()
+        {
+            Lootable best = null;
+            float bestDistance = float.MaxValue;
+
+            foreach (var collider in Physics.OverlapSphere(transform.position, lootSenseRange,
+                         ~0, QueryTriggerInteraction.Collide))
+            {
+                var lootable = collider.GetComponentInParent<Lootable>();
+                if (lootable == null || lootable.Emptied) continue;
+
+                float distance = Vector3.Distance(transform.position, lootable.transform.position);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = lootable;
+                }
+            }
+            return best;
         }
 
         void Think()

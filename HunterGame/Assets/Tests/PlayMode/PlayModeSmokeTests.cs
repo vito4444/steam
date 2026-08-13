@@ -165,6 +165,71 @@ namespace Hunter.Tests
         }
 
         [UnityTest]
+        public IEnumerator RivalActuallyTakesLootItIsStandingOn()
+        {
+            var rival = Object.FindFirstObjectByType<RivalHunterAgent>();
+            var cache = Object.FindFirstObjectByType<Lootable>();
+            Assert.IsNotNull(rival);
+            Assert.IsNotNull(cache);
+            yield return null;
+
+            int before = rival.Inventory.Count;
+            rival.transform.position = cache.transform.position + Vector3.right * 0.6f;
+
+            // Long enough for a decision tick plus the search timer.
+            float elapsed = 0f;
+            while (elapsed < 6f && rival.Inventory.Count == before)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            Assert.Greater(rival.Inventory.Count, before,
+                "a rival standing on a cache must end up carrying something");
+            Assert.Greater(rival.Inventory.TotalValue, 0);
+        }
+
+        [UnityTest]
+        public IEnumerator HudReportsTheLiveBagState()
+        {
+            var hud = Object.FindFirstObjectByType<Hunter.Gameplay.UI.RaidHud>();
+            Assert.IsNotNull(hud, "the raid needs its HUD");
+            yield return null;
+
+            var def = new ItemDefinition("hudtest", "t", ItemCategory.Treasure, ItemRarity.Common, 250, 4f);
+            _run.Inventory.TryAdd(new ItemInstance(def));
+            yield return null;
+
+            Assert.AreEqual(250, _run.Inventory.TotalValue);
+            Assert.AreEqual(4f, _run.Inventory.TotalWeight, 1e-3f);
+        }
+
+        [UnityTest]
+        public IEnumerator HunterAnimatorMovesTheBodyWhileWalking()
+        {
+            var animator = Object.FindFirstObjectByType<ProceduralHunterAnimator>();
+            var player = Object.FindFirstObjectByType<HunterController>();
+            Assert.IsNotNull(animator, "the hunter needs its procedural walk cycle");
+
+            var body = player.transform.Find("Hunter");
+            Assert.IsNotNull(body);
+            yield return null;
+
+            var start = body.localPosition;
+            var startRotation = body.localRotation;
+
+            for (int i = 0; i < 40; i++)
+            {
+                player.Move(Vector2.up, sprintHeld: true, 0.05f);
+                yield return null;
+            }
+
+            bool moved = Vector3.Distance(start, body.localPosition) > 1e-4f
+                         || Quaternion.Angle(startRotation, body.localRotation) > 0.2f;
+            Assert.IsTrue(moved, "the body should bob or lean while running");
+        }
+
+        [UnityTest]
         public IEnumerator PlayerDeathEndsTheRunAndVoidsTheHaul()
         {
             var health = Object.FindFirstObjectByType<HunterController>().GetComponent<Damageable>();
