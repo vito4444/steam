@@ -4,7 +4,7 @@
 
 ## 当前阶段
 
-**已选定方案 A《金雾猎场》**，M1 渲染管线与画面基线完成，进入玩法开发（M2）。
+**已选定方案 A《金雾猎场》**，M1 画面基线与 M2 玩法系统完成，可产出 Windows 可执行文件。
 
 黑暗奇幻的单人 PvE 搜打撤动作 RPG：带着可能永久失去的装备进入金雾笼罩的遗迹，与同样在搜刮的 AI 猎金人竞速抢夺，在雾中主宰追上你之前摇铃撤离。
 
@@ -21,6 +21,7 @@
 | [`docs/02-technical-constraints.md`](docs/02-technical-constraints.md) | 开发环境实况、Unity 配置、Windows 构建链路、自检与截图方案 |
 | [`docs/03-milestone-M0.md`](docs/03-milestone-M0.md) | 开发链路验证实录：Windows 构建产物校验、三轮自检截图迭代、与概念图的差距清单 |
 | [`docs/04-milestone-M1.md`](docs/04-milestone-M1.md) | 渲染管线与画面基线：自研体积光、程序化几何与材质、26 轮画面迭代、三个根因级问题的排查过程 |
+| [`docs/05-milestone-M2.md`](docs/05-milestone-M2.md) | 玩法系统：搜刮撤离循环、近战手感、AI 猎金人、雾中主宰、73 项测试与变异验证 |
 
 ## 五个候选方案速览
 
@@ -60,5 +61,20 @@ tools/forge_and_shoot.sh v1     # 重建场景并渲染三个固定机位
 ```
 HunterGame/Assets/Scripts/Rendering/   自研体积光 Renderer Feature 与 shader
 HunterGame/Assets/Scripts/Worldgen/    程序化网格、程序化贴图、废墟场景生成器
-HunterGame/Assets/Editor/              渲染管线装配、固定机位截图、场景诊断
+HunterGame/Assets/Scripts/Gameplay/    物品与背包、收益评估、局内状态机、战斗、AI
+HunterGame/Assets/Editor/              渲染管线与玩法装配、固定机位截图、构建、诊断
+HunterGame/Assets/Tests/               EditMode 逻辑测试与 PlayMode 场景冒烟测试
+```
+
+## 验证
+
+| 项 | 状态 |
+| --- | --- |
+| EditMode 测试 | 63 项通过 |
+| PlayMode 冒烟测试 | 10 项通过 |
+| 变异验证 | 5 项，每项都只让预期的测试变红 |
+| Windows 构建 | `PE32+ executable (GUI) x86-64`，107 MB，0 错误 0 警告 |
+
+```bash
+tools/mutation_check.sh   # 证明测试真的守护住了逻辑，而不只是跑绿
 ```
