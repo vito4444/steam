@@ -212,6 +212,35 @@ namespace Decoder.Tests
         }
 
         [Test]
+        public void DistanceTo_CountsCharacterGapOnItsOwn()
+        {
+            // 字符间隔是人耳最容易察觉的差异之一。距离公式如果不看这一项，
+            // 一个只在字间节奏上不同的冒充者就会被判成同一个人。
+            var a = Fist(3f, 2.4f, 7f, 0.05f);
+            var b = Fist(3f, 3.6f, 7f, 0.05f);
+
+            Assert.Greater(a.DistanceTo(b), 0.1f, "只差字符间隔时距离不该接近零");
+        }
+
+        [Test]
+        public void DistanceTo_CountsWordGapOnItsOwn()
+        {
+            var a = Fist(3f, 3f, 6.2f, 0.05f);
+            var b = Fist(3f, 3f, 8.2f, 0.05f);
+
+            Assert.Greater(a.DistanceTo(b), 0.02f, "只差词间隔时距离不该为零");
+        }
+
+        [Test]
+        public void DistanceTo_CountsDashRatioOnItsOwn()
+        {
+            var a = Fist(2.6f, 3f, 7f, 0.05f);
+            var b = Fist(3.7f, 3f, 7f, 0.05f);
+
+            Assert.Greater(a.DistanceTo(b), 0.1f, "只差划长比时距离不该接近零");
+        }
+
+        [Test]
         public void DistanceTo_GrowsWithDifference()
         {
             var baseline = Fist(3f, 3f, 7f, 0f);
