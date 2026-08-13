@@ -15,7 +15,10 @@ namespace Worker.Core
         public static readonly RgbColor Yard = new RgbColor(28, 31, 38);
         public static readonly RgbColor FloorA = new RgbColor(44, 48, 57);
         public static readonly RgbColor FloorB = new RgbColor(50, 55, 65);
-        public static readonly RgbColor FloorLine = new RgbColor(63, 69, 81);
+        // Kept deliberately dim: grid lines are the brightest thing in the floor layer,
+        // and at the previous value they sat only 16 luminance below the building body,
+        // which made the floor compete with the structures standing on it.
+        public static readonly RgbColor FloorLine = new RgbColor(56, 61, 72);
 
         // Layer 2: structures, mid.
         public static readonly RgbColor BuildingBody = new RgbColor(78, 85, 99);
