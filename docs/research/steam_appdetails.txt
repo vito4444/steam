@@ -1,0 +1,98 @@
+
+--- PEAK [3527290] ---
+  dev=['Team PEAK'] pub=['Aggro Crab', 'Evil Landfall?']
+  released=Jun 16, 2025  price=$3.99
+  genres=['Action', 'Adventure', 'Indie']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Online Co-op', 'Steam Achievements', 'Full controller support', 'Steam Trading Cards', 'DualShock Controller Support', 'DualShock Controller Support']
+  desc=PEAK is a co-op climbing game where the slightest mistake can spell your doom. Either solo or as a group of lost nature scouts, your only hope of rescue from a mysterious island is to scale 
+
+--- R.E.P.O. [3241660] ---
+  dev=['semiwork'] pub=['semiwork']
+  released=Feb 26, 2025  price=$9.99
+  genres=['Action', 'Early Access']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Online Co-op', 'Camera Comfort', 'Custom Volume Controls', 'Playable without Timed Input', 'Stereo Sound', 'Steam Cloud']
+  desc=An online co-op horror game with up to 6 players. Locate valuable, fully physics-based objects and handle them with care as you retrieve and extract to satisfy your creator's desires.
+
+--- Content Warning [2881650] ---
+  dev=['Zorro', 'Wilnyl', 'Philip', 'thePetHen', 'Skog'] pub=['Evil Landfall?']
+  released=Apr 1, 2024  price=$7.99
+  genres=['Action', 'Adventure', 'Indie']
+  cats=['Multi-player', 'Co-op', 'Online Co-op', 'Cross-Platform Multiplayer', 'DualShock Controller Support', 'DualSense Controller Support', 'Partial Controller Support', 'Steam Cloud', 'Family Sharing']
+  desc=Film your friends doing scary things to become SpöökTube famous! (strongly advised to not go alone)
+
+--- Lethal Company [1966720] ---
+  dev=['Zeekerss'] pub=['Zeekerss']
+  released=Oct 23, 2023  price=$9.99
+  genres=['Action', 'Adventure', 'Indie', 'Early Access']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Online Co-op', 'Custom Volume Controls', 'Stereo Sound', 'Partial Controller Support', 'Family Sharing']
+  desc=A co-op horror about scavenging at abandoned moons to sell scrap to the Company.
+
+--- Schedule I [3164500] ---
+  dev=['TVGS'] pub=['TVGS']
+  released=Mar 24, 2025  price=$19.99
+  genres=['Action', 'Indie', 'Simulation', 'Strategy', 'Early Access']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Online Co-op', 'Steam Achievements', 'Full controller support', 'Adjustable Text Size', 'Camera Comfort', 'Custom Volume Controls']
+  desc=From small-time dope pusher to kingpin - manufacture and distribute a range of drugs throughout the grungy city of Hyland Point. Expand your empire with properties, businesses, employees and
+
+--- IRON NEST: Heavy Turret Simulator [2950790] ---
+  dev=['Nick Nieuwoudt', 'Dominik Latos'] pub=['Nick Nieuwoudt', 'Dominik Latos']
+  released=Aug 6, 2026  price=$14.99
+  genres=['Action', 'Indie', 'Simulation']
+  cats=['Single-player', 'Steam Achievements', 'Full controller support', 'Color Alternatives', '#category_contrast_controls', 'Custom Volume Controls', 'Playable without Timed Input', 'DualShock Controller Support', 'DualShock Controller Support']
+  desc=IRON NEST is a brutal dieselpunk heavy-artillery game where you dominate the battlefield through a colossal war machine. Take map measurements based on the received coordinates, strain the h
+
+--- Machine Party [4108000] ---
+  dev=['Mike Klubnika', 'GDeavid'] pub=['Oro Interactive']
+  released=Jul 30, 2026  price=$6.79
+  genres=['Action', 'Indie']
+  cats=['Multi-player', 'Co-op', 'Online Co-op', 'Shared/Split Screen Co-op', 'Shared/Split Screen', 'Steam Achievements', 'Full controller support', 'DualShock Controller Support', 'Remote Play Together']
+  desc=Machine Party is a collection of violent party games where failure is lethal. Gather your friends and endure high stakes situations to prove your life is worth more than theirs. Survival is 
+
+--- Shift At Midnight [3722330] ---
+  dev=['Bun Muen'] pub=['Kwalee']
+  released=Jul 22, 2026  price=$9.99
+  genres=['Indie', 'Simulation']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Online Co-op', 'Steam Achievements', 'Adjustable Text Size', 'Custom Volume Controls', 'Stereo Sound', 'Family Sharing']
+  desc=An online co-op detective horror for up to 3 players. Work together across randomly generated shifts to investigate your customers, as some are only pretending to be human. Make one mistake,
+
+--- GRAIN ROT [4450620] ---
+  dev=['Beck & Branch Games'] pub=['Neem Interactive']
+  released=Aug 7, 2026  price=$8.99
+  genres=['Action', 'Indie', 'Simulation']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Online Co-op', 'Full controller support', 'Custom Volume Controls', '#category_playable_at_your_own_pace', 'Playable without Timed Input', 'Stereo Sound']
+  desc=A horror co-op extraction builder set in a scorched wasteland where everything burns. Descend with your friends into shifting ruins, rip out furniture, and scavenge for loot before the Corru
+
+--- Cast n Chill [3483740] ---
+  dev=['Wombat Brawler'] pub=['Wombat Brawler']
+  released=Jun 16, 2025  price=$9.74
+  genres=['Casual', 'Indie', 'RPG', 'Simulation', 'Sports']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Shared/Split Screen Co-op', 'Shared/Split Screen', 'Steam Achievements', 'Full controller support', 'Camera Comfort', 'Custom Volume Controls']
+  desc=Cast n Chill is a relaxing fishing game where you explore serene lakes, rivers, and oceans. Catch rare fish, upgrade your gear and reel in legendary catches - all with your loyal companion b
+
+--- ReStory: Chill Electronics Repairs [3812600] ---
+  dev=['Mandragora'] pub=['tinyBuild']
+  released=Aug 6, 2026  price=$17.99
+  genres=['Indie', 'Simulation']
+  cats=['Single-player', 'Steam Achievements', 'Steam Trading Cards', 'DualShock Controller Support', 'DualShock Controller Support', 'DualSense Controller Support', 'DualSense Controller Support', 'Partial Controller Support', 'Steam Cloud']
+  desc=Run a quaint electronics repair shop in mid-2000s Tokyo. Grow your business by carefully restoring iconic video game consoles, cell phones, music players, and other nostalgic devices. Talk t
+
+--- Chop Chop Inc. [4369130] ---
+  dev=['NullRef Entertainment'] pub=['rokaplay select']
+  released=Aug 7, 2026  price=$12.99
+  genres=['Adventure']
+  cats=['Single-player', 'Steam Achievements', 'Steam Cloud', 'Family Sharing']
+  desc=Build your own furniture empire after getting fired from Furnox Corp 🖕. Chop down trees, process wood, automate your growing production lines and sell clever furniture sets for bonus cash. E
+
+--- ARC Raiders [1808500] ---
+  dev=['Embark Studios'] pub=['Embark Studios']
+  released=Oct 30, 2025  price=$39.99
+  genres=['Action']
+  cats=['Multi-player', 'PvP', 'Online PvP', 'Co-op', 'Online Co-op', 'Cross-Platform Multiplayer', 'Steam Achievements', 'Full controller support', 'In-App Purchases']
+  desc=ARC Raiders is a multiplayer extraction adventure, set in a lethal future earth, ravaged by a mysterious mechanized threat known as ARC.
+
+--- Ore Factory Squad ⛏️ [4210580] ---
+  dev=['threeW'] pub=['PlayWay S.A.']
+  released=Jul 16, 2026  price=$12.99
+  genres=['Indie', 'Simulation']
+  cats=['Single-player', 'Multi-player', 'Co-op', 'Online Co-op', 'Steam Achievements', 'Full controller support', 'Camera Comfort', 'Custom Volume Controls', '#category_playable_at_your_own_pace']
+  desc=Ore Factory Squad is a co-op mining and factory-building game with procedural mining and fun at its core! Play alone or with friends, buy properties, dig deep for valuable resources, complet
