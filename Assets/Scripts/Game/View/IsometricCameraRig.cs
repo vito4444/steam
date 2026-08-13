@@ -26,7 +26,12 @@ namespace Worker.Game
         public float Yaw = 45f;
 
         [Tooltip("Extra tiles of headroom kept around the factory when framing it.")]
-        public float MarginTiles = 1.5f;
+        /// <summary>
+    /// Kept tight. Measured against reference screenshots, this scene was filling only
+    /// 54% of the frame where Two Point Hospital and Timberborn fill 93-95%; most of the
+    /// deficit was empty ground around the building rather than anything inside it.
+    /// </summary>
+    public float MarginTiles = 0.5f;
 
         public float MinOrthographicSize = 5f;
         public float MaxOrthographicSize = 40f;
@@ -64,7 +69,11 @@ namespace Worker.Game
         {
             if (world == null) return;
 
-            _focus = new Vector3(world.Map.Width * 0.5f, 0f, world.Map.Height * 0.5f);
+            // Frame the shop floor, not the whole tile map. The map carries a margin of
+            // yard tiles that contain nothing and only push the factory further away.
+            float focusX = Scenarios.FloorOrigin.X + Scenarios.FloorWidth * 0.5f;
+            float focusZ = Scenarios.FloorOrigin.Y + Scenarios.FloorHeight * 0.5f;
+            _focus = new Vector3(focusX, 0f, focusZ);
 
             // A rotated rectangle projects to a diamond, not to its own diagonal. Both
             // map axes contribute to each screen axis, so the extents are (W+H) scaled by
@@ -73,7 +82,7 @@ namespace Worker.Game
             // frame.
             float yawScale = Mathf.Cos(Yaw * Mathf.Deg2Rad);
             float pitchScale = Mathf.Sin(Pitch * Mathf.Deg2Rad);
-            float span = world.Map.Width + world.Map.Height;
+            float span = Scenarios.FloorWidth + Scenarios.FloorHeight;
 
             float screenWidth = span * yawScale + MarginTiles * 2f;
             float screenHeight = span * yawScale * pitchScale + MarginTiles * 2f;

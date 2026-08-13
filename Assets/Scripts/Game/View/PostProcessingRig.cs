@@ -75,7 +75,7 @@ namespace Worker.Game
             // Zero, not positive. Raising exposure to "compensate" for a dusk lighting
             // rig simply undoes it: the ambient reduction and the exposure lift cancel
             // and the image comes back out looking like noon with longer shadows.
-            color.postExposure.value = 0.55f;
+            color.postExposure.value = 0.72f;
 
             color.contrast.overrideState = true;
             color.contrast.value = 11f;

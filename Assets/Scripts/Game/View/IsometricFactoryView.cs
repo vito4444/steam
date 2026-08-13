@@ -139,7 +139,7 @@ namespace Worker.Game
         }
 
         private static Material CreateLit(Color color, float smoothness = 0.15f, float metallic = 0f,
-            Texture2D surface = null)
+            Texture2D surface = null, Vector2 tiling = default)
         {
             var shader = ResolveLitShader();
             if (shader == null) return null;
@@ -153,6 +153,17 @@ namespace Worker.Game
             {
                 if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", surface);
                 else if (material.HasProperty("_MainTex")) material.SetTexture("_MainTex", surface);
+
+                // Meshes are unit sized with 0..1 UVs, so a texture is stretched across
+                // whatever the object is scaled to. On the floor slab that meant one
+                // 192 pixel texture spread over twenty four tiles, which is why doubling
+                // its contrast changed nothing measurable. Tiling has to be set per
+                // surface, in tiles.
+                if (tiling != default)
+                {
+                    if (material.HasProperty("_BaseMap")) material.SetTextureScale("_BaseMap", tiling);
+                    else if (material.HasProperty("_MainTex")) material.SetTextureScale("_MainTex", tiling);
+                }
             }
 
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
@@ -186,7 +197,7 @@ namespace Worker.Game
             var baseColor = Palette.ForBuilding(kind);
             var shade = CreateLit(
                 darkenPercent <= 0 ? baseColor.ToUnity() : baseColor.Darken(darkenPercent).ToUnity(),
-                surface: ProceduralTextures.PaintedPanel());
+                surface: ProceduralTextures.PaintedPanel(), tiling: new Vector2(2f, 2f));
 
             _shadeMaterials[key] = shade;
             return shade;
@@ -223,7 +234,8 @@ namespace Worker.Game
             // a cold dark floor to sit under flat sprites; lit geometry standing on it
             // needs a surface that reflects the warm key, or the whole interior reads
             // colder than the grass outside it.
-            _floorMaterial = CreateLit(new Color(0.42f, 0.41f, 0.39f), surface: ProceduralTextures.Concrete());
+            _floorMaterial = CreateLit(new Color(0.50f, 0.49f, 0.46f), surface: ProceduralTextures.Concrete(),
+                tiling: new Vector2(Scenarios.FloorWidth * 0.5f, Scenarios.FloorHeight * 0.5f));
             _floorLineMaterial = CreateLit(new Color(0.50f, 0.48f, 0.45f));
             _workerMaterial = CreateLit(Palette.WorkerBody.ToUnity(), smoothness: 0.2f);
             _workerTiredMaterial = CreateLit(Palette.WorkerTired.ToUnity(), smoothness: 0.2f);
@@ -233,8 +245,8 @@ namespace Worker.Game
             // hue, but bare metal, dark castings, lit glass and hazard paint appear on
             // several of them and reading as the same material each time is what makes
             // the factory look like one designed object rather than a kit of parts.
-            _metalMaterial = CreateLit(new Color(0.60f, 0.63f, 0.69f), smoothness: 0.45f, metallic: 0.45f, surface: ProceduralTextures.BrushedMetal());
-            _darkMetalMaterial = CreateLit(new Color(0.26f, 0.28f, 0.33f), smoothness: 0.42f, metallic: 0.55f, surface: ProceduralTextures.BrushedMetal());
+            _metalMaterial = CreateLit(new Color(0.60f, 0.63f, 0.69f), smoothness: 0.45f, metallic: 0.45f, surface: ProceduralTextures.BrushedMetal(), tiling: new Vector2(2f, 2f));
+            _darkMetalMaterial = CreateLit(new Color(0.26f, 0.28f, 0.33f), smoothness: 0.42f, metallic: 0.55f, surface: ProceduralTextures.BrushedMetal(), tiling: new Vector2(2f, 2f));
             _glassMaterial = CreateLit(new Color(1f, 0.90f, 0.66f), smoothness: 0.85f);
             if (_glassMaterial != null && _glassMaterial.HasProperty("_EmissionColor"))
             {
@@ -265,7 +277,8 @@ namespace Worker.Game
 
             // A single slab for the yard, with the factory floor sitting slightly proud
             // of it. The lip catches the key light and reads as a raised concrete pad.
-            var yard = CreateBox("Yard", _root, CreateLit(new Color(0.30f, 0.29f, 0.28f), surface: ProceduralTextures.Concrete()));
+            var yard = CreateBox("Yard", _root, CreateLit(new Color(0.30f, 0.29f, 0.28f),
+                surface: ProceduralTextures.Concrete(), tiling: new Vector2(18f, 14f)));
             yard.localScale = new Vector3(map.Width + 8f, 0.4f, map.Height + 8f);
             yard.localPosition = new Vector3(map.Width * 0.5f, -0.2f, map.Height * 0.5f);
 
@@ -301,14 +314,17 @@ namespace Worker.Game
         {
             var dressing = new IsometricSceneDressing(
                 _root,
-                concrete: CreateLit(new Color(0.34f, 0.35f, 0.38f), surface: ProceduralTextures.Concrete()),
+                concrete: CreateLit(new Color(0.34f, 0.35f, 0.38f), surface: ProceduralTextures.Concrete(),
+                    tiling: new Vector2(20f, 16f)),
                 paint: CreateLit(new Color(0.80f, 0.82f, 0.84f), smoothness: 0.05f),
                 hazard: _hazardMaterial,
-                timber: CreateLit(new Color(0.62f, 0.45f, 0.28f), smoothness: 0.1f, surface: ProceduralTextures.Wood()),
+                timber: CreateLit(new Color(0.62f, 0.45f, 0.28f), smoothness: 0.1f, surface: ProceduralTextures.Wood(), tiling: new Vector2(2f, 2f)),
                 drum: CreateLit(new Color(0.32f, 0.46f, 0.40f), smoothness: 0.35f, metallic: 0.3f, surface: ProceduralTextures.BrushedMetal()),
-                grass: CreateLit(new Color(0.11f, 0.15f, 0.11f), surface: ProceduralTextures.Ground()),
-                foliage: CreateLit(new Color(0.10f, 0.18f, 0.12f)),
-                trunk: CreateLit(new Color(0.28f, 0.22f, 0.17f)));
+                grass: CreateLit(new Color(0.19f, 0.25f, 0.17f), surface: ProceduralTextures.Ground(),
+                    tiling: new Vector2(22f, 18f)),
+                foliage: CreateLit(new Color(0.17f, 0.29f, 0.19f)),
+                trunk: CreateLit(new Color(0.28f, 0.22f, 0.17f)),
+                makeMaterial: color => CreateLit(color, smoothness: 0.25f, surface: ProceduralTextures.PaintedPanel()));
 
             dressing.Build(_world);
         }
@@ -340,13 +356,13 @@ namespace Worker.Game
             // colour and cannot be quietly overridden by an asset nobody set.
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.055f, 0.07f, 0.115f);
+            RenderSettings.ambientLight = new Color(0.115f, 0.135f, 0.19f);
             RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
             RenderSettings.customReflectionTexture = null;
             // Dusk sky: cool and dim, so the warm key and the point lights own the image.
             // ambientSkyColor aliases ambientLight in Flat mode, so it is set last and
             // is the value that actually takes effect.
-            RenderSettings.ambientSkyColor = new Color(0.055f, 0.07f, 0.115f);
+            RenderSettings.ambientSkyColor = new Color(0.115f, 0.135f, 0.19f);
 
             Debug.Log("[worker] lighting: ambientMode=" + RenderSettings.ambientMode
                       + " ambientLight=" + RenderSettings.ambientLight
@@ -367,7 +383,7 @@ namespace Worker.Game
         {
             light.type = LightType.Directional;
             light.color = new Color(1f, 0.70f, 0.44f);
-            light.intensity = 0.82f;
+            light.intensity = 1.55f;
             light.transform.rotation = Quaternion.Euler(24f, -42f, 0f);
 
             light.shadows = LightShadows.Soft;

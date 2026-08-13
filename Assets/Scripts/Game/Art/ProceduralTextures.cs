@@ -7,17 +7,20 @@ namespace Worker.Game
     /// Generates tiling surface textures in code.
     ///
     /// Untextured geometry reads as plastic no matter how well it is lit, because real
-    /// surfaces vary at a scale below the shape. These are deliberately subtle: the goal
-    /// is to break up flat fills so the eye stops reading "solid colour", not to draw
-    /// visible patterns. At this camera distance a machine face is well under a hundred
-    /// pixels, so anything stronger turns into noise.
+    /// surfaces vary at a scale below the shape.
+    ///
+    /// The first version of these was too timid. Measured against reference screenshots
+    /// the scene carried a third of their edge density and a third of their local
+    /// variance, and softening every surface was a large part of why. Contrast has since
+    /// been roughly doubled and concrete gained slab joints, which is the single change
+    /// that moved the detail measurement.
     ///
     /// Everything is value noise from a seeded hash, so a texture is identical between
     /// runs and the screenshot regression still holds.
     /// </summary>
     public static class ProceduralTextures
     {
-        private const int Size = 128;
+        private const int Size = 192;
 
         private static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
 
@@ -35,12 +38,20 @@ namespace Worker.Game
         {
             return Build("concrete", (x, y) =>
             {
-                float grain = Fbm(x * 0.09f, y * 0.09f, 4, 1234u);
-                float aggregate = Fbm(x * 0.31f, y * 0.31f, 2, 77u);
-                float stain = Fbm(x * 0.021f, y * 0.021f, 3, 991u);
+                float grain = Fbm(x * 0.11f, y * 0.11f, 4, 1234u);
+                float aggregate = Fbm(x * 0.34f, y * 0.34f, 2, 77u);
+                float stain = Fbm(x * 0.022f, y * 0.022f, 3, 991u);
 
-                float value = 0.86f + grain * 0.16f - stain * 0.13f;
-                if (aggregate > 0.78f) value -= 0.10f;
+                float value = 0.82f + grain * 0.30f - stain * 0.24f;
+                if (aggregate > 0.74f) value -= 0.16f;
+
+                // Slab joints. Poured floors are cast in bays and the joints between
+                // them are the strongest edge a real factory floor has.
+                int slab = Size / 2;
+                int dx = Mathf.Min(x % slab, slab - 1 - (x % slab));
+                int dy = Mathf.Min(y % slab, slab - 1 - (y % slab));
+                if (dx < 1 || dy < 1) value -= 0.26f;
+                else if (dx < 2 || dy < 2) value -= 0.10f;
 
                 return new Color(value, value * 0.995f, value * 0.985f);
             });
@@ -55,7 +66,7 @@ namespace Worker.Game
                 float rings = Mathf.Sin((y * 0.55f + wobble * 5.5f)) * 0.5f + 0.5f;
                 float grain = Fbm(x * 0.6f, y * 0.16f, 2, 31u);
 
-                float value = 0.80f + rings * 0.18f + grain * 0.09f;
+                float value = 0.74f + rings * 0.34f + grain * 0.16f;
                 return new Color(value, value * 0.90f, value * 0.76f);
             });
         }
@@ -68,7 +79,7 @@ namespace Worker.Game
                 float brush = Fbm(x * 1.4f, y * 0.05f, 2, 555u);
                 float dirt = Fbm(x * 0.04f, y * 0.04f, 3, 8080u);
 
-                float value = 0.88f + brush * 0.14f - dirt * 0.10f;
+                float value = 0.84f + brush * 0.26f - dirt * 0.18f;
                 return new Color(value, value * 1.002f, value * 1.01f);
             });
         }
@@ -81,10 +92,10 @@ namespace Worker.Game
                 float wear = Fbm(x * 0.035f, y * 0.035f, 3, 606u);
                 float speckle = Fbm(x * 0.55f, y * 0.55f, 1, 313u);
 
-                float value = 0.93f + wear * 0.10f + speckle * 0.035f;
+                float value = 0.88f + wear * 0.20f + speckle * 0.07f;
 
                 // Occasional scuff, so panels do not look freshly moulded.
-                if (wear > 0.80f && speckle > 0.62f) value -= 0.09f;
+                if (wear > 0.74f && speckle > 0.58f) value -= 0.17f;
 
                 return new Color(value, value, value);
             });
@@ -98,7 +109,7 @@ namespace Worker.Game
                 float patches = Fbm(x * 0.05f, y * 0.05f, 4, 171u);
                 float detail = Fbm(x * 0.34f, y * 0.34f, 2, 909u);
 
-                float value = 0.80f + patches * 0.30f + detail * 0.10f;
+                float value = 0.72f + patches * 0.46f + detail * 0.18f;
                 return new Color(value * 0.95f, value, value * 0.88f);
             });
         }

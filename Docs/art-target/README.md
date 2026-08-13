@@ -190,6 +190,47 @@ Also flagged, and not yet addressed: workers slide rather than walk, workers pas
 through each other, and cargo vanishes on entering a machine rather than being
 consumed visibly.
 
+## Measuring frames instead of judging them
+
+`Tools/analyse-frame.sh` prints five numbers for a captured frame: mean brightness,
+luminance standard deviation, mean saturation, edge density and non-background
+coverage. It exists because judging screenshots by eye proved unreliable in a way that
+cost real time: during the dusk work a change that shifted mean brightness by 28% was
+repeatedly called "no visible difference" from thumbnails.
+
+Measured against the reference captures, the useful finding was that two of the five
+were already fine and three were not:
+
+| Metric | Flat 2D | First isometric | Dusk | Tuned | Two Point Hospital | Timberborn |
+| --- | --- | --- | --- | --- | --- | --- |
+| Brightness | 56 | 68 | 61 | 82 | 112 | 87 |
+| Contrast | 34 | 41 | 38 | 41 | 36 | 32 |
+| Saturation | 39 | 30 | 45 | 49 | 43 | 53 |
+| Edge density | 3% | 1% | 2% | 3% | 6% | 14% |
+| Coverage | 71% | 62% | 54% | 91% | 95% | 93% |
+
+Contrast and saturation reached the reference range early and did not need further
+work; continuing to tune them by eye would have been wasted effort. Coverage was the
+largest correctable gap and closed from 54% to 91% by framing the shop floor rather
+than the whole tile map. Brightness confirmed the dusk pass had overshot.
+
+Two findings the numbers produced that inspection had not:
+
+- **The floor texture was never visible.** Meshes are unit sized with 0..1 UVs, so a
+  texture stretches across whatever the object is scaled to; the floor slab spread one
+  192 pixel texture over twenty four tiles. Doubling the texture's contrast changed
+  nothing measurable, which is what exposed it. Tiling is now set per surface, in tiles.
+- **Edge density does not distinguish good detail from bad.** Raising prop count to 52
+  with six saturated hues moved the metric by one point and made the frame look like
+  spilled sweets, with the machines lost in it. The count came back down to 34, the
+  palette narrowed to drab industrial tones, and props were clustered near machines
+  rather than scattered. The metric barely moved; the image improved a lot.
+
+That second point is the limit of the approach. The numbers are good at catching
+"this change did nothing" and bad at telling good from bad. Edge density remains at 3%
+against a 6-14% reference, and closing it further needs meaningful content -- more
+figures, machine sub-assemblies, visible interiors -- not more scattered objects.
+
 ## Gap list
 
 Ordered by how much each would move the picture, not by effort. The comparison table
