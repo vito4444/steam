@@ -30,6 +30,18 @@ MUTATIONS=(
   "频率容差放大二十倍|${GAMEPLAY}/ReportGrader.cs|public const float FrequencyToleranceKHz = 0.5f;|public const float FrequencyToleranceKHz = 10f;"
   "中文电码信号改发汉字而不是数字|${GAMEPLAY}/ShiftDefinition.cs|return ChineseTelegraphCode.ToDigitStream(telegraph.EncodeText(plainText));|return plainText;"
   "第一班主线等级降为例行|${GAMEPLAY}/ShiftLibrary.cs|correctLevel = ThreatLevel.Attention,\n                isPrimary = true,|correctLevel = ThreatLevel.Routine,\n                isPrimary = true,"
+  "密码本加密改成减法|${RUNTIME}/OneTimePad.cs|var result = add ? (value + key) % 10 : ((value - key) % 10 + 10) % 10;|var result = add ? ((value - key) % 10 + 10) % 10 : (value + key) % 10;"
+  "模 10 改成模 9|${RUNTIME}/OneTimePad.cs|var result = add ? (value + key) % 10 : ((value - key) % 10 + 10) % 10;|var result = add ? (value + key) % 9 : ((value - key) % 9 + 9) % 9;"
+  "分隔符也消耗密钥位|${RUNTIME}/OneTimePad.cs|                    builder.Append(c);\n                    continue;|                    builder.Append(c);\n                    keyIndex++;\n                    continue;"
+  "密码本页号不参与混合，每页都一样|${RUNTIME}/OneTimePad.cs|var state = unchecked((uint)(bookSeed * 2654435761L + pageNumber * 40503L));|var state = unchecked((uint)(bookSeed * 2654435761L));"
+  "报头位数从 3 改成 4|${RUNTIME}/OneTimePad.cs|public const int PageIndicatorDigits = 3;|public const int PageIndicatorDigits = 4;"
+  "报头不足时返回 0 而不是 -1|${RUNTIME}/OneTimePad.cs|            if (digits.Length < PageIndicatorDigits)\n            {\n                return -1;\n            }|            if (digits.Length < PageIndicatorDigits)\n            {\n                return 0;\n            }"
+  "报头页码不再补零对齐|${RUNTIME}/OneTimePad.cs|return pageNumber.ToString("D" + PageIndicatorDigits) + cipher;|return pageNumber.ToString() + cipher;"
+  "漏报的扣分改得和误报一样轻|${GAMEPLAY}/CampaignState.cs|                        case ReportOutcome.Underreported:\n                            score -= 1f;\n                            break;|                        case ReportOutcome.Underreported:\n                            score -= 0.4f;\n                            break;"
+  "上报后不再推进班次|${GAMEPLAY}/CampaignState.cs|            history.Add(record);\n            shiftIndex++;|            history.Add(record);"
+  "存档解析忽略版本号上限|${GAMEPLAY}/CampaignState.cs|                        if (state.version > CurrentVersion)\n                        {\n                            // 比本体还新的存档不要硬解，字段含义可能已经变了。\n                            return null;\n                        }|                        if (false)\n                        {\n                            return null;\n                        }"
+  "存档损坏时抛异常而不是返回 null|${GAMEPLAY}/CampaignState.cs|            if (lines.Length == 0 || lines[0].Trim() != "decoder-save")\n            {\n                return null;\n            }|            if (lines.Length == 0 || lines[0].Trim() != "decoder-save")\n            {\n                return new CampaignState();\n            }"
+  "处境评价不再区分好坏|${GAMEPLAY}/CampaignState.cs|            if (standing >= 0.7f)|            if (standing >= -99f)"
 )
 
 restore() {

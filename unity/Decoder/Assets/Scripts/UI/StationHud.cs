@@ -67,6 +67,7 @@ namespace Decoder.UI
             Frequency,
         }
 
+        private CampaignState _campaign = new CampaignState();
         private InputFocus _focus = InputFocus.Copy;
         private int _padPage = 1;
         private readonly StringBuilder _callsignBuffer = new StringBuilder(8);
@@ -151,7 +152,11 @@ namespace Decoder.UI
             }
 
             _telegraph = ChineseTelegraphCode.Shared;
-            _shift = ShiftLibrary.FirstShift();
+            // 读档决定从第几班开始。存档损坏或不存在都会拿到一个空进度，
+            // 玩家从头开始，而不是看到一个错误弹窗。
+            _campaign = SaveSystem.Load();
+            var all = ShiftLibrary.All();
+            _shift = all[Mathf.Clamp(_campaign.shiftIndex, 0, all.Length - 1)];
             _morse = new MorseReceiver(12f);
             BuildUi();
             LoadShift(_shift);
@@ -180,6 +185,7 @@ namespace Decoder.UI
             AppendLog("按住鼠标右键转头，左键拖动旋钮搜频");
             AppendLog("听到电码后用键盘抄下数字或字母");
             AppendLog("Tab 换填写栏 · [ ] 翻密码本 · D 解密 · L 查电码表");
+            AppendLog(_campaign.StandingLine());
             RefreshPad();
             RefreshForm();
         }
@@ -540,6 +546,17 @@ namespace Decoder.UI
 
             _replyText.text = ReportAftermath.Reply(target, grade);
             _noteText.text = "黑板：" + ReportAftermath.DeskNote(target, grade);
+
+            _campaign.RecordAndAdvance(new ReportRecord
+            {
+                shiftId = _shift.shiftId,
+                callsign = target.callsign,
+                outcome = grade.Outcome,
+                submittedLevel = _selectedLevel,
+                correctLevel = target.correctLevel,
+                accuracy = grade.Accuracy,
+            });
+            SaveSystem.Save(_campaign);
 
             AppendLog($"已送出 · 准确度 {grade.Accuracy:P0} · {LevelLabel(_selectedLevel)}" +
                       $" · 呼号{(grade.CallsignCorrect ? "对" : "错")}" +

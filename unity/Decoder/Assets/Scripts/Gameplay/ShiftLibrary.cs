@@ -141,10 +141,104 @@ namespace Decoder.Gameplay
             return shift;
         }
 
+        /// <summary>
+        /// 第三班。设计意图：
+        ///
+        /// 频段变拥挤。五条信号里只有一条是主线，其中两条同频相邻，
+        /// 玩家得靠细调把它们分开——这是第一次真正需要用到微调旋钮。
+        ///
+        /// 主线电文本身是坏消息，但用的是最低的例行等级发出来的。
+        /// 玩家如果只看发报方标的等级就照抄，会漏报；
+        /// 要读懂内容才知道这条该往上提。这是整个战役第一次
+        /// 让"判断"和"抄收"分开考。
+        /// </summary>
+        public static ShiftDefinition ThirdShift()
+        {
+            var shift = new ShiftDefinition
+            {
+                shiftId = "shift-03",
+                title = "第三班 · 拥挤",
+                inGameDate = "1985-11-09",
+                noiseSeed = 19851109,
+                bandLowKHz = 6800f,
+                bandHighKHz = 7200f,
+            };
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "M08",
+                frequencyKHz = 7043f,
+                kind = SignalKind.OneTimePad,
+                wordsPerMinute = 12f,
+                strength = 0.88f,
+                startOffsetSeconds = 3f,
+                plainText = "桥已封锁",
+                padPage = 46,
+                correctLevel = ThreatLevel.Flash,
+                isPrimary = true,
+                debriefNote = "他们把这条按例行发出来。你没有照抄那个等级。",
+            });
+
+            // 与主线只差 4 kHz，靠粗调分不开，必须动微调。
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "V13",
+                frequencyKHz = 7047f,
+                kind = SignalKind.ChineseTelegraph,
+                wordsPerMinute = 14f,
+                strength = 0.7f,
+                startOffsetSeconds = 5f,
+                plainText = "天气晴好",
+                correctLevel = ThreatLevel.Routine,
+                debriefNote = "气象通报。它离主线太近，很多人会把两条混在一起抄。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "M14",
+                frequencyKHz = 6884f,
+                kind = SignalKind.OneTimePad,
+                wordsPerMinute = 13f,
+                strength = 0.55f,
+                startOffsetSeconds = 11f,
+                plainText = "照常轮换",
+                padPage = 88,
+                correctLevel = ThreatLevel.Routine,
+                debriefNote = "邻站换班。又是另一页。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "R7X",
+                frequencyKHz = 7132f,
+                kind = SignalKind.PlainMorse,
+                wordsPerMinute = 16f,
+                strength = 0.74f,
+                plainText = "CQ CQ DE R7X K",
+                correctLevel = ThreatLevel.Routine,
+                debriefNote = "业余台。今晚他换了个频率，还是没人回他。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "B02",
+                frequencyKHz = 6821f,
+                kind = SignalKind.ChineseTelegraph,
+                wordsPerMinute = 10f,
+                strength = 0.42f,
+                startOffsetSeconds = 17f,
+                plainText = "无线电静默",
+                correctLevel = ThreatLevel.Attention,
+                debriefNote = "很弱的一条。宣布静默本身就是一件值得留意的事。",
+            });
+
+            return shift;
+        }
+
         /// <summary>按顺序返回全部班次。存档与班次推进用它。</summary>
         public static ShiftDefinition[] All()
         {
-            return new[] { FirstShift(), SecondShift() };
+            return new[] { FirstShift(), SecondShift(), ThirdShift() };
         }
     }
 }
