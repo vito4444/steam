@@ -317,13 +317,14 @@ namespace Undertown.Game.Bootstrap
             // screen pixels and their neighbours on one, so a straight eave comes out with a
             // wobble in it and the ground dither crawls when the camera moves.
             //
-            // Two rather than one. At 1:1 a 1080-line display shows thirty cells across and
-            // the whole settlement fits, which sounds like the better default and is not: the
-            // buildings come out small enough that the doorways, the goods in the yards and
-            // the people are all below the size at which they read, and the frame stops being
-            // a place and becomes a map of one. Two shows about fifteen cells, close to the
-            // reference, and the town runs off the edges as the reference's does. The player
-            // can pull back a step for the overview.
+            // Which whole step to open on was settled by putting the reference alongside at
+            // the same width. Counted in cells 1:1 is the nearer match - the reference covers
+            // about twenty-five and 1:1 covers thirty, against fifteen at 2:1 - but counting
+            // cells measures the wrong thing. At 1:1 the settlement sits as a small island in
+            // a field of empty pasture and its doorways, yard goods and people all fall below
+            // the size at which they read; at 2:1 the town fills the frame and runs off the
+            // edges, which is what the reference does. The wheel steps back out for the
+            // overview.
             cam.orthographicSize = Iso.CameraSize(ScreenHeight(), 2);
 
             // The HUD covers the bottom band of the viewport, so the visible area's centre sits
