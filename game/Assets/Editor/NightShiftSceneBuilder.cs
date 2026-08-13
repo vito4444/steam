@@ -402,14 +402,30 @@ namespace Monster.EditorTools
             Box("Plate", panel, Vector3.zero, new Vector3(0.560f, 0.028f, 0.210f), darkPlastic);
             Cylinder("DialFace", panel, new Vector3(-0.135f, 0.020f, 0f), new Vector3(0.150f, 0.006f, 0.150f), brass);
             Cylinder("DialHub", panel, new Vector3(-0.135f, 0.032f, 0f), new Vector3(0.048f, 0.014f, 0.048f), darkPlastic);
+            // Colour-coded caps, because four identical brass cylinders cannot be told
+            // apart from the seat and the engraving under them is eight pixels tall at that
+            // distance. Which verdict is right is the puzzle; which switch is which is not,
+            // and a panel that hides the second only makes the player lean in. The tints are
+            // dull enough to pass for painted period hardware.
+            var capColours = new[]
+            {
+                new Color(0.300f, 0.360f, 0.230f),
+                new Color(0.440f, 0.330f, 0.130f),
+                new Color(0.250f, 0.290f, 0.360f),
+                new Color(0.420f, 0.170f, 0.130f),
+            };
+
             for (var i = 0; i < 4; i++)
             {
+                var cap = Mat($"SwitchCap{i}", capColours[i], 0.34f, 0.35f, null,
+                    Grunge($"Grunge_Cap{i}", 128, 2.4f, 1.30f, 0.0f, 2200 + i * 37), 1.0f);
+
                 Switches.Add(Cylinder($"Switch_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.030f, 0.010f),
-                    new Vector3(0.032f, 0.028f, 0.032f), brass).transform);
-                Box($"Label_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.016f, -0.070f),
-                    new Vector3(0.058f, 0.003f, 0.026f), darkPlastic);
+                    new Vector3(0.032f, 0.028f, 0.032f), cap).transform);
+                Box($"Label_{i}", panel, new Vector3(0.020f + i * 0.075f, 0.016f, -0.072f),
+                    new Vector3(0.071f, 0.003f, 0.032f), darkPlastic);
                 SwitchLabelAnchors.Add(Anchor($"LabelText_{i}", panel,
-                    new Vector3(0.020f + i * 0.075f, 0.019f, -0.070f),
+                    new Vector3(0.020f + i * 0.075f, 0.019f, -0.072f),
                     Quaternion.Euler(90f, 0f, 0f)));
             }
 

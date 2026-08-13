@@ -302,8 +302,8 @@ namespace Monster.EditorTools
                 // switch itself, which is two centimetres across.
                 if (i < labelAnchors.Count && labelAnchors[i] != null)
                 {
-                    Text(labelAnchors[i], "Text", font, Mm(17f), EngravedColour,
-                        new Vector2(0.062f, 0.014f), Vector3.zero, TextAlignmentOptions.Center,
+                    Text(labelAnchors[i], "Text", font, Mm(23f), EngravedColour,
+                        new Vector2(0.075f, 0.020f), Vector3.zero, TextAlignmentOptions.Center,
                         FontStyles.Bold).text = verdict.ToString().ToUpperInvariant();
                 }
 
