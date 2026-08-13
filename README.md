@@ -11,19 +11,38 @@ any other project.
 
 | | |
 | --- | --- |
-| Phase | Concept selection |
+| Phase | Awaiting a concept decision; the technical foundation is built and proven |
 | Market research | ✅ complete — [`docs/research/steam-market-2026.md`](docs/research/steam-market-2026.md) |
 | Game concepts | ✅ five written — [`docs/concepts/`](docs/concepts/) |
 | Concept art | ✅ five targets — [`docs/concepts/art/`](docs/concepts/art/) |
-| Unity toolchain | ✅ installed, licensed, verified on the build machine |
-| Unity project | ⏳ created once a concept is chosen |
-| Build pipeline | ⏳ designed — [`docs/tech/build-pipeline.md`](docs/tech/build-pipeline.md) |
+| Unity toolchain | ✅ installed, licensed, verified |
+| Unity project | ✅ created, builds a Windows `.exe` from Linux |
+| Build pipeline | ✅ running — [`docs/tech/build-pipeline.md`](docs/tech/build-pipeline.md) |
+| Screenshot self-check | ✅ running, bit-exact, mutation-tested |
+| Playable game logic | ❌ none yet — the scene is static and has no interaction |
 
 ## Start here
 
 1. [`docs/concepts/README.md`](docs/concepts/README.md) — the five concepts compared, and the recommendation.
-2. [`docs/research/steam-market-2026.md`](docs/research/steam-market-2026.md) — the market data the concepts are derived from, with sources and raw captures.
-3. [`docs/tech/build-pipeline.md`](docs/tech/build-pipeline.md) — how this gets built and self-checked on a headless, GPU-less machine.
+2. [`docs/progress/`](docs/progress/) — screenshots of the current build beside the concept art, with the measured gap between them.
+3. [`docs/research/steam-market-2026.md`](docs/research/steam-market-2026.md) — the market data the concepts are derived from, with sources and raw captures.
+4. [`docs/tech/build-pipeline.md`](docs/tech/build-pipeline.md) — how this gets built and self-checked on a headless, GPU-less machine.
+
+## Where the build is right now
+
+The Concept E checkpoint booth, rendered by the game itself and captured automatically.
+Left is the concept art target, right is the current build.
+
+![Concept versus build](docs/progress/m1/compare_vs_concept.png)
+
+There is no game yet — this is a static scene with a fixed camera and no interaction. What
+it proves is that the whole loop works: a scene generated from code, cross-compiled to a
+Windows executable from Linux, rendered headless without a GPU, captured, and measured
+against its target. One command, about 25 seconds:
+
+```bash
+tools/build/iterate.sh
+```
 
 ## The recommendation, in one paragraph
 
@@ -42,8 +61,13 @@ Concept D is argued against rather than merely ranked last, is in
 ```
 docs/      research, concepts, concept art, technical plans, progress reports
 tools/     environment setup, Steam research probes, build and self-check scripts
-game/      the Unity project (not yet created)
+game/      the Unity project
 ```
+
+Scenes, materials, textures and the render pipeline assets are **generated from code** by
+`game/Assets/Editor/NightShiftSceneBuilder.cs` and `MonsterSetup.cs`, and are deliberately
+not committed. Committing them meant every regeneration rewrote thousands of fileIDs and
+buried real changes; the build regenerates them when they are absent.
 
 ## Build machine
 
