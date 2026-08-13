@@ -26,16 +26,24 @@ namespace Undertown.Game.Presentation
             // red-green line, which is why the two pictures never looked like the same place
             // however much detail went into them. Ground is most of the screen, so its hue is
             // most of the answer.
-            { TileKind.Grass,       new Color32(0x60, 0x54, 0x28, 0xFF) },
-            { TileKind.Dirt,        new Color32(0x70, 0x57, 0x33, 0xFF) },
-            { TileKind.Road,        new Color32(0x7E, 0x63, 0x39, 0xFF) },
+            //
+            // Grass has since been pulled back across the red-green line, though nowhere near
+            // where it started. Matching the reference's olive by eye left turf and bare earth
+            // within a dozen values of each other on every channel, and at a distance the whole
+            // settlement melted into one sheet of yellow-brown with no plots, verges or lanes
+            // legible in it. The reference's grass really is that olive, but it is set against
+            // roofs and shadow, not against acres of trodden earth; here the ground itself has
+            // to carry the contrast, so green leads by a little and earth keeps the red.
+            { TileKind.Grass,       new Color32(0x55, 0x5C, 0x2B, 0xFF) },
+            { TileKind.Dirt,        new Color32(0x73, 0x56, 0x30, 0xFF) },
+            { TileKind.Road,        new Color32(0x82, 0x65, 0x39, 0xFF) },
             { TileKind.Water,       new Color32(0x2C, 0x4C, 0x58, 0xFF) },
             // Woodland floor is grass. Even a few shades darker, a wooded cell drew its own
             // diamond outline on the map, and a wood came out as a run of tiles rather than a
             // stand of trees. What marks it as woodland is the trees standing on it; the litter
             // and shade underneath them are painted as scatter, which does not follow the cell
             // boundary and so does not advertise it.
-            { TileKind.Forest,      new Color32(0x60, 0x54, 0x28, 0xFF) },
+            { TileKind.Forest,      new Color32(0x55, 0x5C, 0x2B, 0xFF) },
             { TileKind.ClayDeposit, new Color32(0x6C, 0x42, 0x2E, 0xFF) },
             { TileKind.Rock,        new Color32(0x64, 0x60, 0x54, 0xFF) },
             { TileKind.DisusedMine, new Color32(0x54, 0x44, 0x30, 0xFF) },
@@ -142,8 +150,8 @@ namespace Undertown.Game.Presentation
                         int gy = skirt + Hash(i, variant, 977) % Iso.TileHeight;
                         if (!Iso.InsideDiamond(gx, gy - skirt, w, Iso.TileHeight)) continue;
                         Tuft(px, w, h, gx, gy, (i & 1) == 0
-                            ? new Color32(0x5C, 0x56, 0x2A, 0xFF)
-                            : new Color32(0x78, 0x70, 0x38, 0xFF));
+                            ? new Color32(0x4A, 0x52, 0x24, 0xFF)
+                            : new Color32(0x6C, 0x76, 0x36, 0xFF));
                     }
                     break;
 
@@ -182,7 +190,7 @@ namespace Undertown.Game.Presentation
                     // feature large enough for the eye to lock onto and start counting.
                     var deep = new Color32(0x22, 0x3C, 0x46, 0xFF);
                     var mid = new Color32(0x34, 0x58, 0x66, 0xFF);
-                    var glint = new Color32(0x54, 0x78, 0x84, 0xFF);
+                    var glint = new Color32(0x43, 0x62, 0x6E, 0xFF);
 
                     for (int i = 0; i < 46; i++)
                     {
