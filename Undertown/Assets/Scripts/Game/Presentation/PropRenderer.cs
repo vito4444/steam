@@ -13,10 +13,14 @@ namespace Undertown.Game.Presentation
     {
         private readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         private readonly HashSet<Coord> _built = new HashSet<Coord>();
+        private readonly HashSet<Coord> _jetties = new HashSet<Coord>();
         private TownState _town;
         private GridMap _map;
         private WorldRenderer _world;
         private int _depth = -1;
+        private int _townX;
+        private int _townY;
+        private bool _hasTown;
 
         public void Bind(TownState town, WorldRenderer world)
         {
@@ -31,6 +35,7 @@ namespace Undertown.Game.Presentation
             if (_map == null || _world == null) return;
             _depth = depth;
             NoteWhatIsBuilt();
+            ChooseJetties();
 
             int used = 0;
             for (int y = 0; y < _map.Height; y++)
@@ -53,8 +58,13 @@ namespace Undertown.Game.Presentation
 
                 if (kind == TileKind.Water)
                 {
-                    var shore = IsoShoreArt.For(LandEdgesAt(cell), Hash(x, y) % IsoShoreArt.Variants);
+                    int land = LandEdgesAt(cell);
+                    var shore = IsoShoreArt.For(land, Hash(x, y) % IsoShoreArt.Variants);
                     if (shore != null) Place(ref used, cell, shore, offset: 1);
+
+                    if (WantsJetty(cell, land))
+                        Place(ref used, cell, IsoPropArt.ForClutter(IsoPropArt.Clutter.Jetty,
+                            (land & (IsoShoreArt.North | IsoShoreArt.South)) != 0 ? 0 : 1), offset: 2);
                 }
             }
 
@@ -70,7 +80,11 @@ namespace Undertown.Game.Presentation
         private void NoteWhatIsBuilt()
         {
             _built.Clear();
+            _hasTown = false;
             if (_town == null) return;
+
+            long sumX = 0, sumY = 0;
+            int count = 0;
 
             foreach (var building in _town.Buildings)
             {
@@ -80,7 +94,17 @@ namespace Undertown.Game.Presentation
                 for (int dy = 0; dy < def.Height; dy++)
                 for (int dx = 0; dx < def.Width; dx++)
                     _built.Add(building.Origin.Offset(dx, dy));
+
+                if (def.Underground) continue;
+                sumX += building.Origin.X;
+                sumY += building.Origin.Y;
+                count++;
             }
+
+            if (count == 0) return;
+            _townX = (int)(sumX / count);
+            _townY = (int)(sumY / count);
+            _hasTown = true;
         }
 
         private void Place(ref int used, Coord cell, Sprite art, int offset)
@@ -140,6 +164,63 @@ namespace Undertown.Game.Presentation
         }
 
         private static bool IsDry(TileKind kind) => kind != TileKind.Water;
+
+        /// <summary>
+        /// Picks the two stretches of bank that carry a staging: the water cells nearest the
+        /// town that have dry land on exactly one side, kept a few cells apart.
+        ///
+        /// Chosen rather than sampled. A one-in-eleven draw over the bank produced nothing at
+        /// all on the reach in shot - the single-edge cells are a small fraction of the bank
+        /// once the channel starts wandering, and a feature that may or may not exist is not
+        /// a feature. Two is also the right number: this is a village on a river, not a port.
+        ///
+        /// The single-edge test keeps them off inlets and spits. A cell with land on two sides
+        /// is a corner of the channel, and a jetty built into a corner has half its deck
+        /// buried in the bank.
+        /// </summary>
+        private void ChooseJetties()
+        {
+            _jetties.Clear();
+            if (!_hasTown || _depth != 0) return;
+
+            var best = new List<(int dist, Coord cell)>();
+
+            for (int y = 0; y < _map.Height; y++)
+            for (int x = 0; x < _map.Width; x++)
+            {
+                var cell = new Coord(x, y, 0);
+                if (_map.Get(cell) != TileKind.Water) continue;
+
+                int land = LandEdgesAt(cell);
+                if (land == 0 || (land & (land - 1)) != 0) continue;
+
+                int dx = x - _townX;
+                int dy = y - _townY;
+                int dist = dx * dx + dy * dy;
+                if (dist > 26 * 26) continue;
+
+                best.Add((dist, cell));
+            }
+
+            best.Sort((a, b) => a.dist.CompareTo(b.dist));
+
+            foreach (var (_, cell) in best)
+            {
+                if (_jetties.Count >= 2) break;
+
+                bool crowded = false;
+                foreach (var taken in _jetties)
+                {
+                    int dx = taken.X - cell.X;
+                    int dy = taken.Y - cell.Y;
+                    if (dx * dx + dy * dy < 36) crowded = true;
+                }
+
+                if (!crowded) _jetties.Add(cell);
+            }
+        }
+
+        private bool WantsJetty(Coord cell, int landMask) => _jetties.Contains(cell);
 
         /// <summary>
         /// Which plot cells are under cultivation. Roughly half of the fenced grass, in runs

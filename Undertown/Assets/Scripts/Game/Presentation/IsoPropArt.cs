@@ -35,6 +35,9 @@ namespace Undertown.Game.Presentation
 
             // Open country, away from anything the town uses.
             Shrub, TallGrass, Stones, LoneTree, Broadleaf,
+
+            // On the water, against the bank.
+            Jetty,
         }
 
         public static Sprite ForClutter(Clutter clutter, int variant = 0)
@@ -61,6 +64,7 @@ namespace Undertown.Game.Presentation
                     Conifer(px, cx - 1 + (variant & 1), cy, 19 + variant * 3, 9 + (variant & 1));
                     break;
                 case Clutter.Broadleaf: Broadleaf(px, cx, cy, variant); break;
+                case Clutter.Jetty: Jetty(px, cx, cy, variant); break;
             }
 
             return Cache[key] = ToSprite(px, $"iso_clutter_{clutter}_{variant}");
@@ -438,6 +442,69 @@ namespace Undertown.Game.Presentation
                 int y = cy + t / 2;
                 Plot(px, cx + t, y + 10, rail);
                 Plot(px, cx + t, y + 5, rail);
+            }
+        }
+
+        /// <summary>
+        /// A staging over the water: boarded deck, piles driven into the riverbed, and a barrel
+        /// or a coil of rope left on it.
+        ///
+        /// Every settlement on a river has a place where the water is reached on purpose, and
+        /// in the reference it is the first thing the eye lands on at the left edge. Without
+        /// one the river is scenery running past a town that has no use for it, which is not
+        /// what a river next to a brewery means.
+        ///
+        /// The deck runs along whichever axis faces the bank, so the two variants are the two
+        /// diagonals - a jetty parallel to the shore it is attached to reads as a raft.
+        /// </summary>
+        private static void Jetty(Color32[] px, int cx, int cy, int variant)
+        {
+            var plank = C(0x63, 0x4A, 0x2C);
+            var plankLit = C(0x7E, 0x60, 0x3A);
+            var gap = C(0x44, 0x33, 0x1F);
+            var pile = C(0x4A, 0x37, 0x20);
+
+            bool alongU = (variant & 1) == 0;
+            const int deck = 9;
+
+            for (int j = -7; j <= 7; j++)
+            for (int i = -15; i <= 15; i++)
+            {
+                if (Mathf.Abs(i) / 2f + Mathf.Abs(j) > 7.5f) continue;
+
+                int board = alongU ? (i / 2 + j) : (i / 2 - j);
+                var tone = ((board % 3) + 3) % 3 == 0 ? gap : ((i + j) & 1) == 0 ? plankLit : plank;
+                Plot(px, cx + i, cy + deck + j, tone);
+            }
+
+            // The lower edge of the decking, so it has a thickness above the water.
+            for (int i = -15; i <= 15; i++)
+            {
+                int j = Mathf.RoundToInt(7.5f - Mathf.Abs(i) / 2f);
+                for (int t = 1; t <= 2; t++) Plot(px, cx + i, cy + deck - j - t, gap);
+            }
+
+            for (int corner = 0; corner < 2; corner++)
+            {
+                int px0 = corner == 0 ? -12 : 12;
+                for (int lift = -4; lift <= 2; lift++)
+                {
+                    Plot(px, cx + px0, cy + deck + lift - 3, pile);
+                    Plot(px, cx + px0 + 1, cy + deck + lift - 3, plank);
+                }
+            }
+
+            // A barrel standing on the boards, so the staging reads as in use. Wider than it
+            // is tall: the projection squashes everything vertically by half, and a barrel
+            // drawn on square proportions comes out as a post.
+            var hoop = C(0x3A, 0x2A, 0x18);
+            for (int dy = 0; dy < 7; dy++)
+            for (int dx = -4; dx <= 4; dx++)
+            {
+                if (dx * dx + (dy - 3) * (dy - 3) * 2 > 18) continue;
+                var tone = dy == 1 || dy == 5 ? hoop
+                    : dx < -1 ? plankLit : dx > 2 ? gap : plank;
+                Plot(px, cx + 6 + dx, cy + deck + 2 + dy, tone);
             }
         }
 
