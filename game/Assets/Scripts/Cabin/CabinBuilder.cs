@@ -51,6 +51,8 @@ namespace Maner.Cabin
                 PanelRoots[i] = BuildPanel(root.transform, (PanelId)i, PanelYaw[i]);
             }
 
+            CabinClutter.Build(root.transform, PanelRoots, Materials);
+
             foreach (var def in ConsoleLayout.All)
             {
                 var visual = ControlMeshFactory.Build(def, PanelRoots[(int)def.Panel], Materials);
