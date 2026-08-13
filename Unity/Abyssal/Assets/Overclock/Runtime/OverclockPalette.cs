@@ -16,13 +16,13 @@ namespace Overclock
     public static class OverclockPalette
     {
         /// <summary>基底。几乎是黑的，只带一点冷调。</summary>
-        public static readonly Color Substrate = new Color(0.031f, 0.043f, 0.063f);
+        public static readonly Color Substrate = new Color(0.062f, 0.086f, 0.118f);
 
         /// <summary>格子的分隔网格线。</summary>
-        public static readonly Color Grid = new Color(0.075f, 0.098f, 0.133f);
+        public static readonly Color Grid = new Color(0.130f, 0.180f, 0.235f);
 
         /// <summary>坏块。暗褐色，和冷调的基底区分开。</summary>
-        public static readonly Color DeadCell = new Color(0.086f, 0.067f, 0.055f);
+        public static readonly Color DeadCell = new Color(0.135f, 0.098f, 0.078f);
 
         /// <summary>烧毁的元件。焦黑带一点余烬的红。</summary>
         public static readonly Color Burned = new Color(0.145f, 0.055f, 0.043f);

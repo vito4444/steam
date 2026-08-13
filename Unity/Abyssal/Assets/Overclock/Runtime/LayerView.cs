@@ -87,9 +87,21 @@ namespace Overclock
                 // 格子之间留一道缝，这道缝就是网格线，不用额外画。
                 var tile = Make(group, $"Cell_{x}_{y}", PrimitiveType.Cube,
                     CellCenter(x, y) + new Vector3(0f, -0.06f, 0f),
-                    new Vector3(CellSize * 0.94f, 0.10f, CellSize * 0.94f),
+                    new Vector3(CellSize * 0.88f, 0.10f, CellSize * 0.88f),
                     _substrateMaterial);
                 _substrate.Add(tile.GetComponent<MeshRenderer>());
+
+                // 再压一块略大略暗的底板当描边。空板上如果只有纯色块，
+                // 在纯黑背景里根本读不出棋盘的存在，玩家不知道能往哪放。
+                var edge = Make(group, $"Edge_{x}_{y}", PrimitiveType.Cube,
+                    CellCenter(x, y) + new Vector3(0f, -0.09f, 0f),
+                    new Vector3(CellSize * 0.98f, 0.06f, CellSize * 0.98f),
+                    _substrateMaterial);
+                var edgeRenderer = edge.GetComponent<MeshRenderer>();
+                _block ??= new MaterialPropertyBlock();
+                edgeRenderer.GetPropertyBlock(_block);
+                _block.SetColor(BaseColorId, OverclockPalette.Grid);
+                edgeRenderer.SetPropertyBlock(_block);
             }
         }
 
@@ -394,6 +406,31 @@ namespace Overclock
             renderer.GetPropertyBlock(_block);
             _block.SetColor(BaseColorId, color);
             renderer.SetPropertyBlock(_block);
+        }
+
+        /// <summary>
+        /// 销毁整层的可视化。换层时必须调用，否则上一层的几百个格子会留在场景里，
+        /// 叠在新层上面——玩家会看到两层电路重影，而且帧率会一层层掉下去。
+        /// </summary>
+        public void Dispose()
+        {
+            if (Root == null) return;
+
+            if (Application.isPlaying) Object.Destroy(Root.gameObject);
+            else Object.DestroyImmediate(Root.gameObject);
+
+            Root = null;
+            _substrate.Clear();
+            _bodies.Clear();
+            _bodyTransforms.Clear();
+            _links.Clear();
+            _linkCells.Clear();
+            _packets.Clear();
+            _packetRenderers.Clear();
+            _packetLink.Clear();
+            _packetPhase.Clear();
+            _highlightEdges.Clear();
+            _highlight = null;
         }
 
         static GameObject Make(Transform parent, string name, PrimitiveType type,

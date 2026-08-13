@@ -43,6 +43,9 @@ namespace Abyssal.EditorTools
             var go = new GameObject("Bootstrap");
             go.AddComponent<Abyssal.CabinBootstrap>();
 
+            // ABYSSAL 的控制舱同时用到 Lit 和 Unlit。
+            ShaderAnchorTools.CreateAnchor(includeLit: true);
+
             EditorSceneManager.SaveScene(scene, BootScenePath);
 
             var buildScenes = new[] { new EditorBuildSettingsScene(BootScenePath, true) };
@@ -75,6 +78,71 @@ namespace Abyssal.EditorTools
         [MenuItem("Abyssal/Build/Windows x64")]
         public static void BuildWindows()
             => Build(BuildTarget.StandaloneWindows64, "windows-x64", "Abyssal.exe");
+
+        /// <summary>
+        /// 构建 OVERCLOCK 的 Windows 版本。
+        /// 两个方案共用同一个 Unity 工程，靠不同的启动场景区分。
+        /// </summary>
+        /// <summary>Linux 版只用于本机把游戏真正跑起来验证，不对外发行。</summary>
+        [MenuItem("Overclock/Build Linux x64")]
+        public static void BuildOverclockLinux()
+            => BuildOverclock(BuildTarget.StandaloneLinux64, "overclock-linux-x64", "Overclock.x86_64");
+
+        [MenuItem("Overclock/Build Windows x64")]
+        public static void BuildOverclockWindows()
+        {
+            BuildOverclock(BuildTarget.StandaloneWindows64, "overclock-windows-x64", "Overclock.exe");
+        }
+
+        static void BuildOverclock(BuildTarget target, string folder, string executable)
+        {
+            CreateOverclockBootScene();
+            ConfigurePlayerSettings();
+            PlayerSettings.productName = "OVERCLOCK";
+
+            string location = Path.Combine(OutputRoot, folder, executable);
+            Directory.CreateDirectory(Path.GetDirectoryName(location) ?? OutputRoot);
+
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { OverclockScenePath },
+                locationPathName = location,
+                target = target,
+                targetGroup = BuildTargetGroup.Standalone,
+                options = BuildOptions.None,
+            });
+
+            var s = report.summary;
+            Debug.Log($"OVERCLOCK: {target} build result={s.result} size={s.totalSize} " +
+                      $"errors={s.totalErrors} time={s.totalTime.TotalSeconds:F1}s output={location}");
+
+            if (s.result != BuildResult.Succeeded) EditorApplication.Exit(7);
+        }
+
+        const string OverclockScenePath = SceneDir + "/OverclockBoot.unity";
+
+        [MenuItem("Overclock/Create Boot Scene")]
+        public static void CreateOverclockBootScene()
+        {
+            SetupUrp.Run();
+            Directory.CreateDirectory(SceneDir);
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var go = new GameObject("Bootstrap");
+            go.AddComponent<global::Overclock.OverclockBootstrap>();
+
+            // OVERCLOCK 整套视觉只用 Unlit，不需要把 Lit 的变体也拖进来。
+            ShaderAnchorTools.CreateAnchor(includeLit: false);
+
+            EditorSceneManager.SaveScene(scene, OverclockScenePath);
+            EditorBuildSettings.scenes = new[]
+            {
+                new EditorBuildSettingsScene(OverclockScenePath, true),
+            };
+
+            Debug.Log($"OVERCLOCK: boot scene saved to {OverclockScenePath} " +
+                      $"({new FileInfo(OverclockScenePath).Length} bytes)");
+        }
 
         [MenuItem("Abyssal/Build/Linux x64")]
         public static void BuildLinux()

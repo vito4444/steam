@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Abyssal/Scenes/Boot.unity
-    guid: c23b295507dd8859ebf905a9e6c19e01
+    path: Assets/Abyssal/Scenes/OverclockBoot.unity
+    guid: 7cd633cc9336c99f191278507557472a
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

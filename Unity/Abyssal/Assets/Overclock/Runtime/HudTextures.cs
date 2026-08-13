@@ -178,6 +178,36 @@ namespace Overclock
         }
 
         /// <summary>
+        /// 升级卡片底框。悬停时描边变亮变粗，同时底色微微提亮。
+        /// 三张卡并排时，玩家的视线需要一个明确的「我正指着这张」的反馈。
+        /// </summary>
+        public static Texture2D Card(bool hovered, int w = 400, int h = 300)
+        {
+            return Cached($"card:{hovered}:{w}:{h}", () =>
+            {
+                var fill = hovered
+                    ? new Color32(0x12, 0x24, 0x30, 0xF6)
+                    : new Color32(0x0A, 0x14, 0x1C, 0xEE);
+                var p = new Painter(w, h, fill);
+
+                if (hovered)
+                {
+                    p.RectOutline(0, 0, w, h, 4, new Color32(0x7A, 0xE4, 0xF4, 0xFF));
+                    p.RectOutline(6, 6, w - 12, h - 12, 1, new Color32(0x2E, 0x6C, 0x82, 0xFF));
+                }
+                else
+                {
+                    p.RectOutline(0, 0, w, h, 2, new Color32(0x2A, 0x50, 0x62, 0xFF));
+                }
+
+                // 顶部一条色带，让卡片在视觉上有个「表头」。
+                p.Rect(0, h - 10, w, 4,
+                       hovered ? new Color32(0x7A, 0xE4, 0xF4, 0xFF) : new Color32(0x2E, 0x6C, 0x82, 0xFF));
+                return p.ToTexture($"Card_{hovered}", false);
+            });
+        }
+
+        /// <summary>
         /// 横向进度条。带刻度和一条目标线——
         /// 玩家需要知道的不只是「涨到哪了」，更是「还差多少」。
         /// </summary>
