@@ -24,53 +24,87 @@ namespace Undertown.Game.Presentation
             var clear = new Color32(0, 0, 0, 0);
             for (int i = 0; i < px.Length; i++) px[i] = clear;
 
-            var skin = new Color32(0xD9, 0xB0, 0x88, 0xFF);
+            var skin = new Color32(0xC9, 0xA0, 0x78, 0xFF);
+            var skinShade = new Color32(0xA2, 0x7C, 0x58, 0xFF);
             var hair = new Color32(0x3E, 0x2C, 0x1C, 0xFF);
-            var boot = new Color32(0x2E, 0x22, 0x18, 0xFF);
+            var hose = new Color32(0x50, 0x3E, 0x2A, 0xFF);
+            var boot = new Color32(0x2A, 0x20, 0x16, 0xFF);
+            var belt = new Color32(0x33, 0x26, 0x1A, 0xFF);
             var outline = new Color32(0x12, 0x0E, 0x0A, 0xFF);
             var coatLit = Lighten(coat, 18);
-            var coatDark = Darken(coat, 22);
+            var coatDark = Darken(coat, 24);
+            var sleeve = Darken(coat, 40);
 
             int cx = Width / 2;
             int feet = 5;
-            int bodyTop = feet + (tall ? 17 : 15);
 
-            // Contact shadow, an isometric ellipse pressed into the ground.
+            // Legs, then a tunic falling to mid-thigh, then head. Drawn as separate parts
+            // rather than one block: at this size a figure is four or five pixels wide, and a
+            // solid rectangle of coat colour reads as a crate rather than a person. The gap
+            // between the legs and the flare of the hem are what make the silhouette legible.
+            int legTop = feet + (tall ? 6 : 5);
+            int shoulder = legTop + (tall ? 10 : 9);
+
             var shade = new Color32(0x12, 0x0E, 0x0A, 0x66);
             for (int y = -3; y <= 3; y++)
             for (int x = -7; x <= 7; x++)
                 if (x * x + y * y * 6 <= 49) Blend(px, cx + x, feet - 1 + y, shade);
 
-            for (int x = -3; x <= -1; x++) Fill(px, cx + x, feet - 1, 1, 3, boot);
-            for (int x = 1; x <= 3; x++) Fill(px, cx + x, feet - 1, 1, 3, boot);
-
-            // Coat, lit from the upper left as everything else is.
-            for (int y = feet + 1; y < bodyTop; y++)
-            for (int x = -4; x <= 4; x++)
+            for (int y = feet; y < legTop; y++)
             {
-                var tone = x <= -2 ? coatLit : x >= 3 ? coatDark : coat;
-                Plot(px, cx + x, y, tone);
+                var tone = y < feet + 2 ? boot : hose;
+                Plot(px, cx - 3, y, tone);
+                Plot(px, cx - 2, y, tone);
+                Plot(px, cx + 1, y, Darken(tone, 10));
+                Plot(px, cx + 2, y, Darken(tone, 10));
             }
 
-            // Shoulder trim carries rank or mood without a second sprite.
-            for (int x = -4; x <= 4; x++)
+            int hem = legTop - 2;
+            for (int y = hem; y <= shoulder; y++)
             {
-                Plot(px, cx + x, bodyTop - 1, trim);
-                Plot(px, cx + x, bodyTop - 2, trim);
+                float t = (y - hem) / (float)Mathf.Max(1, shoulder - hem);
+                int half = Mathf.RoundToInt(Mathf.Lerp(4.4f, 3.2f, t));
+                for (int x = -half; x <= half; x++)
+                {
+                    var tone = x <= -half + 1 ? coatLit : x >= half - 1 ? coatDark : coat;
+                    Plot(px, cx + x, y, tone);
+                }
             }
 
-            for (int y = bodyTop; y < bodyTop + 5; y++)
+            for (int x = -4; x <= 4; x++) Plot(px, cx + x, hem + 3, belt);
+
+            // Arms hang outside the tunic, one lit and one in shadow, ending in a hand.
+            for (int y = hem + 2; y <= shoulder - 1; y++)
+            {
+                Plot(px, cx - 5, y, y == hem + 2 ? skinShade : Lighten(sleeve, 22));
+                Plot(px, cx + 5, y, y == hem + 2 ? skinShade : sleeve);
+            }
+
             for (int x = -3; x <= 3; x++)
             {
-                if ((x == -3 || x == 3) && (y == bodyTop || y == bodyTop + 4)) continue;
-                Plot(px, cx + x, y, skin);
+                Plot(px, cx + x, shoulder, trim);
+                Plot(px, cx + x, shoulder - 1, trim);
             }
 
-            for (int x = -3; x <= 3; x++)
+            Plot(px, cx - 1, shoulder + 1, skinShade);
+            Plot(px, cx, shoulder + 1, skinShade);
+            Plot(px, cx + 1, shoulder + 1, skinShade);
+
+            int headBase = shoulder + 2;
+            for (int y = headBase; y < headBase + 5; y++)
+            for (int x = -2; x <= 2; x++)
             {
-                Plot(px, cx + x, bodyTop + 4, hair);
-                Plot(px, cx + x, bodyTop + 5, hair);
+                if ((x == -2 || x == 2) && y == headBase) continue;
+                Plot(px, cx + x, y, x >= 1 ? skinShade : skin);
             }
+
+            for (int x = -2; x <= 2; x++) Plot(px, cx + x, headBase + 5, hair);
+            Plot(px, cx - 3, headBase + 3, hair);
+            Plot(px, cx - 3, headBase + 4, hair);
+            Plot(px, cx + 3, headBase + 3, hair);
+            Plot(px, cx + 3, headBase + 4, hair);
+            Plot(px, cx - 2, headBase + 4, hair);
+            Plot(px, cx + 2, headBase + 4, hair);
 
             Outline(px, outline);
             return Cache[key] = ToSprite(px, $"iso_agent_{key:X}");
