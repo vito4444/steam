@@ -248,6 +248,67 @@ Two of the eight new tests state the curve as arithmetic rather than as a
 sentence, because it is a claim that will quietly stop being true the first time
 anyone edits the quota curve.
 
+## Somebody played it
+
+The gap list has said "nobody has played it" since M2, filed as unclosable on a
+machine with no GPU. That turned out to be wrong: this VM runs a TigerVNC display
+at 1920x1200, so the built player can be launched in a window and driven with
+real mouse input.
+
+It could not be played at all.
+
+Every build ever produced shipped with looking and clicking completely dead. Not
+unreliable — dead. `DeskInteractor` takes its input through a plain C# property,
+the scene generator assigned a `LegacyInputSource` to it at edit time, and
+properties are not serialised, so by the time the player ran there was a
+`NullInputSource` returning a zero look delta and false for every button.
+
+It survived three milestones because nothing ever went through it. The self-check
+drives the camera with `SnapLookAt` and the shift with `Submit`, reaching straight
+past the input layer, so every checkpoint passed and every screenshot looked
+right while the game itself was inert. This is the same class of bug as the dead
+switches in M2 — state assigned at edit time that does not survive serialisation
+— and having fixed that one, I did not go looking for siblings.
+
+Measured before and after, on the running player, as the mean per-pixel
+difference between two captures:
+
+| | idle to idle (film grain only) | across a large mouse movement |
+|---|---|---|
+| before | 0.73 | 0.78 |
+| after | 0.74 | 29.68 |
+
+`DeskInteractor` builds its own input source in `Awake` now, and the self-check
+installs a scripted one and asserts the two things that were silently broken: a
+look delta turns the camera, and a click reaches what it is aimed at. It reports
+`camera_turned_degrees: 18.7` and `click_reached_target: true`.
+
+The pointer is also locked and hidden. Without that the operating system's arrow
+sits on top of the booth and a player assumes it is what they are aiming with,
+when the ray comes from the centre of the view. Hiding it is what makes that
+discoverable, and it is the only reason the booth needs no crosshair.
+
+A recorded session confirms, independently reviewed: the camera pans smoothly
+with no jumps, objects passing the centre of the view take a white highlight,
+clicking leans in and the text becomes readable — the reviewer transcribed
+DISTRICT CIRCULAR / LAMP REPLACEMENT SCHEDULE SUSPENDED UNTIL FURTHER NOTICE. /
+FILED off the screen — and right mouse sits back. No stutter, tearing,
+flickering, stuck highlights or camera clipping.
+
+Two things the play session turned up on the way:
+
+**Un-hovering set an object's emission to black** rather than restoring what its
+material emits. Nothing visible today is both emissive and interactable, but a
+lit key or a screen would have gone permanently dark the first time a player
+looked at it and away again.
+
+**The intercom keypad was the brightest object in the booth**, brighter than any
+of the paperwork. That was the desk lamp: widening it to reach the binder two
+metres away meant blowing out a keypad seventy centimetres away, because a point
+source falls off with the square of distance and one lamp cannot serve both
+ranges. A dim wide fill over the desk does the reach now and the lamp goes back
+to being a lamp. Keypad and permit read at 52 and 47 against a frame mean of 25.
+
 ## Bugs this milestone surfaced
 
 Five, all of which had been shipping silently.
@@ -326,10 +387,12 @@ machine is Linux. That has to change before release.
 
 Reassessed from M2's list.
 
-1. **Interaction is untested by a human.** Look, hover, lean-in and the new
-   leafing are exercised only by the scripted self-check. Nothing here has ever
-   been played. This is now the largest gap and it cannot be closed on this
-   machine. *High.*
+1. **Only one person has played it, and only for a minute.** Looking, hovering,
+   leaning in and backing out are confirmed by hand on a real display. Throwing a
+   switch and watching a vehicle leave is not — aiming by script is unreliable
+   once the pointer is locked, and every click in the recorded session landed on
+   the post tray. That path is covered by the self-check and by the `admitted`
+   screenshot, but no human has done it. *Medium.*
 2. **Audio has never been heard.** Synthesised, structurally tested, and now
    wired to the intercom as well — but this machine has no audio device.
    *Medium.*
