@@ -39,6 +39,9 @@ namespace Undertown.Game.Presentation
                 var cell = new Coord(x, y, depth);
                 var kind = _map.Get(cell);
 
+                var bed = GardenOn(cell, kind);
+                if (bed != null) Place(ref used, cell, bed, offset: -2);
+
                 Sprite art = IsoPropArt.HasProp(kind)
                     ? IsoPropArt.For(kind, IsoTileArt.VariantAt(x, y))
                     : ClutterOn(cell, kind);
@@ -138,10 +141,39 @@ namespace Undertown.Game.Presentation
 
         private static bool IsDry(TileKind kind) => kind != TileKind.Water;
 
-        private bool NearALane(Coord cell)
+        /// <summary>
+        /// Which plot cells are under cultivation. Roughly half of the fenced grass, in runs
+        /// rather than singly, so the beds group into gardens instead of speckling the town
+        /// with isolated squares of soil.
+        ///
+        /// Grass is the only candidate: worn earth is a working yard and paving is a way
+        /// through, and putting a seed bed on either would say the wrong thing about ground
+        /// the player is meant to read at a glance.
+        /// </summary>
+        private Sprite GardenOn(Coord cell, TileKind kind)
         {
-            for (int dy = -2; dy <= 2; dy++)
-            for (int dx = -2; dx <= 2; dx++)
+            if (kind != TileKind.Grass || _built.Contains(cell)) return null;
+
+            // One cell from a lane, not two. At the wider radius the beds spilled past the
+            // last fence into open country, and a dug row with no plot around it reads as a
+            // field nobody owns rather than as somebody's garden.
+            if (!NearALane(cell, radius: 1)) return null;
+
+            // Coarse cells of two-by-two decide together, which is what gives runs; the finer
+            // hash then breaks up their edges so the gardens do not come out as blocks.
+            int clump = Hash(cell.X >> 1, cell.Y >> 1);
+            if (clump % 5 >= 2) return null;
+
+            int h = Hash(cell.X, cell.Y);
+            if (h % 7 == 0) return null;
+
+            return IsoGardenArt.For((clump / 5) % IsoGardenArt.Variants);
+        }
+
+        private bool NearALane(Coord cell, int radius = 2)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            for (int dx = -radius; dx <= radius; dx++)
                 if (IsLane(_map.Get(cell.Offset(dx, dy)))) return true;
             return false;
         }
