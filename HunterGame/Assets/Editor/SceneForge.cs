@@ -79,7 +79,7 @@ namespace Hunter.EditorTools
         {
             var so = new SerializedObject(data);
             SetInt(so, "m_DepthPrimingMode", 0);
-            SetEnumByName(so, "m_RenderingMode", 0);            // Forward
+            SetEnumByName(so, "m_RenderingMode", 2);            // Forward+ (clustered)
             SetBool(so, "m_AccurateGbufferNormals", true);
             SetInt(so, "m_IntermediateTextureMode", 0);          // Always, keeps blit passes valid
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -109,18 +109,18 @@ namespace Hunter.EditorTools
         {
             var feature = ScriptableObject.CreateInstance<Hunter.Rendering.VolumetricFogFeature>();
             feature.name = "VolumetricFog";
-            feature.settings.density = 0.062f;
+            feature.settings.density = 0.038f;
             feature.settings.steps = 48;
             feature.settings.maxDistance = 120f;
             feature.settings.anisotropy = 0.72f;
             feature.settings.scatterColor = new Color(1f, 0.90f, 0.62f);
-            feature.settings.intensity = 0.5f;
+            feature.settings.intensity = 0.30f;
             feature.settings.heightBase = -1f;
             feature.settings.heightFalloff = 0.062f;
             feature.settings.noiseScale = 0.038f;
             feature.settings.noiseStrength = 0.62f;
-            feature.settings.sunBoost = 1.25f;
-            feature.settings.ambientFloor = 0.035f;
+            feature.settings.sunBoost = 0.85f;
+            feature.settings.ambientFloor = 0.018f;
             feature.settings.pointLightGain = 0.22f;
 
             AssetDatabase.AddObjectToAsset(feature, data);
@@ -180,7 +180,7 @@ namespace Hunter.EditorTools
             // LightRenderingMode.PerPixel is 2; PerVertex (1) makes point lights vanish on
             // large welded meshes such as the pavement.
             SetInt(so, "m_AdditionalLightsRenderingMode", 2);
-            SetInt(so, "m_AdditionalLightsPerObjectLimit", 8);
+            SetInt(so, "m_AdditionalLightsPerObjectLimit", 8);   // ignored under Forward+
             SetBool(so, "m_AdditionalLightShadowsSupported", true);
             SetInt(so, "m_AdditionalLightsShadowmapResolution", 2048);
 
@@ -233,14 +233,14 @@ namespace Hunter.EditorTools
                 Ground = MakeLit("Ground", new Color(0.95f, 0.92f, 0.86f), groundAlbedo, groundNormal, groundMask,
                     normalScale: 1.7f, tiling: 1.15f),
                 Gold = MakeGold(),
-                Silhouette = MakeLit("Silhouette", new Color(0.30f, 0.30f, 0.33f), null, null, null,
+                Silhouette = MakeLit("Silhouette", new Color(0.42f, 0.42f, 0.46f), null, null, null,
                     smoothness: 0.12f),
-                Cloth = MakeLit("Cloth", new Color(0.36f, 0.35f, 0.38f), stoneAlbedo, stoneNormal, null,
+                Cloth = MakeLit("Cloth", new Color(0.58f, 0.56f, 0.60f), stoneAlbedo, stoneNormal, null,
                     normalScale: 0.5f, smoothness: 0.19f, tiling: 2.2f),
                 // Near-black and near-mirror. The colour comes almost entirely from what it
                 // reflects, which is the point.
-                Water = MakeLit("Water", new Color(0.035f, 0.042f, 0.048f), null, null, null,
-                    smoothness: 0.96f),
+                Water = MakeLit("Water", new Color(0.10f, 0.115f, 0.125f), null, null, null,
+                    smoothness: 0.90f),
                 Timber = MakeLit("Timber", new Color(0.62f, 0.46f, 0.30f), stoneAlbedo, stoneNormal, null,
                     normalScale: 0.9f, smoothness: 0.22f, tiling: 2.6f),
                 Banner = MakeLit("Banner", new Color(1.35f, 0.42f, 0.26f), stoneAlbedo, null, null,
@@ -309,17 +309,17 @@ namespace Hunter.EditorTools
             // clear colour gave the floor nothing to mirror, which is why the foreground
             // stayed featureless no matter how much light was added.
             var sky = new Material(Shader.Find("Skybox/Procedural")) { name = "AurumSky" };
-            sky.SetFloat("_SunSize", 0.045f);
+            sky.SetFloat("_SunSize", 0.02f);
             sky.SetFloat("_SunSizeConvergence", 3f);
-            sky.SetFloat("_AtmosphereThickness", 1.35f);
+            sky.SetFloat("_AtmosphereThickness", 0.95f);
             sky.SetColor("_SkyTint", new Color(0.60f, 0.585f, 0.44f));
             sky.SetColor("_GroundColor", new Color(0.145f, 0.135f, 0.105f));
-            sky.SetFloat("_Exposure", 0.46f);
+            sky.SetFloat("_Exposure", 0.22f);
             AssetDatabase.CreateAsset(sky, SettingsDir + "/AurumSky.mat");
 
             RenderSettings.skybox = sky;
             RenderSettings.ambientMode = AmbientMode.Skybox;
-            RenderSettings.ambientIntensity = 1.15f;
+            RenderSettings.ambientIntensity = 2.0f;
             RenderSettings.reflectionIntensity = 1f;
 
             // Ambient only reaches the shaders through the environment SH probe, and in
@@ -355,9 +355,9 @@ namespace Hunter.EditorTools
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
             sun.color = new Color(1f, 0.945f, 0.775f);
-            sun.intensity = 2.8f;
+            sun.intensity = 2.4f;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.68f;
+            sun.shadowStrength = 0.52f;
             sun.shadowBias = 0.04f;
             sun.shadowNormalBias = 0.35f;
             sunGo.transform.rotation = Quaternion.Euler(15f, 191f, 0f);
@@ -369,8 +369,8 @@ namespace Hunter.EditorTools
             fillGo.transform.SetParent(root, false);
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Directional;
-            fill.color = new Color(0.60f, 0.62f, 0.72f);
-            fill.intensity = 1.1f;
+            fill.color = new Color(0.74f, 0.72f, 0.70f);
+            fill.intensity = 2.0f;
             fill.shadows = LightShadows.None;
             fillGo.transform.rotation = Quaternion.Euler(58f, 34f, 0f);
 
@@ -381,7 +381,7 @@ namespace Hunter.EditorTools
             var bounce = bounceGo.AddComponent<Light>();
             bounce.type = LightType.Point;
             bounce.color = new Color(1f, 0.86f, 0.62f);
-            bounce.intensity = 6.5f;
+            bounce.intensity = 8f;
             bounce.range = 38f;
             bounce.shadows = LightShadows.None;
 
@@ -393,8 +393,8 @@ namespace Hunter.EditorTools
             var rim = rimGo.AddComponent<Light>();
             rim.type = LightType.Point;
             rim.color = new Color(1f, 0.82f, 0.52f);
-            rim.intensity = 7.5f;
-            rim.range = 7.5f;
+            rim.intensity = 26f;
+            rim.range = 11f;
             rim.shadows = LightShadows.None;
 
             // Foreground fill. The frame masses were rendering as flat black shapes with no
@@ -402,12 +402,12 @@ namespace Hunter.EditorTools
             // without lifting the midground.
             var foreGo = new GameObject("ForegroundFill");
             foreGo.transform.SetParent(root, false);
-            foreGo.transform.position = new Vector3(0.4f, 3.2f, -4.2f);
+            foreGo.transform.position = new Vector3(0.3f, 3.4f, 3.2f);
             var fore = foreGo.AddComponent<Light>();
             fore.type = LightType.Point;
-            fore.color = new Color(0.62f, 0.66f, 0.80f);
-            fore.intensity = 11f;
-            fore.range = 24f;
+            fore.color = new Color(0.72f, 0.74f, 0.82f);
+            fore.intensity = 30f;
+            fore.range = 18f;
             fore.shadows = LightShadows.None;
 
             // Distant glow behind the tower, reading as the source of the gold mist.
@@ -417,8 +417,8 @@ namespace Hunter.EditorTools
             var mistCore = mistCoreGo.AddComponent<Light>();
             mistCore.type = LightType.Point;
             mistCore.color = new Color(1f, 0.90f, 0.66f);
-            mistCore.intensity = 5f;
-            mistCore.range = 110f;
+            mistCore.intensity = 1.6f;
+            mistCore.range = 90f;
             mistCore.shadows = LightShadows.None;
         }
 
@@ -435,15 +435,17 @@ namespace Hunter.EditorTools
                 name = "DustMote",
             };
             material.SetTexture("_BaseMap", dustTexture);
-            material.SetColor("_BaseColor", new Color(1f, 0.86f, 0.58f, 0.55f));
+            material.SetColor("_BaseColor", new Color(1f, 0.88f, 0.62f, 1f));
             material.SetFloat("_Surface", 1f);          // transparent
-            material.SetFloat("_Blend", 1f);            // additive
-            material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+            // URP recomputes the blend factors from _Blend when the material is validated,
+            // so setting src and dst directly is discarded. Mode 1 is Premultiply, which is
+            // what silently produced hard-edged quads; additive is mode 2. Dust in a light
+            // shaft is emissive, so it should add rather than composite.
+            material.SetFloat("_Blend", 2f);
             material.SetFloat("_ZWrite", 0f);
             material.renderQueue = 3000;
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+            material.EnableKeyword("_ALPHAMODULATE_ON");
             AssetDatabase.CreateAsset(material, MaterialsDir + "/DustMote.mat");
 
             var go = new GameObject("AirborneDust");
@@ -577,6 +579,7 @@ namespace Hunter.EditorTools
             var runSo = new SerializedObject(run);
             runSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
             runSo.FindProperty("playerHealth").objectReferenceValue = player.GetComponent<Damageable>();
+            runSo.FindProperty("playerMelee").objectReferenceValue = player.GetComponent<MeleeCombatant>();
             runSo.FindProperty("bell").objectReferenceValue = bell;
             runSo.FindProperty("extractionPoint").objectReferenceValue = handles.BellTower;
             runSo.ApplyModifiedPropertiesWithoutUndo();
@@ -628,6 +631,15 @@ namespace Hunter.EditorTools
             hudSo.FindProperty("playerHealth").objectReferenceValue = player.GetComponent<Damageable>();
             hudSo.ApplyModifiedPropertiesWithoutUndo();
 
+            // Starts hidden; RunBootstrap opens it when a raid resolves.
+            var campGo = new GameObject("CampScreen");
+            campGo.transform.SetParent(gameplayRoot.transform, false);
+            var campScreen = campGo.AddComponent<CampScreen>();
+            var campSo = new SerializedObject(campScreen);
+            campSo.FindProperty("hudCamera").objectReferenceValue = camera.GetComponent<Camera>();
+            campSo.FindProperty("raidHud").objectReferenceValue = hud;
+            campSo.ApplyModifiedPropertiesWithoutUndo();
+
             var audioGo = new GameObject("RaidAudio");
             audioGo.transform.SetParent(gameplayRoot.transform, false);
             var raidAudio = audioGo.AddComponent<RaidAudio>();
@@ -645,6 +657,7 @@ namespace Hunter.EditorTools
             bootSo.FindProperty("playerCamera").objectReferenceValue = camera;
             bootSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
             bootSo.FindProperty("combat").objectReferenceValue = player.GetComponent<MeleeCombatant>();
+            bootSo.FindProperty("campScreen").objectReferenceValue = campScreen;
             bootSo.FindProperty("hud").objectReferenceValue = hud;
             bootSo.ApplyModifiedPropertiesWithoutUndo();
         }
@@ -683,6 +696,7 @@ namespace Hunter.EditorTools
 
         static void BuildPostProcessing(Transform root)
         {
+            AssetDatabase.DeleteAsset(VolumeProfilePath);
             var profile = ScriptableObject.CreateInstance<VolumeProfile>();
             AssetDatabase.CreateAsset(profile, VolumeProfilePath);
 
@@ -691,16 +705,16 @@ namespace Hunter.EditorTools
             tonemap.mode.value = TonemappingMode.Neutral;
 
             var bloom = profile.Add<Bloom>(true);
-            bloom.threshold.overrideState = true; bloom.threshold.value = 1.25f;
-            bloom.intensity.overrideState = true; bloom.intensity.value = 0.62f;
+            bloom.threshold.overrideState = true; bloom.threshold.value = 1.9f;
+            bloom.intensity.overrideState = true; bloom.intensity.value = 0.30f;
             bloom.scatter.overrideState = true; bloom.scatter.value = 0.72f;
             bloom.tint.overrideState = true; bloom.tint.value = new Color(1f, 0.86f, 0.62f);
             bloom.highQualityFiltering.overrideState = true; bloom.highQualityFiltering.value = true;
 
             var color = profile.Add<ColorAdjustments>(true);
-            color.postExposure.overrideState = true; color.postExposure.value = -0.05f;
-            color.contrast.overrideState = true; color.contrast.value = 26f;
-            color.saturation.overrideState = true; color.saturation.value = -14f;
+            color.postExposure.overrideState = true; color.postExposure.value = 0.15f;
+            color.contrast.overrideState = true; color.contrast.value = 17f;
+            color.saturation.overrideState = true; color.saturation.value = -4f;
             color.colorFilter.overrideState = true; color.colorFilter.value = new Color(1f, 0.96f, 0.88f);
 
             // Gold highlights against cool shadows: the palette rule from the concept doc.
@@ -714,7 +728,7 @@ namespace Hunter.EditorTools
             smh.highlights.overrideState = true; smh.highlights.value = new Vector4(1.06f, 0.98f, 0.86f, 0.02f);
 
             var vignette = profile.Add<Vignette>(true);
-            vignette.intensity.overrideState = true; vignette.intensity.value = 0.26f;
+            vignette.intensity.overrideState = true; vignette.intensity.value = 0.16f;
             vignette.smoothness.overrideState = true; vignette.smoothness.value = 0.42f;
             vignette.color.overrideState = true; vignette.color.value = new Color(0.02f, 0.015f, 0.01f);
 
@@ -731,6 +745,16 @@ namespace Hunter.EditorTools
             dof.focusDistance.overrideState = true; dof.focusDistance.value = 6.5f;
             dof.aperture.overrideState = true; dof.aperture.value = 8.5f;
             dof.focalLength.overrideState = true; dof.focalLength.value = 42f;
+
+            // Persist every override as a sub-asset of the profile, otherwise the whole
+            // post chain is lost on reload and none of the grading applies.
+            foreach (var component in profile.components)
+            {
+                component.hideFlags = HideFlags.HideInHierarchy;
+                AssetDatabase.AddObjectToAsset(component, profile);
+            }
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssets();
 
             var volumeGo = new GameObject("PostProcessVolume");
             volumeGo.transform.SetParent(root, false);

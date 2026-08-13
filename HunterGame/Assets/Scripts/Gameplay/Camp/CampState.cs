@@ -163,21 +163,14 @@ namespace Hunter.Gameplay.Camp
             int cartographer = LevelOf(FacilityKind.Cartographer);
             int shrine = LevelOf(FacilityKind.Shrine);
 
-            var weapon = forge switch
-            {
-                0 => ItemCatalog.RustedBlade,
-                1 or 2 => ItemCatalog.HuntersFalchion,
-                _ => ItemCatalog.WardenHalberd,
-            };
-
             return new LoadoutModifiers(
-                carryWeightBonus: vault * 4.5f,
-                carrySlotBonus: vault * 2,
-                vitalityBonus: shrine * 14f,
+                carryWeightBonus: vault * FacilityInfo.VaultWeightPerLevel,
+                carrySlotBonus: vault * FacilityInfo.VaultSlotsPerLevel,
+                vitalityBonus: shrine * FacilityInfo.ShrineVitalityPerLevel,
                 // One route home to start with; the cartographer sells the rest.
                 knownExtractionPoints: 1 + cartographer,
                 startingConsumables: alchemy,
-                startingWeapon: weapon);
+                startingWeapon: FacilityInfo.WeaponAt(forge));
         }
 
         /// Total spent plus banked. Used by the camp screen to show lifetime progress.

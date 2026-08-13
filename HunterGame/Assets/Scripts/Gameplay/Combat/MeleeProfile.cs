@@ -59,11 +59,29 @@ namespace Hunter.Gameplay.Combat
             return isFinisher ? damage * FinisherMultiplier : damage;
         }
 
+        /// The starting weapon: slower and shorter than the falchion so that the first forge
+        /// upgrade is felt in the swing itself, not only on the damage number.
+        public static MeleeProfile RustedBlade() => new()
+        {
+            StartupTime = 0.22f, ActiveTime = 0.10f, RecoveryTime = 0.34f, ComboWindow = 0.20f,
+            Range = 2.1f, ArcDegrees = 95f, BaseDamage = 13f, StaminaCost = 18f,
+            HitStopSeconds = 0.05f, CameraShake = 0.24f, Knockback = 2.0f,
+        };
+
         public static MeleeProfile Falchion() => new()
         {
             StartupTime = 0.16f, ActiveTime = 0.11f, RecoveryTime = 0.26f, ComboWindow = 0.24f,
             Range = 2.5f, ArcDegrees = 115f, BaseDamage = 22f, StaminaCost = 16f,
             HitStopSeconds = 0.07f, CameraShake = 0.32f, Knockback = 2.8f,
+        };
+
+        /// The forge tier the camp sells. Mirrors FacilityInfo.WeaponAt so the shop's promise
+        /// and the swing the player gets cannot drift apart.
+        public static MeleeProfile ForForgeLevel(int forgeLevel) => forgeLevel switch
+        {
+            <= 0 => RustedBlade(),
+            1 or 2 => Falchion(),
+            _ => Halberd(),
         };
 
         public static MeleeProfile Halberd() => new()

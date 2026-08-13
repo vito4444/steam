@@ -17,6 +17,7 @@ namespace Hunter.Gameplay.Run
         [SerializeField] HunterController player;
         [SerializeField] MeleeCombatant combat;
         [SerializeField] RaidHud hud;
+        [SerializeField] CampScreen campScreen;
 
         [Header("Interaction")]
         [SerializeField] float interactRange = 2.6f;
@@ -37,11 +38,50 @@ namespace Hunter.Gameplay.Run
                 Cursor.visible = false;
             }
             if (playerCamera != null) playerCamera.SnapToTarget();
+
+            if (campScreen != null && run != null && Application.isPlaying)
+            {
+                campScreen.RaidRequested += OnRaidRequested;
+                run.Director.PhaseChanged += OnPhaseChanged;
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (campScreen != null) campScreen.RaidRequested -= OnRaidRequested;
+            if (run != null && run.Director != null) run.Director.PhaseChanged -= OnPhaseChanged;
+        }
+
+        /// A resolved raid hands control to the camp. Without this the meta loop is a screen
+        /// the player can never reach: the run ends and nothing happens.
+        void OnPhaseChanged(RunPhase phase)
+        {
+            if (campScreen == null) return;
+            if (phase is not (RunPhase.Extracted or RunPhase.Died or RunPhase.TimedOut)) return;
+
+            campScreen.Open(run.Camp);
+            if (Application.isPlaying)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+        }
+
+        void OnRaidRequested()
+        {
+            if (!Application.isPlaying) return;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
         }
 
         void Update()
         {
             if (captureMode || run == null || player == null) return;
+            // The camp owns input while it is up, otherwise arrow keys would also walk the
+            // hunter around behind the screen.
+            if (campScreen != null && campScreen.IsOpen) return;
 
             float dt = Time.deltaTime;
             var keyboard = Keyboard.current;

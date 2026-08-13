@@ -1,6 +1,35 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-5290942171417327457
+--- !u!114 &-6157211849289826061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49d89fce01bfb82e681b8225067d93ab, type: 3}
+  m_Name: VolumetricFog
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  settings:
+    density: 0.038
+    steps: 48
+    maxDistance: 120
+    anisotropy: 0.72
+    scatterColor: {r: 1, g: 0.9, b: 0.62, a: 1}
+    intensity: 0.3
+    heightBase: -1
+    heightFalloff: 0.062
+    noiseScale: 0.038
+    noiseStrength: 0.62
+    sunBoost: 0.85
+    ambientFloor: 0.018
+    pointLightGain: 0.22
+    renderPassEvent: 450
+  shader: {fileID: 0}
+--- !u!114 &-5242002851143934491
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -26,35 +55,6 @@ MonoBehaviour:
     BlurQuality: 0
     Falloff: 100
     SampleCount: 12
---- !u!114 &-2643092162000681822
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49d89fce01bfb82e681b8225067d93ab, type: 3}
-  m_Name: VolumetricFog
-  m_EditorClassIdentifier: 
-  m_Active: 1
-  settings:
-    density: 0.062
-    steps: 48
-    maxDistance: 120
-    anisotropy: 0.72
-    scatterColor: {r: 1, g: 0.9, b: 0.62, a: 1}
-    intensity: 0.5
-    heightBase: -1
-    heightFalloff: 0.062
-    noiseScale: 0.038
-    noiseStrength: 0.62
-    sunBoost: 1.25
-    ambientFloor: 0.035
-    pointLightGain: 0.22
-    renderPassEvent: 550
-  shader: {fileID: 0}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80,9 +80,9 @@ MonoBehaviour:
     probeSamplingDebugTexture: {fileID: 0}
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
-  - {fileID: -5290942171417327457}
-  - {fileID: -2643092162000681822}
-  m_RendererFeatureMap: 9f4889b120cc92b6a28454afaed951db
+  - {fileID: -5242002851143934491}
+  - {fileID: -6157211849289826061}
+  m_RendererFeatureMap: e51dfb212eaa40b7f300410472308daa
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 0}
@@ -101,7 +101,7 @@ MonoBehaviour:
     failOperation: 0
     zFailOperation: 0
   m_ShadowTransparentReceive: 1
-  m_RenderingMode: 0
+  m_RenderingMode: 2
   m_DepthPrimingMode: 0
   m_CopyDepthMode: 1
   m_DepthAttachmentFormat: 0

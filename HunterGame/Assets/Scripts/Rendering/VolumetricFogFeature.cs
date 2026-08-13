@@ -30,7 +30,7 @@ namespace Hunter.Rendering
             [Range(0f, 2f)] public float ambientFloor = 0.16f;
             [Range(0f, 4f)] public float pointLightGain = 0.9f;
 
-            public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+            public RenderPassEvent renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
         }
 
         public Settings settings = new();

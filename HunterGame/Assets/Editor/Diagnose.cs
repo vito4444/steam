@@ -73,6 +73,26 @@ namespace Hunter.EditorTools
                           $"format={groundAlbedo.format} sRGB={GraphicsFormatUtility.IsSRGBFormat(groundAlbedo.graphicsFormat)}");
             }
 
+            var cam = Object.FindFirstObjectByType<Camera>();
+            if (cam != null)
+            {
+                var extra = cam.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                Debug.Log($"DIAG camera post={(extra != null && extra.renderPostProcessing)} " +
+                          $"aa={(extra != null ? extra.antialiasing.ToString() : "n/a")} " +
+                          $"volumeMask={(extra != null ? extra.volumeLayerMask.value : -1)} " +
+                          $"volumeTrigger={(extra != null && extra.volumeTrigger != null ? extra.volumeTrigger.name : "null")} " +
+                          $"hdr={cam.allowHDR}");
+            }
+
+            foreach (var volume in Object.FindObjectsByType<UnityEngine.Rendering.Volume>(FindObjectsSortMode.None))
+            {
+                var profile = volume.sharedProfile;
+                Debug.Log($"DIAG volume={volume.name} global={volume.isGlobal} weight={volume.weight} " +
+                          $"priority={volume.priority} layer={volume.gameObject.layer} " +
+                          $"profile={(profile != null ? profile.name : "NULL")} " +
+                          $"components={(profile != null ? profile.components.Count : 0)}");
+            }
+
             Debug.Log("DIAG_DONE");
         }
     }

@@ -19,6 +19,7 @@ namespace Hunter.EditorTools
             public Vector3 Position;
             public Vector3 Euler;
             public float Fov;
+            public bool ShowCamp;
         }
 
         static readonly Shot[] Shots =
@@ -26,6 +27,7 @@ namespace Hunter.EditorTools
             new() { Name = "hero-over-shoulder", Position = new Vector3(0.46f, 1.72f, -1.85f), Euler = new Vector3(3.2f, 3.5f, 0f), Fov = 60f },
             new() { Name = "colonnade-depth",    Position = new Vector3(-1.2f, 2.6f, 5.5f),   Euler = new Vector3(4f, 6f, 0f),    Fov = 55f },
             new() { Name = "loot-approach",      Position = new Vector3(1.4f, 1.55f, 5.4f),   Euler = new Vector3(3f, 24f, 0f),   Fov = 58f },
+            new() { Name = "camp-screen",        Position = new Vector3(-1.2f, 2.6f, 5.5f),   Euler = new Vector3(4f, 6f, 0f),    Fov = 55f, ShowCamp = true },
         };
 
         [MenuItem("Hunter/Capture Shots")]
@@ -109,6 +111,14 @@ namespace Hunter.EditorTools
                 camGo.transform.rotation = Quaternion.Euler(shot.Euler);
                 cam.fieldOfView = shot.Fov;
 
+                var camp = UnityEngine.Object.FindFirstObjectByType<Hunter.Gameplay.UI.CampScreen>();
+                if (camp != null)
+                {
+                    if (shot.ShowCamp) camp.PopulateForCapture();
+                    else camp.Close();
+                    Canvas.ForceUpdateCanvases();
+                }
+
                 var path = Path.Combine(outDir, $"{tag}_{shot.Name}.png");
                 if (!Render(cam, width, height, supersample, path)) anyFailed = true;
             }
@@ -135,6 +145,16 @@ namespace Hunter.EditorTools
 
             var previousTarget = cam.targetTexture;
             cam.targetTexture = rt;
+
+            // Screen-space-camera canvases size themselves from the camera's pixel rect, which
+            // only becomes the render target's after the assignment above. In batch mode the
+            // editor screen is 640x480, so without this the UI is laid out for a frame a third
+            // of the size and lands in the top-left corner.
+            foreach (var canvas in UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+            {
+                if (canvas.renderMode == RenderMode.ScreenSpaceCamera) canvas.worldCamera = cam;
+            }
+            Canvas.ForceUpdateCanvases();
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
             cam.Render();
