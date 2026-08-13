@@ -333,10 +333,12 @@ namespace Undertown.Game.Bootstrap
             // Short of that, the frame is allowed to crop: north and south edges may run a
             // little past the viewport, which buys a closer view and costs nothing the player
             // cannot scroll to.
-            // Kept mild. At 0.88 the crop took the clay pit and the sawmill with it, which are
-            // the two most three-dimensional things in the settlement; a frame that fills
-            // itself by cutting off its own landmarks is not a better frame.
-            const float verticalCrop = 0.95f;
+            // How far it can be pushed depends on what is at the edges. At 0.88 the crop took
+            // the clay pit and the sawmill with it, which are the two most three-dimensional
+            // things here; a frame that fills itself by cutting off its own landmarks is not a
+            // better frame. With both of those moved into the middle blocks, what the crop now
+            // reaches is house corners and open plots, and those it can have.
+            const float verticalCrop = 0.90f;
             cam.orthographicSize = Mathf.Max(3.5f, Mathf.Max(sizeForHeight * verticalCrop, sizeForWidth));
 
             // The HUD covers the bottom band of the viewport, so the visible area's centre sits
