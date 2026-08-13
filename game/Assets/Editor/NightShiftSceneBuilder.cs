@@ -69,6 +69,8 @@ namespace Monster.EditorTools
         private static Transform _manualPages;
         private static Transform _manualAnchor;
         private static Transform _logAnchor;
+        private static Vector3 _lampOrigin;
+        private static Vector3 _lampTarget;
 
         [MenuItem("MONSTER/Build Night Shift Booth Scene")]
         public static void Build()
@@ -85,6 +87,8 @@ namespace Monster.EditorTools
             _manualPages = null;
             _manualAnchor = null;
             _logAnchor = null;
+            _lampOrigin = Vector3.zero;
+            _lampTarget = Vector3.zero;
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -97,6 +101,8 @@ namespace Monster.EditorTools
 
             var outside = new GameObject("Outside").transform;
             BuildOutside(outside);
+
+            BoothAtmosphere.Build(booth, _lampOrigin, _lampTarget, ScreenAnchors.ToArray());
 
             var camera = BuildCamera();
             BoothContentBuilder.Populate(new BoothContentBuilder.Handles(
@@ -298,7 +304,6 @@ namespace Monster.EditorTools
                 ScreenAnchors.Add(Anchor($"ScreenText_{i}", pivot,
                     new Vector3(0f, 0.205f, -0.150f), Quaternion.identity));
 
-                BuildScanlines(pivot, darkPlastic);
 
                 var glow = new GameObject("Glow").AddComponent<Light>();
                 glow.transform.SetParent(pivot, false);
@@ -453,25 +458,6 @@ namespace Monster.EditorTools
             }
         }
 
-        /// <summary>Scanlines across a CRT face. The readout text is drawn by
-        /// BoothContentBuilder; this is only the phosphor banding over the top of it.
-        ///
-        /// An earlier version also drew a faked CCTV image out of flat quads here. Once
-        /// the monitors carried real readouts those quads sat in front of the text and hid
-        /// it, so they are gone.</summary>
-        private static void BuildScanlines(Transform pivot, Material dark)
-        {
-            var lines = new GameObject("Scanlines").transform;
-            lines.SetParent(pivot, false);
-            lines.localPosition = new Vector3(0f, 0.205f, 0f);
-
-            for (var line = 0; line < 11; line++)
-            {
-                Box($"Scanline_{line}", lines, new Vector3(0f, -0.125f + line * 0.025f, -0.156f),
-                    new Vector3(0.520f, 0.004f, 0.002f), dark);
-            }
-        }
-
         private static void BuildLamp(Transform parent)
         {
             var lampMat = Mat("LampEnamel", new Color(0.400f, 0.120f, 0.080f), 0.45f, 0.2f);
@@ -499,6 +485,8 @@ namespace Monster.EditorTools
             // built around, and the first pass missed the desk entirely.
             var keyPosition = origin + new Vector3(0.170f, 0.360f, 0.048f);
             var keyTarget = new Vector3(0.02f, DeskTopY, 0.62f);
+            _lampOrigin = keyPosition;
+            _lampTarget = keyTarget;
             var light = new GameObject("Key").AddComponent<Light>();
             light.transform.SetParent(lamp, true);
             light.transform.SetPositionAndRotation(keyPosition,

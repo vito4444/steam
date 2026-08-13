@@ -63,6 +63,13 @@ if [[ ${STATUS} -eq 124 || ${STATUS} -eq 137 ]]; then
   log "FATAL: player timed out after ${TIMEOUT}s"
 fi
 
+# A stable path alongside the per-commit one. The commit-named directory is the
+# archive; without a fixed alias, anything looking at "the latest screenshots" silently
+# reads the previous commit's the moment a commit lands.
+LATEST="$(dirname "${OUT_DIR}")/latest"
+rm -rf "${LATEST}"
+cp -r "${OUT_DIR}" "${LATEST}"
+
 SHOTS=$(find "${OUT_DIR}" -maxdepth 1 -name '*.png' | wc -l)
 log "captured ${SHOTS} screenshot(s)"
 find "${OUT_DIR}" -maxdepth 1 -name '*.png' -printf '  %f  %s bytes\n' 2>/dev/null

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Monster.Audio;
 using Monster.Interaction;
 using Monster.Presentation;
 using Monster.Rules;
@@ -92,6 +93,10 @@ namespace Monster.EditorTools
 
             var presenter = new GameObject("Booth").AddComponent<BoothPresenter>();
             presenter.Bind(permit, biometrics, cabin, underside, manual, logbook);
+
+            var audio = presenter.gameObject.AddComponent<AudioSource>();
+            audio.playOnAwake = false;
+            presenter.gameObject.AddComponent<BoothAudio>().Bind(presenter);
 
             BuildSwitches(handles.SwitchMeshes, handles.SwitchLabelAnchors, font, presenter);
             MakeInspectable(handles.PermitMesh, "permit", 0.46f, new Vector3(0f, 1f, -0.34f));
