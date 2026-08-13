@@ -1,0 +1,466 @@
+[
+ {
+  "iteration": 0,
+  "score": 14.744,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.0016,
+    0.002,
+    0.0028
+   ],
+   "ambientEquator": [
+    0.001,
+    0.0012,
+    0.0016
+   ],
+   "ambientGround": [
+    0.0006,
+    0.0006,
+    0.0008
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 7.0,
+     "range": 3.0,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 2.6,
+     "range": 1.7
+    },
+    "rimColdWindow": {
+     "intensity": 3.2,
+     "range": 2.6,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 1.2,
+     "range": 1.5,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 2.2,
+     "range": 1.8
+    }
+   },
+   "emission": {
+    "crtScreen": 0.95,
+    "neonLamp": 3.0,
+    "meterFace": 0.3,
+    "dialStrip": 0.45,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 2.0
+   }
+  },
+  "summary": "死黑占比-0.296  细节密度-0.146  暗部下限+0.054  冷色占比+0.230"
+ },
+ {
+  "iteration": 1,
+  "score": 16.616,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.001222,
+    0.001528,
+    0.002139
+   ],
+   "ambientEquator": [
+    0.000764,
+    0.000916,
+    0.001222
+   ],
+   "ambientGround": [
+    0.000458,
+    0.000458,
+    0.000611
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 7.8512,
+     "range": 3.555,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 1.8902,
+     "range": 2.0145
+    },
+    "rimColdWindow": {
+     "intensity": 2.08,
+     "range": 3.081,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 1.4736,
+     "range": 1.7775,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 2.5344,
+     "range": 2.133
+    }
+   },
+   "emission": {
+    "crtScreen": 0.83587,
+    "neonLamp": 3.279,
+    "meterFace": 0.3,
+    "dialStrip": 0.45,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 2.217
+   }
+  },
+  "summary": "死黑占比-0.346  细节密度-0.145  亮部上限+0.103  暗部下限+0.058"
+ },
+ {
+  "iteration": 2,
+  "score": 21.877,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.000914,
+    0.001143,
+    0.0016
+   ],
+   "ambientEquator": [
+    0.000571,
+    0.000685,
+    0.000914
+   ],
+   "ambientGround": [
+    0.000343,
+    0.000343,
+    0.000457
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 7.8512,
+     "range": 4.32288,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 2.23422,
+     "range": 2.44963
+    },
+    "rimColdWindow": {
+     "intensity": 1.352,
+     "range": 3.7465,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 1.4736,
+     "range": 2.16144,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 2.5344,
+     "range": 2.59373
+    }
+   },
+   "emission": {
+    "crtScreen": 0.96257,
+    "neonLamp": 3.4078,
+    "meterFace": 0.3,
+    "dialStrip": 0.40383,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 2.68412
+   }
+  },
+  "summary": "死黑占比-0.393  亮部上限+0.202  细节密度-0.145  暗部下限+0.083"
+ },
+ {
+  "iteration": 3,
+  "score": 23.649,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.000594,
+    0.000743,
+    0.00104
+   ],
+   "ambientEquator": [
+    0.000371,
+    0.000445,
+    0.000594
+   ],
+   "ambientGround": [
+    0.000223,
+    0.000223,
+    0.000297
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 7.9605,
+     "range": 5.38415,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 1.32415,
+     "range": 3.05101
+    },
+    "rimColdWindow": {
+     "intensity": 1.23275,
+     "range": 4.66627,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 1.62579,
+     "range": 2.69207,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 2.88922,
+     "range": 3.23049
+    }
+   },
+   "emission": {
+    "crtScreen": 0.52968,
+    "neonLamp": 3.01756,
+    "meterFace": 0.3,
+    "dialStrip": 0.32242,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 3.17827
+   }
+  },
+  "summary": "死黑占比-0.399  细节密度-0.146  亮部上限+0.130  暗部下限+0.086"
+ },
+ {
+  "iteration": 4,
+  "score": 20.663,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.000386,
+    0.000483,
+    0.000676
+   ],
+   "ambientEquator": [
+    0.000241,
+    0.000289,
+    0.000386
+   ],
+   "ambientGround": [
+    0.000145,
+    0.000145,
+    0.000193
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 5.48544,
+     "range": 6.7275,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 1.6664,
+     "range": 3.81224
+    },
+    "rimColdWindow": {
+     "intensity": 1.14917,
+     "range": 5.8305,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 0.98511,
+     "range": 3.36374,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 1.94733,
+     "range": 4.0365
+    }
+   },
+   "emission": {
+    "crtScreen": 0.70121,
+    "neonLamp": 3.03673,
+    "meterFace": 0.3,
+    "dialStrip": 0.28044,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 3.87018
+   }
+  },
+  "summary": "死黑占比-0.399  亮部上限+0.152  细节密度-0.151  暗部下限+0.092"
+ },
+ {
+  "iteration": 5,
+  "score": 22.483,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.000251,
+    0.000314,
+    0.000439
+   ],
+   "ambientEquator": [
+    0.000157,
+    0.000188,
+    0.000251
+   ],
+   "ambientGround": [
+    9.4e-05,
+    9.4e-05,
+    0.000125
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 5.51096,
+     "range": 8.0,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 1.00387,
+     "range": 4.76339
+    },
+    "rimColdWindow": {
+     "intensity": 1.06505,
+     "range": 7.28521,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 1.0568,
+     "range": 4.20299,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 2.1518,
+     "range": 5.04361
+    }
+   },
+   "emission": {
+    "crtScreen": 0.43751,
+    "neonLamp": 2.93075,
+    "meterFace": 0.3,
+    "dialStrip": 0.23787,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 4.65041
+   }
+  },
+  "summary": "死黑占比-0.399  细节密度-0.153  暗部下限+0.088  亮部上限+0.104"
+ },
+ {
+  "iteration": 6,
+  "score": 20.393,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.000163,
+    0.000204,
+    0.000285
+   ],
+   "ambientEquator": [
+    0.000102,
+    0.000122,
+    0.000163
+   ],
+   "ambientGround": [
+    6.1e-05,
+    6.1e-05,
+    8.1e-05
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 4.13542,
+     "range": 8.0,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 1.35522,
+     "range": 5.95186
+    },
+    "rimColdWindow": {
+     "intensity": 1.06505,
+     "range": 8.0,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 0.68692,
+     "range": 5.25164,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 1.48044,
+     "range": 6.30199
+    }
+   },
+   "emission": {
+    "crtScreen": 0.61027,
+    "neonLamp": 3.08895,
+    "meterFace": 0.3,
+    "dialStrip": 0.21318,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 5.73117
+   }
+  },
+  "summary": "死黑占比-0.399  细节密度-0.154  暗部下限+0.097  平均亮度+0.055"
+ },
+ {
+  "iteration": 7,
+  "score": 20.803,
+  "config": {
+   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+   "ambientSky": [
+    0.000106,
+    0.000133,
+    0.000185
+   ],
+   "ambientEquator": [
+    6.6e-05,
+    7.9e-05,
+    0.000106
+   ],
+   "ambientGround": [
+    4e-05,
+    4e-05,
+    5.3e-05
+   ],
+   "fogDensity": 0.05,
+   "lights": {
+    "keyLampWarm": {
+     "intensity": 4.45243,
+     "range": 8.0,
+     "spotAngle": 78.0
+    },
+    "fillCrtGreen": {
+     "intensity": 0.82328,
+     "range": 7.43685
+    },
+    "rimColdWindow": {
+     "intensity": 0.9954,
+     "range": 8.0,
+     "spotAngle": 54.0
+    },
+    "bounceDeskWarm": {
+     "intensity": 0.82497,
+     "range": 6.56192,
+     "spotAngle": 72.0
+    },
+    "practicalNeon": {
+     "intensity": 1.76172,
+     "range": 7.87434
+    }
+   },
+   "emission": {
+    "crtScreen": 0.46618,
+    "neonLamp": 3.63013,
+    "meterFace": 0.3,
+    "dialStrip": 0.21318,
+    "frostedGlass": 0.85,
+    "labelPlate": 0.16,
+    "indicatorLamp": 6.90262
+   }
+  },
+  "summary": "死黑占比-0.399  细节密度-0.154  暗部下限+0.093  绿色占比-0.339"
+ }
+]

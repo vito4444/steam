@@ -1,0 +1,249 @@
+[
+ {
+  "shot": {
+   "path": "artifacts/screenshots/probe_front.png",
+   "width": 1920,
+   "height": 1080,
+   "luma_mean": 0.2347217533073342,
+   "luma_median": 0.1772392156862745,
+   "luma_p05": 0.07500392156862745,
+   "luma_p95": 0.6443458823529411,
+   "shadow_ratio": 0.02056884765625,
+   "highlight_ratio": 0.004835340711805556,
+   "contrast_rms": 0.18392041555512526,
+   "saturation_mean": 0.3713520436263105,
+   "saturation_p90": 0.6337448559670782,
+   "warm_ratio": 0.7082112630208334,
+   "cool_ratio": 0.0659518771701389,
+   "green_ratio": 0.04585096571180555,
+   "edge_density": 0.05349392361111111,
+   "dominant_hues": [
+    [
+     0,
+     0.3801
+    ],
+    [
+     30,
+     0.2567
+    ],
+    [
+     330,
+     0.0663
+    ],
+    [
+     210,
+     0.0547
+    ]
+   ]
+  },
+  "reference": {
+   "path": "docs/research/refshots/iron_nest_heavy_turret_simulator_0.jpg",
+   "width": 1920,
+   "height": 1080,
+   "luma_mean": 0.14843497395833335,
+   "luma_median": 0.09931999999999999,
+   "luma_p05": 0.0,
+   "luma_p95": 0.4881037254901961,
+   "shadow_ratio": 0.3996921115451389,
+   "highlight_ratio": 0.0016682942708333333,
+   "contrast_rms": 0.16234403784844997,
+   "saturation_mean": 0.6144606439997043,
+   "saturation_p90": 1.0,
+   "warm_ratio": 0.6452975802951388,
+   "cool_ratio": 0.012830946180555556,
+   "green_ratio": 0.2257622612847222,
+   "edge_density": 0.1947089301215278,
+   "dominant_hues": [
+    [
+     0,
+     0.3602
+    ],
+    [
+     30,
+     0.257
+    ],
+    [
+     60,
+     0.1964
+    ],
+    [
+     330,
+     0.0248
+    ]
+   ]
+  },
+  "profile": {
+   "description": "方案 A 深夜监听站：绿色 CRT 主导，暖黄台灯对比，冷蓝边缘点缀",
+   "saturation_mean": 0.45,
+   "warm_ratio": 0.22,
+   "green_ratio": 0.38,
+   "cool_ratio": 0.1
+  },
+  "composition_rows": [
+   {
+    "metric": "luma_mean",
+    "label": "平均亮度",
+    "note": "画面整体明暗",
+    "mine": 0.2347,
+    "target": 0.1484,
+    "diff": 0.0863,
+    "tolerance": 0.05,
+    "ok": false
+   },
+   {
+    "metric": "luma_p05",
+    "label": "暗部下限",
+    "note": "暗部是否死黑",
+    "mine": 0.075,
+    "target": 0.0,
+    "diff": 0.075,
+    "tolerance": 0.04,
+    "ok": false
+   },
+   {
+    "metric": "luma_p95",
+    "label": "亮部上限",
+    "note": "亮部是否够亮",
+    "mine": 0.6443,
+    "target": 0.4881,
+    "diff": 0.1562,
+    "tolerance": 0.06,
+    "ok": false
+   },
+   {
+    "metric": "shadow_ratio",
+    "label": "死黑占比",
+    "note": "亮度<0.06 的像素比例",
+    "mine": 0.0206,
+    "target": 0.3997,
+    "diff": -0.3791,
+    "tolerance": 0.08,
+    "ok": false
+   },
+   {
+    "metric": "highlight_ratio",
+    "label": "过曝占比",
+    "note": "亮度>0.90 的像素比例",
+    "mine": 0.0048,
+    "target": 0.0017,
+    "diff": 0.0032,
+    "tolerance": 0.04,
+    "ok": true
+   },
+   {
+    "metric": "contrast_rms",
+    "label": "对比度",
+    "note": "亮度标准差",
+    "mine": 0.1839,
+    "target": 0.1623,
+    "diff": 0.0216,
+    "tolerance": 0.04,
+    "ok": true
+   },
+   {
+    "metric": "edge_density",
+    "label": "细节密度",
+    "note": "可读结构的丰富程度",
+    "mine": 0.0535,
+    "target": 0.1947,
+    "diff": -0.1412,
+    "tolerance": 0.06,
+    "ok": false
+   }
+  ],
+  "composition_gaps": [
+   {
+    "label": "死黑占比",
+    "diff": -0.3791,
+    "tolerance": 0.08,
+    "severity": 4.74
+   },
+   {
+    "label": "亮部上限",
+    "diff": 0.1562,
+    "tolerance": 0.06,
+    "severity": 2.6
+   },
+   {
+    "label": "细节密度",
+    "diff": -0.1412,
+    "tolerance": 0.06,
+    "severity": 2.35
+   },
+   {
+    "label": "暗部下限",
+    "diff": 0.075,
+    "tolerance": 0.04,
+    "severity": 1.88
+   },
+   {
+    "label": "平均亮度",
+    "diff": 0.0863,
+    "tolerance": 0.05,
+    "severity": 1.73
+   }
+  ],
+  "palette_rows": [
+   {
+    "metric": "saturation_mean",
+    "label": "平均饱和度",
+    "note": "画面色彩浓度",
+    "mine": 0.3714,
+    "target": 0.45,
+    "diff": -0.0786,
+    "tolerance": 0.06,
+    "ok": false
+   },
+   {
+    "metric": "warm_ratio",
+    "label": "暖色占比",
+    "note": "红橙黄区域",
+    "mine": 0.7082,
+    "target": 0.22,
+    "diff": 0.4882,
+    "tolerance": 0.08,
+    "ok": false
+   },
+   {
+    "metric": "green_ratio",
+    "label": "绿色占比",
+    "note": "黄绿到青区域",
+    "mine": 0.0459,
+    "target": 0.38,
+    "diff": -0.3341,
+    "tolerance": 0.08,
+    "ok": false
+   },
+   {
+    "metric": "cool_ratio",
+    "label": "冷色占比",
+    "note": "青到紫蓝区域",
+    "mine": 0.066,
+    "target": 0.1,
+    "diff": -0.034,
+    "tolerance": 0.08,
+    "ok": true
+   }
+  ],
+  "palette_gaps": [
+   {
+    "label": "暖色占比",
+    "diff": 0.4882,
+    "tolerance": 0.08,
+    "severity": 6.1
+   },
+   {
+    "label": "绿色占比",
+    "diff": -0.3341,
+    "tolerance": 0.08,
+    "severity": 4.18
+   },
+   {
+    "label": "平均饱和度",
+    "diff": -0.0786,
+    "tolerance": 0.06,
+    "severity": 1.31
+   }
+  ]
+ }
+]

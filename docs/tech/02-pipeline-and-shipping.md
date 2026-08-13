@@ -1,0 +1,262 @@
+# 技术管线与 Steam 发行方案
+
+**日期**：2026-08-13
+**目标**：Windows x64，Steam 发行
+**引擎**：Unity 6000.0.81f1 LTS
+
+---
+
+## 1. 云端开发环境（已搭建并验证）
+
+### 1.1 硬件与系统条件
+
+| 项目 | 实测值 |
+|---|---|
+| 操作系统 | Ubuntu 24.04.4 LTS |
+| CPU | 4 核 |
+| 内存 | 15 GB |
+| 磁盘可用 | 235 GB |
+| **GPU** | **无。`/dev/dri` 不存在** |
+| 图形栈 | Xvfb + Mesa 25.2.8 llvmpipe（软件渲染），OpenGL 4.5 core |
+| 网络 | 无出站限制 |
+
+**无 GPU 是这个环境最重要的约束**，它决定了后面所有技术选择。
+
+### 1.2 已安装组件
+
+| 组件 | 版本 | 位置 |
+|---|---|---|
+| Unity Editor | 6000.0.81f1 (LTS) | `/opt/unity/6000.0.81f1/Editor/Unity` |
+| Windows Build Support (Mono) | 同上 | `.../Editor/Data/PlaybackEngines/WindowsStandaloneSupport` |
+| Unity 许可证 | Unity Personal，Assigned | `~/.config/unity3d/Unity/licenses/UnityEntitlementLicense.xml` |
+
+许可证实测输出：
+
+```
+Product Name: Unity Personal
+License Type: Assigned
+EntitlementGroupId: 15669746929978-UnityPersonal
+	com.unity.editor
+	com.unity.editor.headless
+```
+
+`com.unity.editor.headless` 这一项是关键——它是无头批处理构建的授权前提。
+
+### 1.3 一个必须知道的限制：Windows 只能用 Mono 后端
+
+Unity 官方**不提供** Linux 版的 Windows IL2CPP 构建模块。查询 Unity 官方发布接口，`6000.0.81f1` 的 Linux 编辑器可用模块只有：
+
+```
+linux-il2cpp     Linux Build Support (IL2CPP)
+mac-mono         Mac Build Support (Mono)
+windows-mono     Windows Build Support (Mono)
+windows-server   Windows Dedicated Server Build Support
+```
+
+没有 `windows-il2cpp`。
+
+**这意味着什么**：
+
+- 云端可以产出完全可运行、可发行的 Windows x64 版本，但脚本后端是 Mono。
+- Mono 后端发行到 Steam 完全合法且常见，但相比 IL2CPP 有两个劣势：托管代码可被反编译工具直接还原成接近源码的 C#；部分场景下运行时性能略低。
+- **建议**：日常迭代和自动化验证全部在云端用 Mono 构建；正式发行版在一台 Windows 机器上用 IL2CPP 重新构建。构建脚本已经把目标平台参数化，切换只需改一个参数。
+
+---
+
+## 2. 自动化管线（已跑通）
+
+### 2.1 三条命令
+
+| 脚本 | 作用 | 实测耗时 |
+|---|---|---|
+| `tools/build-probe-scene.sh` | 程序化重建美术探针场景 | 约 6 秒 |
+| `tools/capture.sh` | 无头渲染场景中所有机位并存 PNG | 约 6 秒（5 个 1920×1080 机位） |
+| `tools/build-windows.sh` | 交叉构建 Windows x64 可执行文件 | 约 16 秒 |
+
+Windows 构建实测产物：
+
+```
+Decoder.exe: PE32+ executable (GUI) x86-64, for MS Windows, 7 sections
+UnityPlayer.dll  34 MB
+Decoder_Data/    资源
+MonoBleedingEdge/ 运行时
+```
+
+### 2.2 截图为什么必须走 Xvfb
+
+Unity 的 `-nographics` 参数会完全跳过图形设备初始化，此时无法渲染，也就截不了图。所以截图必须在有 X display 的环境下执行。`tools/unity-env.sh` 提供了两个函数区分这两种场景：
+
+```bash
+run_unity_with_display()   # xvfb-run + LIBGL_ALWAYS_SOFTWARE=1，用于截图
+run_unity_headless()       # -nographics，用于构建、测试、资源导入，明显更快
+```
+
+llvmpipe 软件渲染在探针场景这种规模（约 400 个图元、5 盏实时灯）下渲染 1920×1080 只需约 1 秒/张，完全够用。场景复杂度上去之后会明显变慢，这是需要持续关注的成本项。
+
+### 2.3 画面自检：`tools/compare_frames.py`
+
+这是"看自己和目标的差距"的具体实现。它把截图与参考图放在同一套指标下量化对比，输出可直接据以调参的偏差表。
+
+**一个重要的设计决定：指标分成两组，对标不同的东西。**
+
+| 组 | 指标 | 对标对象 | 理由 |
+|---|---|---|---|
+| 构图与影调 | 平均亮度、暗部下限、亮部上限、死黑占比、过曝占比、对比度、细节密度 | 参考游戏的官方截图 | "一屏里有多少可读的东西""暗部压不压得住"是通用的画面质量问题，与题材无关，应该对标已被市场验证的同类画面 |
+| 配色 | 平均饱和度、暖色占比、绿色占比、冷色占比 | 项目自定义的配色档案 | 参考作品的配色服务的是它自己的题材。照抄 IRON NEST 的红色柴油朋克配色，只会把冷战监听站做成 IRON NEST 的复制品 |
+
+内置配色档案 `night-watch` 对应方案 A：
+
+```
+saturation_mean = 0.45   平均饱和度
+warm_ratio      = 0.22   暖色占比（暖黄台灯）
+green_ratio     = 0.38   绿色占比（CRT，标志色，应当主导）
+cool_ratio      = 0.10   冷色占比（窗光，边缘点缀）
+```
+
+用法：
+
+```bash
+python3 tools/compare_frames.py \
+  --shot artifacts/screenshots/probe_front.png \
+  --reference docs/research/refshots/iron_nest_heavy_turret_simulator_0.jpg \
+  --profile night-watch
+```
+
+### 2.4 光照自动配平：`tools/auto_tune_lighting.py`
+
+自检只告诉你差多少，不告诉你怎么改。这个脚本闭合了循环：读自检偏差 → 按启发式规则改写光照配置 → 重建场景 → 重新截图 → 重新自检 → 记录评分，迭代若干轮后把评分最好的参数写回配置。
+
+光照参数已从代码里抽到 `unity/Decoder/Assets/Config/lighting-probe.json`，脚本和人都可以改。
+
+**配平只动光照与自发光强度，不动几何、材质和机位**——那些属于设计决策，不该由自动脚本代劳。
+
+#### 一个实测发现：自动配平的能力边界
+
+第一轮跑 8 次迭代，结果是评分不降反升（14.7 → 20.8），最优解就是初始配置。逐轮看数据能看出原因：
+
+```
+第 1/8 轮  评分 14.744   死黑占比-0.296  细节密度-0.146  暗部下限+0.054  冷色占比+0.230
+第 4/8 轮  评分 23.649   死黑占比-0.399  细节密度-0.146  亮部上限+0.130  暗部下限+0.086
+第 8/8 轮  评分 20.803   死黑占比-0.399  细节密度-0.154  暗部下限+0.093  绿色占比-0.339
+```
+
+**死黑占比和细节密度这两项，八轮里几乎纹丝不动。** 原因是它们根本不由光照决定：
+
+- **细节密度**由几何数量和材质贴图决定。探针场景全是纯色图元，没有法线贴图、没有粗糙度变化、没有丝印文字和磨损，所以边缘梯度上不去。想提升只能加几何或上贴图。
+- **死黑占比**由构图决定。参考图里近 40% 的死黑来自舱壁与管道的自阴影，而探针场景的仪表墙是一整块正对光源的平面，没有可以投下阴影的结构。
+
+把够不着的指标留在目标函数里，只会让配平不断压暗全场去追一个它根本改不了的数字，反而把配色搞乱。所以这两项的权重已被显式设为 0，并在代码里写明原因。
+
+**这个发现本身比配平结果更有价值**：它把"画面还差在哪"从模糊的感觉变成了明确的分工——配色和曝光交给自动配平，信息密度和明暗层次必须靠人工做几何与材质设计。
+
+---
+
+## 3. 美术探针场景
+
+`unity/Decoder/Assets/Editor/ProbeSceneBuilder.cs` 用纯代码生成一个完整的工位场景，**零美术资源**。它的目的不是做最终关卡，而是回答一个立项阶段必须回答的问题：在没有美术团队、没有 GPU 的条件下，方案 A 的画面方向能不能成立。
+
+场景包含：
+
+- 封闭房间：混凝土地面、天花板、四壁、暴露线管
+- 三层设备机架：旋钮阵列（带底座刻度环和指示线）、拨杆开关、彩色指示灯（红/琥珀/绿）、标签牌、面板螺丝、面板凹缝、通风格栅、垂落的线缆
+- 中央 CRT 示波器与四个模拟表盘、横贯机架的频率刻度盘
+- 桌面：摊开的电报纸、一次性密码本、打字机（含键排）、台灯
+- 右墙：结霜窗户与窗框、传真机
+- 左墙：四抽屉档案柜（含黄铜把手）、插着图钉的边境地图
+- 五盏灯：暖黄台灯（主光）、绿色 CRT（填充）、冷蓝窗光（边缘）、桌面暖色反弹、氖灯余光
+- 五个机位：主视角、桌面俯视、左转、右转，外加一个用于诊断布局的俯视全景
+
+截图见 `artifacts/screenshots/`。
+
+**结论：方案 A 的画面方向成立。** 零美术资源、纯程序化图元，配合三光源配色，已经能生成一个一眼可辨认的"信号解码工位"。这证明该方案的美术成本结构对小团队是可承受的。
+
+---
+
+## 4. Steam 发行清单
+
+以下是把游戏送上 Steam 商店必须完成的事项。标注"待用户处理"的项目需要账号所有者本人操作，无法代劳。
+
+### 4.1 账号与费用
+
+| 项目 | 说明 | 状态 |
+|---|---|---|
+| Steamworks 开发者账号 | 注册 partner.steamgames.com | 待用户处理 |
+| Steam Direct 费用 | 每款游戏 100 美元，售出 1000 美元后可退回 | 待用户处理 |
+| 税务与银行信息 | 需要提交给 Valve，中国大陆开发者需填写 W-8BEN 表 | 待用户处理 |
+| 身份验证 | Valve 要求提供身份证明文件 | 待用户处理 |
+
+**注意**：从付款到商店页可以发布，Valve 有一个强制等待期（付款后 30 天才能发布，且商店页必须在发行前至少 2 周上线）。这个时间窗口需要提前规划。
+
+### 4.2 商店页素材
+
+| 素材 | 规格 | 备注 |
+|---|---|---|
+| 主要 Capsule | 616×353 | **转化漏斗的第一道闸，投入应当最高** |
+| 小型 Capsule | 462×174 | 搜索结果与列表中显示 |
+| 主 Capsule（大） | 1232×706 | 首页推荐位 |
+| 竖版 Capsule | 748×896 | 部分推荐位 |
+| 页面背景 | 1438×810 | |
+| 库藏图 | 600×900 | 玩家库中显示 |
+| 截图 | 至少 5 张，1920×1080 | 前 4 张最重要 |
+| 预告片 | 建议 30–90 秒 | 前 5 秒决定留存 |
+
+调研结论明确指出 Capsule 是开发者可控范围内影响最大的单一变量。方案 A 的 Capsule 构图建议见 `docs/concepts/01-game-concepts.md` A.7 节。
+
+### 4.3 构建上传
+
+Steam 使用 SteamPipe 上传构建。需要准备：
+
+- `app_build_<appid>.vdf`：构建配置
+- `depot_build_<depotid>.vdf`：仓库配置
+- `steamcmd` 或 `steamcmd.exe`：上传工具
+
+这部分可以完全自动化，接入现有的 `tools/build-windows.sh` 之后即可实现"一条命令从源码到 Steam 测试分支"。**待 App ID 确定后即可实现。**
+
+### 4.4 Steamworks SDK 集成
+
+只有在需要以下功能时才必须集成：成就、云存档、排行榜、创意工坊、Steam 输入、富存在状态。
+
+方案 A 建议至少集成：
+
+- **成就**：提升商店页完整度，玩家期待值高
+- **Steam 云存档**：单机叙事游戏的基本盘，玩家换机不丢档
+
+Unity 侧通过 Steamworks.NET 或 Facepunch.Steamworks 接入。这两个库都是 C# 绑定，与 Mono 后端兼容。
+
+### 4.5 发行前的硬性验收标准
+
+这些不是"最好有"，是"没有就不能发"：
+
+1. **全部音频线索有视觉等价物**（方案 A 特有）。音频驱动的玩法如果没有视觉替代，听障玩家完全无法游玩。
+2. **简体中文完整本地化**，包括 UI、剧情文本、商店页。
+3. **在真实 Windows 机器上完成一次完整通关测试**。云端 Mono 构建只验证了"能构建、能启动"，不能替代真机测试。
+4. **分辨率与窗口模式**：至少支持 1920×1080 / 2560×1440 / 3840×2160 与窗口/全屏切换。
+5. **退款窗口内的体验**：Steam 允许 2 小时内无理由退款。游戏必须在前 30 分钟内把核心玩法的乐趣讲清楚。
+6. **崩溃率**：发行前需要有一段时间的稳定性测试，Mono 后端的异常处理需要覆盖存档读写失败等边界。
+
+---
+
+## 5. 当前进度与缺口
+
+### 已完成并验证
+
+| 项目 | 证据 |
+|---|---|
+| Unity 6000.0.81f1 安装 | `Unity -version` 输出 `6000.0.81f1` |
+| Windows 构建模块安装 | `PlaybackEngines/WindowsStandaloneSupport/Variations/win64_player_nondevelopment_mono` 存在 |
+| Unity 许可证激活 | `Unity.Licensing.Client --showEntitlements` 输出 `Unity Personal / Assigned` |
+| Windows x64 交叉构建 | `Decoder.exe: PE32+ executable (GUI) x86-64, for MS Windows` |
+| 无头软件渲染截图 | `artifacts/screenshots/` 下 5 张 1920×1080 PNG |
+| 画面量化自检 | `artifacts/reports/probe_front_selfcheck.json` |
+| 光照自动配平循环 | `artifacts/tuning/history.json` |
+
+### 已知缺口
+
+| 缺口 | 原因 | 影响 |
+|---|---|---|
+| 细节密度约为参考图的 26%（0.050 vs 0.195） | 探针场景全是纯色图元，无贴图 | 画面观感与商业作品有明显差距，需要材质工作 |
+| 死黑占比约为参考图的 15%（0.060 vs 0.400） | 仪表墙是正对光源的平面，无自阴影结构 | 明暗层次不足，需要几何设计介入 |
+| Windows 构建只能用 Mono 后端 | Unity 不提供 Linux 版 Windows IL2CPP 模块 | 正式发行版需在 Windows 机器上重新构建 |
+| 未在真实 Windows 上运行过 | 云环境无 Windows | 只验证了可构建，未验证可运行 |
+| 无音频系统 | 方案未定，尚未开工 | 方案 A 的核心玩法依赖音频，是后续最大工作量 |
+| 无 Steamworks 集成 | 需要 App ID，待账号就绪 | 不影响开发，发行前必须完成 |

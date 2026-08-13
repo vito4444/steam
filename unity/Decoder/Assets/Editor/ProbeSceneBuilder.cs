@@ -21,6 +21,71 @@ namespace Decoder.EditorTools
     public static class ProbeSceneBuilder
     {
         private const string ScenePath = "Assets/Scenes/ArtProbe.unity";
+        private const string ConfigPath = "Assets/Config/lighting-probe.json";
+
+        [Serializable]
+        private class LightCfg
+        {
+            public float intensity = 1f;
+            public float range = 2f;
+            public float spotAngle = 60f;
+        }
+
+        [Serializable]
+        private class LightsCfg
+        {
+            public LightCfg keyLampWarm = new();
+            public LightCfg fillCrtGreen = new();
+            public LightCfg rimColdWindow = new();
+            public LightCfg bounceDeskWarm = new();
+            public LightCfg practicalNeon = new();
+        }
+
+        [Serializable]
+        private class EmissionCfg
+        {
+            public float crtScreen = 1f;
+            public float neonLamp = 3f;
+            public float meterFace = 0.3f;
+            public float dialStrip = 0.45f;
+            public float frostedGlass = 0.85f;
+            public float labelPlate = 0.16f;
+            public float indicatorLamp = 2f;
+        }
+
+        [Serializable]
+        private class ProbeLightingConfig
+        {
+            public float[] ambientSky = { 0.0016f, 0.0020f, 0.0028f };
+            public float[] ambientEquator = { 0.0010f, 0.0012f, 0.0016f };
+            public float[] ambientGround = { 0.0006f, 0.0006f, 0.0008f };
+            public float fogDensity = 0.05f;
+            public LightsCfg lights = new();
+            public EmissionCfg emission = new();
+        }
+
+        private static ProbeLightingConfig _cfg;
+
+        private static void LoadConfig()
+        {
+            var full = Path.Combine(Application.dataPath, "..", ConfigPath);
+            if (File.Exists(full))
+            {
+                _cfg = JsonUtility.FromJson<ProbeLightingConfig>(File.ReadAllText(full))
+                       ?? new ProbeLightingConfig();
+                Log($"已加载光照配置 {ConfigPath}");
+            }
+            else
+            {
+                _cfg = new ProbeLightingConfig();
+                Log($"未找到 {ConfigPath}，使用内置默认光照配置");
+            }
+        }
+
+        private static Color Rgb(IReadOnlyList<float> v, Color fallback)
+        {
+            return v is { Count: >= 3 } ? new Color(v[0], v[1], v[2]) : fallback;
+        }
 
         private static readonly Color WarmLamp = new(1.0f, 0.72f, 0.36f);
         private static readonly Color CrtGreen = new(0.30f, 1.0f, 0.45f);
@@ -39,6 +104,7 @@ namespace Decoder.EditorTools
             try
             {
                 Random.InitState(20260813);
+                LoadConfig();
 
                 var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 CreateMaterials();
@@ -110,14 +176,16 @@ namespace Decoder.EditorTools
 
         private static void BuildLightingEnvironment()
         {
+            // 环境光压到接近零。目标参考图（IRON NEST）有近 40% 的像素低于亮度 0.06，
+            // 那种"只有光源照到的地方才亮"的层次感来自极低的环境光，而不是后期调色。
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.035f, 0.040f, 0.055f);
-            RenderSettings.ambientEquatorColor = new Color(0.022f, 0.024f, 0.030f);
-            RenderSettings.ambientGroundColor = new Color(0.012f, 0.012f, 0.014f);
+            RenderSettings.ambientSkyColor = Rgb(_cfg.ambientSky, new Color(0.0016f, 0.0020f, 0.0028f));
+            RenderSettings.ambientEquatorColor = Rgb(_cfg.ambientEquator, new Color(0.0010f, 0.0012f, 0.0016f));
+            RenderSettings.ambientGroundColor = Rgb(_cfg.ambientGround, new Color(0.0006f, 0.0006f, 0.0008f));
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Exponential;
-            RenderSettings.fogColor = new Color(0.020f, 0.026f, 0.032f);
-            RenderSettings.fogDensity = 0.055f;
+            RenderSettings.fogColor = new Color(0.0012f, 0.0016f, 0.0020f);
+            RenderSettings.fogDensity = _cfg.fogDensity;
             RenderSettings.skybox = null;
         }
 
@@ -153,31 +221,97 @@ namespace Decoder.EditorTools
             var root = new GameObject("InstrumentWall").transform;
             root.position = new Vector3(0, 0, -1.7f);
 
-            var crtMat = MakeEmissive("CrtScreen", CrtGreen, 1.35f);
-            var meterMat = MakeEmissive("MeterFace", new Color(0.75f, 0.85f, 0.55f), 0.30f);
-            var neonMat = MakeEmissive("NeonLamp", NeonAmber, 3.0f);
+            var crtMat = MakeEmissive("CrtScreen", CrtGreen, _cfg.emission.crtScreen);
+            var meterMat = MakeEmissive("MeterFace", new Color(0.75f, 0.85f, 0.55f), _cfg.emission.meterFace);
+            var neonMat = MakeEmissive("NeonLamp", NeonAmber, _cfg.emission.neonLamp);
 
-            // 主机架：三层堆叠的设备箱
+            var labelMat = MakeEmissive("LabelPlate", new Color(0.80f, 0.78f, 0.66f), _cfg.emission.labelPlate);
+            var lampRed = MakeEmissive("LampRed", new Color(1.0f, 0.20f, 0.12f), _cfg.emission.indicatorLamp * 1.1f);
+            var lampAmber = MakeEmissive("LampAmberSmall", NeonAmber, _cfg.emission.indicatorLamp);
+            var lampGreen = MakeEmissive("LampGreenSmall", new Color(0.35f, 1.0f, 0.40f), _cfg.emission.indicatorLamp * 0.9f);
+            var indicatorMats = new[] { lampRed, lampAmber, lampGreen };
+
+            // 主机架：三层堆叠的设备箱。每层都做面板缝、螺丝、标签牌和指示灯，
+            // 因为自检显示细节密度是与目标差距最大的维度之一。
             for (var row = 0; row < 3; row++)
             {
                 var y = 0.95f + row * 0.52f;
                 AddBox(root, $"Rack_{row}", new Vector3(0, y, 0.12f),
                     new Vector3(2.60f, 0.48f, 0.34f), _steelOlive);
 
+                // 面板上下缘的凹缝：制造硬边缘，是提升可读结构最便宜的手段
+                AddBox(root, $"RackSeamTop_{row}", new Vector3(0, y + 0.235f, 0.292f),
+                    new Vector3(2.58f, 0.012f, 0.010f), _bakelite);
+                AddBox(root, $"RackSeamBottom_{row}", new Vector3(0, y - 0.235f, 0.292f),
+                    new Vector3(2.58f, 0.012f, 0.010f), _bakelite);
+
+                // 面板固定螺丝
+                for (var sx = 0; sx < 6; sx++)
+                {
+                    for (var sy = 0; sy < 2; sy++)
+                    {
+                        AddCylinder(root, $"Screw_{row}_{sx}_{sy}",
+                            new Vector3(-1.24f + sx * 0.496f, y - 0.205f + sy * 0.41f, 0.293f),
+                            new Vector3(0.011f, 0.004f, 0.011f),
+                            Quaternion.Euler(90, 0, 0), _brassKnob);
+                    }
+                }
+
                 // 每层面板上的旋钮阵列
                 var knobCount = row == 1 ? 7 : 5;
                 for (var i = 0; i < knobCount; i++)
                 {
                     var x = Mathf.Lerp(-1.12f, 1.12f, knobCount == 1 ? 0.5f : i / (float)(knobCount - 1));
+                    // 旋钮底座刻度环
+                    AddCylinder(root, $"KnobRing_{row}_{i}",
+                        new Vector3(x, y - 0.13f, 0.291f),
+                        new Vector3(0.072f, 0.004f, 0.072f),
+                        Quaternion.Euler(90, 0, 0), _steelDark);
                     AddCylinder(root, $"Knob_{row}_{i}",
-                        new Vector3(x, y - 0.13f, 0.295f),
+                        new Vector3(x, y - 0.13f, 0.297f),
                         new Vector3(0.052f, 0.022f, 0.052f),
                         Quaternion.Euler(90, 0, 0), _bakelite);
-                    // 旋钮指示线
                     AddBox(root, $"KnobMark_{row}_{i}",
-                        new Vector3(x, y - 0.09f, 0.318f),
+                        new Vector3(x, y - 0.09f, 0.320f),
                         new Vector3(0.006f, 0.028f, 0.004f), _brassKnob);
+                    // 旋钮下方的标签牌
+                    AddBox(root, $"KnobLabel_{row}_{i}",
+                        new Vector3(x, y - 0.196f, 0.293f),
+                        new Vector3(0.088f, 0.020f, 0.003f), labelMat);
                 }
+
+                // 拨杆开关排 + 指示灯：小面积高对比，同时补暖色
+                for (var i = 0; i < 8; i++)
+                {
+                    var x = -1.18f + i * 0.338f;
+                    AddBox(root, $"ToggleBase_{row}_{i}", new Vector3(x, y + 0.115f, 0.293f),
+                        new Vector3(0.030f, 0.030f, 0.006f), _steelDark);
+                    AddCylinder(root, $"ToggleStick_{row}_{i}",
+                        new Vector3(x, y + 0.132f, 0.305f),
+                        new Vector3(0.006f, 0.020f, 0.006f),
+                        Quaternion.Euler(i % 3 == 0 ? -28f : 22f, 0, 0), _brassKnob);
+                    AddSphere(root, $"Indicator_{row}_{i}",
+                        new Vector3(x + 0.052f, y + 0.115f, 0.300f),
+                        Vector3.one * 0.017f, indicatorMats[(row * 3 + i) % indicatorMats.Length]);
+                }
+
+                // 通风格栅：密集平行线，边缘密度贡献大
+                for (var g = 0; g < 9; g++)
+                {
+                    AddBox(root, $"Vent_{row}_{g}",
+                        new Vector3(1.14f, y - 0.09f + g * 0.019f, 0.292f),
+                        new Vector3(0.30f, 0.008f, 0.008f), _bakelite);
+                }
+            }
+
+            // 机架之间的线缆：从设备墙垂下来，打断大块平面
+            for (var c = 0; c < 5; c++)
+            {
+                var x = -0.95f + c * 0.48f;
+                AddCylinder(root, $"Cable_{c}",
+                    new Vector3(x, 0.55f + (c % 2) * 0.12f, 0.30f),
+                    new Vector3(0.010f, 0.22f + (c % 3) * 0.05f, 0.010f),
+                    Quaternion.Euler(0, 0, (c - 2) * 5f), _bakelite);
             }
 
             // 中央 CRT 示波器：画面的绿色光源本体
@@ -206,7 +340,7 @@ namespace Decoder.EditorTools
 
             // 频率刻度盘：横贯机架的长条
             AddBox(root, "DialStrip", new Vector3(0, 1.62f, 0.298f), new Vector3(1.90f, 0.10f, 0.010f),
-                MakeEmissive("DialStripFace", new Color(0.85f, 0.78f, 0.45f), 0.45f));
+                MakeEmissive("DialStripFace", new Color(0.85f, 0.78f, 0.45f), _cfg.emission.dialStrip));
             AddBox(root, "DialCursor", new Vector3(0.24f, 1.62f, 0.312f), new Vector3(0.008f, 0.13f, 0.004f), _brassKnob);
         }
 
@@ -262,7 +396,7 @@ namespace Decoder.EditorTools
         {
             var root = new GameObject("WindowWall").transform;
 
-            var frostMat = MakeEmissive("FrostedGlass", ColdWindow, 0.85f);
+            var frostMat = MakeEmissive("FrostedGlass", ColdWindow, _cfg.emission.frostedGlass);
             AddBox(root, "WindowGlass", new Vector3(2.24f, 1.62f, 0.35f), new Vector3(0.02f, 0.85f, 1.15f), frostMat);
             AddBox(root, "WindowFrameT", new Vector3(2.22f, 2.08f, 0.35f), new Vector3(0.05f, 0.07f, 1.25f), _steelDark);
             AddBox(root, "WindowFrameB", new Vector3(2.22f, 1.16f, 0.35f), new Vector3(0.05f, 0.07f, 1.25f), _steelDark);
@@ -306,29 +440,43 @@ namespace Decoder.EditorTools
             var root = new GameObject("Lighting").transform;
 
             // 1. 台灯：暖黄，锥形，画面的视觉中心。锥角收紧，让光斑只落在桌面纸张上。
-            var lamp = NewLight(root, "KeyLamp_Warm", LightType.Spot, WarmLamp, 4.2f, 2.3f);
+            var lampCfg = _cfg.lights.keyLampWarm;
+            var lamp = NewLight(root, "KeyLamp_Warm", LightType.Spot, WarmLamp, lampCfg.intensity, lampCfg.range);
             lamp.transform.localPosition = new Vector3(-0.84f, 1.16f, -0.78f);
-            lamp.transform.localRotation = Quaternion.Euler(62f, 22f, 0f);
-            lamp.spotAngle = 78f;
+            lamp.transform.localRotation = Quaternion.Euler(58f, 202f, 0f);
+            lamp.spotAngle = lampCfg.spotAngle;
             lamp.innerSpotAngle = 26f;
             lamp.shadows = LightShadows.Soft;
 
             // 2. CRT：绿色，只照亮设备墙前一小段距离。范围压到 1.5m 以内，
             //    否则整间混凝土房都会被染绿，失去三色分区。
-            var crt = NewLight(root, "FillLight_CrtGreen", LightType.Point, CrtGreen, 1.5f, 1.45f);
+            var crtCfg = _cfg.lights.fillCrtGreen;
+            var crt = NewLight(root, "FillLight_CrtGreen", LightType.Point, CrtGreen, crtCfg.intensity, crtCfg.range);
             crt.transform.localPosition = new Vector3(0f, 1.94f, -1.30f);
             crt.shadows = LightShadows.None;
 
             // 3. 窗光：冷蓝，从右侧斜入，负责把右半边从死黑里拉出来
-            var window = NewLight(root, "RimLight_ColdWindow", LightType.Spot, ColdWindow, 3.6f, 4.2f);
+            var winCfg = _cfg.lights.rimColdWindow;
+            var window = NewLight(root, "RimLight_ColdWindow", LightType.Spot, ColdWindow, winCfg.intensity, winCfg.range);
             window.transform.localPosition = new Vector3(2.10f, 1.74f, 0.30f);
             window.transform.localRotation = Quaternion.Euler(12f, -112f, 0f);
-            window.spotAngle = 76f;
-            window.innerSpotAngle = 18f;
+            window.spotAngle = winCfg.spotAngle;
+            window.innerSpotAngle = 12f;
             window.shadows = LightShadows.Soft;
 
+            // 桌面反弹光：真实房间里台灯照亮桌面后会把暖色反射到面前的设备上。
+            // 没有这一盏，机架下半部分会完全被 CRT 的绿色吃掉，画面失去冷暖对比。
+            var bounceCfg = _cfg.lights.bounceDeskWarm;
+            var bounce = NewLight(root, "Bounce_DeskWarm", LightType.Spot, WarmLamp, bounceCfg.intensity, bounceCfg.range);
+            bounce.transform.localPosition = new Vector3(-0.30f, 0.86f, -1.05f);
+            bounce.transform.localRotation = Quaternion.Euler(-32f, 186f, 0f);
+            bounce.spotAngle = bounceCfg.spotAngle;
+            bounce.innerSpotAngle = 40f;
+            bounce.shadows = LightShadows.None;
+
             // 补：氖灯排的余光，避免机架上沿死黑
-            var neon = NewLight(root, "Practical_NeonSpill", LightType.Point, NeonAmber, 0.55f, 1.1f);
+            var neonCfg = _cfg.lights.practicalNeon;
+            var neon = NewLight(root, "Practical_NeonSpill", LightType.Point, NeonAmber, neonCfg.intensity, neonCfg.range);
             neon.transform.localPosition = new Vector3(0f, 2.40f, -1.32f);
             neon.shadows = LightShadows.None;
         }
@@ -357,7 +505,7 @@ namespace Decoder.EditorTools
             // Unity 相机默认朝 +Z，所以主视角的 yaw 是 180。
             var seat = new Vector3(0f, 1.24f, -0.16f);
 
-            AddShot(root, "probe_front", seat, new Vector3(-6f, 180f, 0f), 66f,
+            AddShot(root, "probe_front", seat, new Vector3(2f, 180f, 0f), 68f,
                 "docs/research/refshots/iron_nest_heavy_turret_simulator_0.jpg", isMain: true);
             AddShot(root, "probe_desk", seat, new Vector3(42f, 180f, 0f), 62f,
                 "docs/research/refshots/papers_please_0.jpg");
@@ -380,7 +528,7 @@ namespace Decoder.EditorTools
             cam.nearClipPlane = 0.03f;
             cam.farClipPlane = 40f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.010f, 0.013f, 0.017f);
+            cam.backgroundColor = new Color(0.0f, 0.0f, 0.0f);
             cam.allowHDR = true;
             cam.enabled = isMain;
             if (isMain)
