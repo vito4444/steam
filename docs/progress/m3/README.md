@@ -196,6 +196,31 @@ from every mistake they had already made. It was checked by mutation: clearing
 the pending queue on restore turns it red at exactly the night the deduction was
 due, and reverting turns it green.
 
+### The binder was not readable
+
+Found by looking at the screenshot rather than by any test. Each criterion was
+printed as one line truncated at forty-six characters, so a player could not read
+the rule they were about to be judged against — and the entire game is deciding
+whether a subject matches a written criterion.
+
+Five criteria to a page now, in full, wrapped at word boundaries with the wrapped
+lines alongside the criterion number rather than under it so a page of rules
+stays a list. Clicking the binder while leaning over it turns the page, which is
+what the leafing interaction was always for.
+
+| page 1 | page 2 |
+|---|---|
+| ![](shots/manual.png) | ![](shots/manual_page2.png) |
+
+Two mistakes had to be walked back. The line width was guessed from an assumed
+advance of 0.51 em and every line ran off the paper; DejaVu Sans Mono advances
+0.602 em, so at 10 mm on a 272 mm page the budget is 42 characters. And the
+binder was too dark to read at all — fallout from narrowing the desk lamp earlier
+in this milestone to keep it off the nearest monitor's face. The monitors are
+unlit now and cannot be washed out by anything, so that reason had already
+evaporated. The cone is wider than it ever was, and post exposure drops from
+−0.62 to −0.76 to keep the frame at the concept's level.
+
 ### A clock, so that asking costs something
 
 Moving the pause and the layered voice off the monitors was supposed to make
@@ -290,6 +315,12 @@ withheld, 0 errors logged.
 | edit-mode tests | 84 passing |
 | self-check errors | 0 |
 | self-check run | 6 nights, 96 vehicles, 54 credits withheld, save resumed |
+| Windows player | 103 MB, PE32+ x86-64, cross-compiled from Linux |
+| Linux player | 99 MB |
+
+`tools/build/build.sh` produces both. Windows is Mono rather than IL2CPP, which
+is not a choice: IL2CPP for a Windows target needs a Windows host, and this
+machine is Linux. That has to change before release.
 
 ## What is still missing
 
@@ -306,9 +337,9 @@ Reassessed from M2's list.
    thirty-first simply does not start. *Medium.*
 4. **Props still have no surface detail** beyond the grunge-mapped large
    surfaces. *Medium.*
-5. **The manual cannot be leafed through.** The leafing interaction went in for
-   the post; the binder still shows only the criteria in force, so a player
-   cannot check what a superseded revision said. *Medium.*
+5. **The binder shows every page including superseded ones, but does not mark
+   which are in force.** A player has to infer it from the revision number.
+   *Medium.*
 6. **The monitors are flat quads.** No curved glass, no barrel distortion. *Low.*
 7. **Legacy input, not the Input System.** No rebinding. *Low.*
 8. **Validated only on a software rasteriser.** Post-processing, shadow filtering
