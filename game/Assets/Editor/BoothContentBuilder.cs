@@ -49,7 +49,7 @@ namespace Monster.EditorTools
                 Light[] headlights, Light[] taillights,
                 Transform permitMesh, Transform permitAnchor,
                 Transform manualMesh, Transform manualAnchor,
-                Transform logAnchor, Transform mailAnchor,
+                Transform logAnchor, Transform mailAnchor, Transform clockAnchor,
                 IReadOnlyList<Transform> screenAnchors,
                 IReadOnlyList<Transform> switchMeshes,
                 IReadOnlyList<Transform> switchLabelAnchors,
@@ -68,6 +68,7 @@ namespace Monster.EditorTools
                 ManualAnchor = manualAnchor;
                 LogAnchor = logAnchor;
                 MailAnchor = mailAnchor;
+                ClockAnchor = clockAnchor;
                 ScreenAnchors = screenAnchors;
                 SwitchMeshes = switchMeshes;
                 SwitchLabelAnchors = switchLabelAnchors;
@@ -87,6 +88,7 @@ namespace Monster.EditorTools
             public Transform ManualAnchor { get; }
             public Transform LogAnchor { get; }
             public Transform MailAnchor { get; }
+            public Transform ClockAnchor { get; }
             public IReadOnlyList<Transform> ScreenAnchors { get; }
             public IReadOnlyList<Transform> SwitchMeshes { get; }
             public IReadOnlyList<Transform> SwitchLabelAnchors { get; }
@@ -118,6 +120,15 @@ namespace Monster.EditorTools
 
             var presenter = new GameObject("Booth").AddComponent<BoothPresenter>();
             presenter.Bind(permit, biometrics, cabin, intercom, manual, logbook, mail);
+
+            if (handles.ClockAnchor != null)
+            {
+                var face = Text(handles.ClockAnchor, "Text", font, Mm(30f), PhosphorColour,
+                    new Vector2(0.150f, 0.042f), Vector3.zero, TextAlignmentOptions.Center,
+                    FontStyles.Bold);
+                face.text = "22:00";
+                presenter.BindClock(face);
+            }
 
             var stage = presenter.gameObject.AddComponent<CheckpointStage>();
             stage.Rig(handles.StageBarrierArm, handles.StageVehicle, handles.StageSubject,

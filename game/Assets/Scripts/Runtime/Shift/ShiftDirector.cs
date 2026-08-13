@@ -102,6 +102,22 @@ namespace Monster.Shift
             }
         }
 
+        /// <summary>Twenty-two hundred to oh six hundred, in game minutes.
+        ///
+        /// The clock exists so that asking a question costs something. Without it the
+        /// interrogation is free again -- four keys the player presses on every vehicle
+        /// because there is no reason not to -- and the whole point of moving those two
+        /// criteria off the monitors is lost.
+        ///
+        /// The numbers are set so that the last night is tight and the first is not. Night
+        /// thirty queues twenty-six vehicles at eighteen minutes each, which is 468 of the
+        /// 480 minutes available: clearing it leaves time for one question. Night one queues
+        /// fifteen, which leaves time for twenty-three.</summary>
+        public const int MinutesPerNight = 480;
+
+        public const int MinutesPerVehicle = 18;
+        public const int MinutesPerQuestion = 9;
+
         public int CampaignSeed { get; }
         public int ShiftIndex { get; }
         public CriteriaManual Manual { get; }
@@ -113,7 +129,36 @@ namespace Monster.Shift
         /// <summary>How many vehicles turn up tonight. A save records verdicts and replays
         /// them, and this is what it checks them against.</summary>
         public int QueueLength => _queue.Count;
-        public bool IsFinished => _position >= _queue.Count;
+        public int MinutesSpent { get; private set; }
+        public int MinutesRemaining => Math.Max(0, MinutesPerNight - MinutesSpent);
+        public bool IsOutOfTime => MinutesRemaining < MinutesPerVehicle;
+
+        /// <summary>A night ends when the queue runs dry or when there is no longer time to
+        /// deal with another vehicle, whichever comes first.</summary>
+        public bool IsFinished => _position >= _queue.Count || IsOutOfTime;
+
+        /// <summary>The clock on the wall, as the player reads it. Starts at 22:00.</summary>
+        public string TimeOfDay
+        {
+            get
+            {
+                var minutes = (22 * 60 + MinutesSpent) % (24 * 60);
+                return $"{minutes / 60:00}:{minutes % 60:00}";
+            }
+        }
+
+        /// <summary>Charges the clock for something the player did that was not a decision.
+        /// Returns false if there was not time for it.</summary>
+        public bool Spend(int minutes)
+        {
+            if (minutes <= 0 || MinutesRemaining < minutes)
+            {
+                return false;
+            }
+
+            MinutesSpent += minutes;
+            return true;
+        }
 
         public GeneratedSubject Current => IsFinished ? _queue[^1] : _queue[_position];
 
@@ -144,6 +189,7 @@ namespace Monster.Shift
 
             _decisions.Add(decision);
             _position++;
+            MinutesSpent += MinutesPerVehicle;
 
             DecisionMade?.Invoke(decision);
             return decision;

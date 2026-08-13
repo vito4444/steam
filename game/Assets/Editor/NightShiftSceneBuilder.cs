@@ -72,6 +72,7 @@ namespace Monster.EditorTools
         private static Transform _manualAnchor;
         private static Transform _logAnchor;
         private static Transform _mailAnchor;
+        private static Transform _clockAnchor;
         private static Vector3 _lampOrigin;
         private static Vector3 _lampTarget;
         private static Transform _barrierArm;
@@ -98,6 +99,7 @@ namespace Monster.EditorTools
             _manualAnchor = null;
             _logAnchor = null;
             _mailAnchor = null;
+            _clockAnchor = null;
             _lampOrigin = Vector3.zero;
             _lampTarget = Vector3.zero;
             _barrierArm = null;
@@ -125,7 +127,7 @@ namespace Monster.EditorTools
                 _barrierArm, _vehicleRoot, _subjectRoot, Headlights.ToArray(), Taillights.ToArray(),
                 _permitPaper, _permitAnchor,
                 _manualPages, _manualAnchor,
-                _logAnchor, _mailAnchor,
+                _logAnchor, _mailAnchor, _clockAnchor,
                 ScreenAnchors, Switches, SwitchLabelAnchors,
                 IntercomKeys, IntercomKeyLabels,
                 camera.gameObject));
@@ -396,6 +398,19 @@ namespace Monster.EditorTools
                     new Vector3(0.020f + i * 0.075f, 0.019f, -0.070f),
                     Quaternion.Euler(90f, 0f, 0f)));
             }
+
+            // The shift clock, mounted on the desk beside the switches. It is the only
+            // thing in the booth that tells the player they are running out of anything.
+            var clock = new GameObject("ShiftClock").transform;
+            clock.SetParent(parent, false);
+            clock.SetPositionAndRotation(new Vector3(0.36f, DeskTopY + 0.030f, 0.72f),
+                Quaternion.Euler(-24f, -8f, 0f));
+            Box("Case", clock, Vector3.zero, new Vector3(0.190f, 0.060f, 0.096f), darkPlastic);
+            Box("Face", clock, new Vector3(0f, 0.006f, -0.049f), new Vector3(0.150f, 0.044f, 0.006f),
+                Mat("ClockFace", new Color(0.020f, 0.030f, 0.024f), 0.5f, 0f,
+                    new Color(0.020f, 0.070f, 0.034f)));
+            _clockAnchor = Anchor("ClockText", clock, new Vector3(0f, 0.006f, -0.054f),
+                Quaternion.identity);
 
             // Intercom keypad. Deliberately across the desk from the verdict switches:
             // one row asks a question and the other ends someone's night.

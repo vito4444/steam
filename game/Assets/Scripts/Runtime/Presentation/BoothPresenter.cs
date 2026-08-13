@@ -28,6 +28,7 @@ namespace Monster.Presentation
         [SerializeField] private PrintedSurface manual;
         [SerializeField] private PrintedSurface logbook;
         [SerializeField] private PrintedSurface mailTray;
+        [SerializeField] private TMPro.TMP_Text clock;
 
         // Serialised, not subscribed at edit time. C# event subscriptions do not survive
         // serialisation, so wiring the switches when the scene was generated left every
@@ -71,6 +72,8 @@ namespace Monster.Presentation
             mailTray = mailSurface;
         }
 
+        public void BindClock(TMPro.TMP_Text face) => clock = face;
+
         /// <summary>Puts a question through the glass. The reply lands after however long
         /// this particular bearer takes to start answering, which is the whole point: the
         /// pause is felt in real time as well as printed, and asking costs time the player
@@ -78,6 +81,12 @@ namespace Monster.Presentation
         public bool Ask(Question question)
         {
             if (_director == null || _director.IsFinished || _pendingReply != null)
+            {
+                return false;
+            }
+
+            // The clock is the whole reason asking is a decision rather than a habit.
+            if (!_director.Spend(ShiftDirector.MinutesPerQuestion))
             {
                 return false;
             }
@@ -91,6 +100,7 @@ namespace Monster.Presentation
             var subject = _director.Current.Attributes;
             var reply = Interrogation.Ask(subject, question);
 
+            RefreshClock();
             Show(intercom, DocumentBuilder.IntercomWaiting(question));
             QuestionAsked?.Invoke(question);
 
@@ -175,8 +185,19 @@ namespace Monster.Presentation
                 return true;
             }
 
+            RefreshClock();
             RefreshDesk();
             return true;
+        }
+
+        private void RefreshClock()
+        {
+            if (clock == null || _director == null)
+            {
+                return;
+            }
+
+            clock.text = _director.TimeOfDay;
         }
 
         private void Start()
@@ -305,6 +326,7 @@ namespace Monster.Presentation
 
         private void OpenShift()
         {
+            RefreshClock();
             RefreshDesk();
             RefreshManual();
             RefreshLogbook(null);
