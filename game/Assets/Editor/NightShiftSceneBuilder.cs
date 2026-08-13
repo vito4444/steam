@@ -229,7 +229,8 @@ namespace Monster.EditorTools
 
             // A shallow steel frame around the aperture reads as "this is a window" rather
             // than "this wall is missing a piece".
-            var steel = Mat("Steel", new Color(0.155f, 0.158f, 0.160f), 0.42f, 0.6f);
+            var steel = Mat("Steel", new Color(0.155f, 0.158f, 0.160f), 0.42f, 0.6f, null,
+                Grunge("Grunge_Steel", 256, 2.5f, 1.40f, 0.0f, 3319), 1.2f);
             const float frameDepth = 0.05f;
             var frameZ = RoomMaxZ - 0.01f;
             Box("Frame_Bottom", parent, new Vector3(0f, WindowMinY, frameZ),
@@ -286,18 +287,27 @@ namespace Monster.EditorTools
 
         private static void BuildDeskEquipment(Transform parent)
         {
-            var crtShell = Mat("CRTShell", new Color(0.215f, 0.205f, 0.170f), 0.22f);
+            // Every one of these carries a wear map now. Without it the props were flat
+            // colours sitting on a desk that had grunge, which read as toys on a table: the
+            // eye sees the surface variation on the big planes and its absence on the small
+            // objects, and decides the small objects are not real.
+            var crtShell = Mat("CRTShell", new Color(0.215f, 0.205f, 0.170f), 0.22f, 0f, null,
+                Grunge("Grunge_Shell", 256, 2.8f, 1.35f, 0.0f, 6631), 1.4f);
 
             // Unlit, because a phosphor screen emits and does not reflect. As a Lit
             // material the desk lamp fell across the nearest monitor and washed its face
             // from green to pale yellow, which no CRT has ever done.
             var crtScreen = UnlitMat("CRTScreen", new Color(0.030f, 0.150f, 0.064f));
-            var brass = Mat("Brass", new Color(0.44f, 0.34f, 0.15f), 0.38f, 0.70f);
+            var brass = Mat("Brass", new Color(0.44f, 0.34f, 0.15f), 0.38f, 0.70f, null,
+                Grunge("Grunge_Brass", 256, 2.6f, 1.55f, 0.0f, 7717), 1.3f);
             var paper = Mat("Paper", new Color(0.660f, 0.636f, 0.552f), 0.05f, 0f, null,
                 Grunge("Grunge_Paper", 256, 3.0f, 0.55f, 0.0f, 2231), 1f);
-            var darkPlastic = Mat("DarkPlastic", new Color(0.055f, 0.055f, 0.062f), 0.28f);
-            var enamel = Mat("Enamel", new Color(0.700f, 0.690f, 0.650f), 0.52f);
-            var wood = Mat("Wood", new Color(0.220f, 0.135f, 0.075f), 0.18f);
+            var darkPlastic = Mat("DarkPlastic", new Color(0.075f, 0.074f, 0.082f), 0.28f, 0f, null,
+                Grunge("Grunge_Plastic", 256, 2.4f, 1.20f, 0.0f, 4127), 1.2f);
+            var enamel = Mat("Enamel", new Color(0.700f, 0.690f, 0.650f), 0.52f, 0f, null,
+                Grunge("Grunge_Enamel", 256, 2.2f, 1.45f, 0.0f, 9203), 1.0f);
+            var wood = Mat("Wood", new Color(0.220f, 0.135f, 0.075f), 0.18f, 0f, null,
+                Grunge("Grunge_Wood", 256, 7.0f, 0.60f, 0.0f, 5519), 2.0f);
 
             var monitors = new GameObject("Monitors").transform;
             monitors.SetParent(parent, false);
@@ -519,7 +529,11 @@ namespace Monster.EditorTools
 
         private static void BuildLamp(Transform parent)
         {
-            var lampMat = Mat("LampEnamel", new Color(0.400f, 0.120f, 0.080f), 0.45f, 0.2f);
+            // Chipped, and duller than the first pass, which was a saturated orange disc
+            // that read as painted plastic rather than as a lamp somebody has owned for
+            // twenty years.
+            var lampMat = Mat("LampEnamel", new Color(0.330f, 0.108f, 0.076f), 0.38f, 0.2f, null,
+                Grunge("Grunge_LampEnamel", 256, 2.2f, 1.70f, 0.0f, 8461), 1.1f);
             var lampInner = Mat("LampInner", new Color(0.02f, 0.02f, 0.02f), 0.1f, 0f,
                 new Color(1.00f, 0.72f, 0.38f) * 2.6f);
 
@@ -571,9 +585,9 @@ namespace Monster.EditorTools
                 Quaternion.Euler(90f, 0f, 0f));
             fill.type = LightType.Spot;
             fill.color = new Color(1.00f, 0.83f, 0.62f);
-            fill.intensity = 5.2f;
-            fill.range = 4.2f;
-            fill.spotAngle = 120f;
+            fill.intensity = 7.4f;
+            fill.range = 5.0f;
+            fill.spotAngle = 142f;
             fill.innerSpotAngle = 40f;
             fill.shadows = LightShadows.None;
 

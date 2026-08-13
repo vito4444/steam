@@ -139,7 +139,7 @@ namespace Monster.EditorTools
 
             var colorAdjustments = Add<ColorAdjustments>();
             colorAdjustments.postExposure.Override(-0.76f);
-            colorAdjustments.contrast.Override(9f);
+            colorAdjustments.contrast.Override(5.5f);
             colorAdjustments.saturation.Override(-9f);
             colorAdjustments.colorFilter.Override(new Color(1.0f, 0.97f, 0.93f));
 
