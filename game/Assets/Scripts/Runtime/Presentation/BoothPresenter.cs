@@ -248,6 +248,16 @@ namespace Monster.Presentation
                     ShowMail(statement.Mail);
                 }
 
+                // The report comes to the player rather than waiting to be found. When a
+                // night ends the screens go dark and the window empties, and playing it
+                // through by hand the booth just sat there looking broken: the one thing
+                // that says what happened, and what to do next, was a sheet of paper too
+                // far away to read.
+                if (interactor != null && logControls.Count > 0)
+                {
+                    interactor.FocusOn(logControls[0]);
+                }
+
                 return true;
             }
 
@@ -394,6 +404,14 @@ namespace Monster.Presentation
 
         private void OpenShift()
         {
+            // Whatever the player was reading belongs to last night. Without this, signing
+            // the log left them still staring at it, now showing a fresh and empty duty log,
+            // with no indication that a new night had started behind their head.
+            if (interactor != null)
+            {
+                interactor.Release();
+            }
+
             RefreshClock();
             RefreshDesk();
             RefreshManual();

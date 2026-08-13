@@ -85,6 +85,29 @@ the deductions that actually arrived rather than the ones still in the post, sin
 the office is four nights slow and a run can finish owing more than it was ever
 shown.
 
+## A whole night, by hand
+
+Played through in the built player: night one opens on the post orders, the queue
+works down vehicle by vehicle, the clock advances eighteen minutes a car, the queue
+empties in the small hours, and the morning report lands on the log.
+
+![The morning report](shots/06_morning_report.png)
+
+It reports what you were paid and what was taken off, and says nothing whatever
+about whether you were right. Signing it starts night two: clock back to 22:00,
+screens live, a fresh permit on the desk, and a new set of headlights on the road.
+
+Two things came out of doing this rather than trusting the self-check.
+
+When a night ended the screens went dark, the window emptied and the booth just sat
+there looking broken. The one sheet that said what had happened, and what to do
+next, was face-up on the desk and too far away to read. The report is put in front
+of the player now, the same way the binder is on a first night.
+
+And signing the log left the player still staring at it, now showing a fresh and
+empty duty log for a night that had already started behind their head. Opening a
+shift releases whatever was being read, because it belonged to the night before.
+
 ## The picture
 
 ![The booth](shots/05_booth_idle.png)
@@ -162,9 +185,9 @@ are half a pixel-hair different from what a player sees.
 
 ## Gaps
 
-- **Nobody has played a whole night.** This session played the opening of one, by
-  hand, and confirmed the loop. Fifteen vehicles start to finish, with the clock
-  running out, has only ever been done by the scripted self-check.
+- **No night has been played out under the clock.** A full night has now been played
+  by hand, but its queue emptied in the small hours. A night that runs to 06:00 with
+  vehicles still waiting has only ever happened in the scripted self-check.
 - **Monitors are flat quads.** No curvature, no glass, no reflection of the room.
 - **The lamp base cannot take a texture.** Cylinder cap UVs; see above.
 - **Legacy input, not the Input System.** Works, but rebinding is not possible and
