@@ -14,6 +14,16 @@ namespace Monster.Interaction
         private DeskInteractable _hovered;
         private DeskInteractable _focused;
 
+        /// <summary>Where look and click come from.
+        ///
+        /// Built in Awake rather than assigned by the scene generator. A plain property is
+        /// not serialised, so the generator's assignment existed only inside the editor and
+        /// every build shipped with the null source: no looking, no clicking, nothing. The
+        /// automated self-check never saw it because it drives the camera and the presenter
+        /// directly and never goes through here.
+        ///
+        /// Still settable, because the self-check now installs a scripted source to prove
+        /// this path works at all.</summary>
         public IInputSource Input { get; set; } = new NullInputSource();
 
         public DeskInteractable Hovered => _hovered;
@@ -23,6 +33,27 @@ namespace Monster.Interaction
         {
             _camera = GetComponent<BoothCamera>();
             _view = GetComponent<Camera>();
+
+            if (Input is NullInputSource)
+            {
+                Input = new LegacyInputSource();
+            }
+        }
+
+        private void OnEnable()
+        {
+            // Without this the operating system's pointer sits on top of the booth and
+            // every player assumes it is what they are aiming with. The ray comes from the
+            // centre of the view; hiding the pointer is what makes that discoverable
+            // instead of baffling, and it is the only reason the booth needs no crosshair.
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
+        private void OnDisable()
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
 
         private void Update()

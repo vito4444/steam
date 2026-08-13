@@ -288,7 +288,7 @@ namespace Monster.EditorTools
             // material the desk lamp fell across the nearest monitor and washed its face
             // from green to pale yellow, which no CRT has ever done.
             var crtScreen = UnlitMat("CRTScreen", new Color(0.030f, 0.150f, 0.064f));
-            var brass = Mat("Brass", new Color(0.62f, 0.47f, 0.19f), 0.66f, 0.85f);
+            var brass = Mat("Brass", new Color(0.44f, 0.34f, 0.15f), 0.38f, 0.70f);
             var paper = Mat("Paper", new Color(0.660f, 0.636f, 0.552f), 0.05f, 0f, null,
                 Grunge("Grunge_Paper", 256, 3.0f, 0.55f, 0.0f, 2231), 1f);
             var darkPlastic = Mat("DarkPlastic", new Color(0.055f, 0.055f, 0.062f), 0.28f);
@@ -548,12 +548,30 @@ namespace Monster.EditorTools
                 Quaternion.LookRotation(keyTarget - keyPosition, Vector3.up));
             light.type = LightType.Spot;
             light.color = new Color(1.00f, 0.735f, 0.455f);
-            light.intensity = 25f;
+            light.intensity = 16f;
             light.range = 4.5f;
-            light.spotAngle = 114f;
+            light.spotAngle = 104f;
             light.innerSpotAngle = 26f;
             light.shadows = LightShadows.Hard;
             light.shadowStrength = 0.80f;
+
+            // A dim, high, wide source over the whole desk.
+            //
+            // Without it the lamp had to do everything, and a point source cannot: at 1/d²
+            // the binder two metres away needed an intensity that blew the intercom keypad
+            // seventy centimetres away into a solid gold slab brighter than any of the
+            // paperwork. Splitting the job lets the lamp stay a lamp.
+            var fill = new GameObject("DeskFill").AddComponent<Light>();
+            fill.transform.SetParent(lamp.parent, false);
+            fill.transform.SetPositionAndRotation(new Vector3(0.30f, 2.05f, 0.55f),
+                Quaternion.Euler(90f, 0f, 0f));
+            fill.type = LightType.Spot;
+            fill.color = new Color(1.00f, 0.83f, 0.62f);
+            fill.intensity = 5.2f;
+            fill.range = 4.2f;
+            fill.spotAngle = 120f;
+            fill.innerSpotAngle = 40f;
+            fill.shadows = LightShadows.None;
 
             // A weak unshadowed bounce so the wall behind the lamp is not pure black.
             var bounce = new GameObject("Bounce").AddComponent<Light>();

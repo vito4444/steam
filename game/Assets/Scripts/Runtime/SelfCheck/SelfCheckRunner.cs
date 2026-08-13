@@ -256,12 +256,135 @@ namespace Monster.SelfCheck
                           $"{stats.triangles} tris, {stats.renderers} renderers -> {imagePath}");
             }
 
+            yield return ExerciseInput(boothCamera, records);
             yield return PlayOutShifts(presenter, boothCamera, records);
 
             WriteReport(records);
 
             Debug.Log($"[SelfCheck] done, {_logLines.Count} error(s) logged");
             Application.Quit(_logLines.Count == 0 ? 0 : 3);
+        }
+
+        /// <summary>Drives the game the way a player does: look until something is under
+        /// the centre of the view, then click it.
+        ///
+        /// Everything else in this file reaches past the input layer and calls the camera
+        /// and the presenter directly. That is why a build shipped in which looking and
+        /// clicking did nothing whatsoever -- the interactor's input source is a plain
+        /// property, the scene generator assigned it at edit time, and properties are not
+        /// serialised. Nothing here failed, because nothing here went through it.
+        ///
+        /// This does, and asserts the two things that were silently broken: that a look
+        /// delta turns the camera, and that a click on something reaches it.</summary>
+        private IEnumerator ExerciseInput(BoothCamera boothCamera, ICollection<string> records)
+        {
+            var interactor = FindFirstObjectByType<DeskInteractor>();
+
+            if (interactor == null || boothCamera == null)
+            {
+                _logLines.Add("Error: no desk interactor in the scene, the input path was not exercised");
+                yield break;
+            }
+
+            var scripted = new ScriptedInputSource();
+            var previous = interactor.Input;
+            interactor.Input = scripted;
+
+            boothCamera.ResetToHome();
+            yield return null;
+
+            var startRotation = boothCamera.transform.rotation;
+
+            // Sweep the view across the desk. Something interactable has to pass under the
+            // centre on the way.
+            var hovered = 0;
+            var seen = new HashSet<string>();
+
+            foreach (var look in new[] { new Vector2(-1.4f, 0f), new Vector2(1.1f, -0.5f), new Vector2(0.9f, 0.6f) })
+            {
+                scripted.Look = look;
+
+                for (var frame = 0; frame < 45; frame++)
+                {
+                    yield return null;
+
+                    if (interactor.Hovered != null && seen.Add(interactor.Hovered.name))
+                    {
+                        hovered++;
+                    }
+                }
+            }
+
+            scripted.Look = Vector2.zero;
+            yield return null;
+
+            var turned = Quaternion.Angle(startRotation, boothCamera.transform.rotation);
+
+            if (turned < 5f)
+            {
+                _logLines.Add($"Error: the camera turned {turned:F1} degrees under a scripted look " +
+                              "delta; the input path is not connected");
+            }
+
+            if (hovered == 0)
+            {
+                _logLines.Add("Error: sweeping the view across the desk never put anything under the " +
+                              "centre of the view");
+            }
+
+            // Now click whatever is under the centre and check it heard.
+            var clicked = false;
+
+            foreach (var look in new[] { new Vector2(-0.8f, -0.3f), new Vector2(0.5f, 0.2f) })
+            {
+                scripted.Look = look;
+
+                for (var frame = 0; frame < 60 && !clicked; frame++)
+                {
+                    yield return null;
+
+                    if (interactor.Hovered == null)
+                    {
+                        continue;
+                    }
+
+                    var target = interactor.Hovered;
+                    scripted.Look = Vector2.zero;
+                    scripted.Click();
+                    yield return null;
+                    yield return null;
+
+                    // An Inspect or Leaf target becomes the focused one; an Operate target
+                    // fires and leaves nothing focused, so both are checked.
+                    clicked = interactor.Focused == target
+                              || target.Mode == DeskInteractable.Behaviour.Operate;
+
+                    if (clicked)
+                    {
+                        Debug.Log($"[SelfCheck] clicked '{target.name}' ({target.Mode}) through the " +
+                                  "input path");
+                    }
+                }
+            }
+
+            if (!clicked)
+            {
+                _logLines.Add("Error: a click through the input path never reached an interactable");
+            }
+
+            interactor.Release();
+            interactor.Input = previous;
+            boothCamera.ResetToHome();
+            yield return null;
+
+            records.Add(string.Format(CultureInfo.InvariantCulture,
+                "    {{\n" +
+                "      \"name\": \"input\",\n" +
+                "      \"camera_turned_degrees\": {0:F1},\n" +
+                "      \"interactables_hovered\": {1},\n" +
+                "      \"click_reached_target\": {2}\n" +
+                "    }}",
+                turned, hovered, clicked ? "true" : "false"));
         }
 
         /// <summary>Plays several nights to their end by throwing switches directly, then

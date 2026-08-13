@@ -53,6 +53,41 @@ namespace Monster.Interaction
 
     /// <summary>An input source that produces nothing, used while the self-check is
     /// positioning the camera itself.</summary>
+    /// <summary>An input source driven from code.
+    ///
+    /// Exists so the automated self-check can go through the same path a player does.
+    /// Everything before this drove the camera and the presenter directly, which is how a
+    /// build shipped in which looking and clicking did nothing at all and no test noticed.
+    /// </summary>
+    public sealed class ScriptedInputSource : IInputSource
+    {
+        private bool _interact;
+        private bool _back;
+
+        public Vector2 LookDelta { get; private set; }
+        public bool InteractPressed { get; private set; }
+        public bool BackPressed { get; private set; }
+
+        /// <summary>Look by this much on every frame until told otherwise.</summary>
+        public Vector2 Look { get; set; }
+
+        /// <summary>Queues a click for the next frame, the way a real button press lasts
+        /// exactly one frame.</summary>
+        public void Click() => _interact = true;
+
+        public void Back() => _back = true;
+
+        public void Tick(float deltaTime)
+        {
+            LookDelta = Look;
+
+            InteractPressed = _interact;
+            BackPressed = _back;
+            _interact = false;
+            _back = false;
+        }
+    }
+
     public sealed class NullInputSource : IInputSource
     {
         public Vector2 LookDelta => Vector2.zero;

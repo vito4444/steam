@@ -42,6 +42,31 @@ namespace Monster.Interaction
 
         public event Action<DeskInteractable> Operated;
 
+        private static readonly Color HighlightEmission = new(0.16f, 0.13f, 0.07f);
+
+        private Color[] _resting;
+
+        /// <summary>Remembers what each renderer emits when nothing is looking at it. Read
+        /// from the shared material once, lazily, because the scene generator assigns the
+        /// renderers and the materials are not final until it has finished.</summary>
+        private void CaptureRestingEmission()
+        {
+            if (_resting != null && _resting.Length == highlightTargets.Length)
+            {
+                return;
+            }
+
+            _resting = new Color[highlightTargets.Length];
+
+            for (var i = 0; i < highlightTargets.Length; i++)
+            {
+                var material = highlightTargets[i] != null ? highlightTargets[i].sharedMaterial : null;
+                _resting[i] = material != null && material.HasProperty("_EmissionColor")
+                    ? material.GetColor("_EmissionColor")
+                    : Color.black;
+            }
+        }
+
         public void Configure(Behaviour behaviour, string interactionPayload, float distance,
             Vector3 offset, Renderer[] highlights)
         {
@@ -62,16 +87,24 @@ namespace Monster.Interaction
             _hovered = hovered;
             _properties ??= new MaterialPropertyBlock();
 
-            foreach (var target in highlightTargets)
+            CaptureRestingEmission();
+
+            for (var i = 0; i < highlightTargets.Length; i++)
             {
+                var target = highlightTargets[i];
                 if (target == null)
                 {
                     continue;
                 }
 
                 target.GetPropertyBlock(_properties);
+
+                // Un-hovering restores what the material was emitting rather than forcing
+                // black. Forcing black meant any interactable that glows on its own -- a
+                // lit key, a reflector, a screen -- went permanently dark the first time
+                // the player looked at it and away again.
                 _properties.SetColor("_EmissionColor",
-                    hovered ? new Color(0.16f, 0.13f, 0.07f) : Color.black);
+                    hovered ? _resting[i] + HighlightEmission : _resting[i]);
                 target.SetPropertyBlock(_properties);
             }
         }

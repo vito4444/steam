@@ -156,7 +156,10 @@ namespace Monster.EditorTools
             }
 
             handles.Camera.AddComponent<BoothCamera>();
-            handles.Camera.AddComponent<DeskInteractor>().Input = new LegacyInputSource();
+            // No input source assigned here. IInputSource is a plain property and does not
+            // serialise, so anything set at edit time is gone by the time the player runs.
+            // DeskInteractor builds its own in Awake.
+            handles.Camera.AddComponent<DeskInteractor>();
 
             var printed = permit != null && manual != null && logbook != null
                           && intercom != null && biometrics != null && cabin != null;
