@@ -31,8 +31,20 @@ namespace Hunter.Worldgen
         int NextSeed() => unchecked(_seedCounter = _seedCounter * 1103515245 + 12345);
         float Range(float a, float b) => a + (float)_rng.NextDouble() * (b - a);
 
-        public void Generate(Transform root)
+        /// Handles to the objects gameplay code needs to attach behaviour to.
+        public sealed class SiteHandles
         {
+            public Transform Hunter;
+            public Transform BellTower;
+            public readonly List<Transform> Rivals = new();
+            public readonly List<Transform> LootCaches = new();
+            public readonly List<Transform> PatrolPoints = new();
+        }
+
+        public SiteHandles Generate(Transform root)
+        {
+            var handles = new SiteHandles();
+
             BuildGround(root);
             BuildForegroundFrame(root);
             BuildColonnade(root);
@@ -40,12 +52,98 @@ namespace Hunter.Worldgen
             BuildRoofBeams(root);
             BuildFarTower(root);
             BuildRubbleField(root);
-            BuildLootCache(root, new Vector3(2.75f, 0f, 9.6f));
-            BuildHunter(root, new Vector3(-0.62f, 0f, 0.55f));
-            BuildRivalSilhouettes(root);
+
+            handles.LootCaches.Add(BuildLootCache(root, new Vector3(2.75f, 0f, 9.6f)).transform);
+            handles.LootCaches.Add(BuildLootCache(root, new Vector3(-5.4f, 0f, 22.5f)).transform);
+            handles.LootCaches.Add(BuildLootCache(root, new Vector3(4.9f, 0f, 33.8f)).transform);
+
+            handles.Hunter = BuildHunter(root, new Vector3(-0.62f, 0f, 0.55f)).transform;
+            handles.BellTower = BuildBellTower(root, new Vector3(-6.8f, 0f, 30f)).transform;
+            BuildRivalSilhouettes(root, handles);
+            BuildPatrolPoints(root, handles);
+
+            return handles;
         }
 
-        GameObject Emit(Transform parent, string name, Mesh mesh, Material material, bool castShadows = true)
+        void BuildPatrolPoints(Transform root, SiteHandles handles)
+        {
+            var container = new GameObject("PatrolPoints");
+            container.transform.SetParent(root, false);
+
+            var positions = new[]
+            {
+                new Vector3(-4.2f, 0f, 12f), new Vector3(4.4f, 0f, 18f),
+                new Vector3(-5.1f, 0f, 26f), new Vector3(3.8f, 0f, 34f),
+                new Vector3(-2.4f, 0f, 42f), new Vector3(2.2f, 0f, 24f),
+            };
+
+            for (int i = 0; i < positions.Length; i++)
+            {
+                var point = new GameObject($"Patrol_{i}");
+                point.transform.SetParent(container.transform, false);
+                point.transform.position = positions[i];
+                handles.PatrolPoints.Add(point.transform);
+            }
+        }
+
+        /// The bell: a stone frame with a hanging bronze bell. Ringing it is the loudest
+        /// commitment in a raid, so it needs to be visible from across the nave.
+        GameObject BuildBellTower(Transform root, Vector3 pos)
+        {
+            var mb = new MeshBuilder();
+            var stone = new Color(0.44f, 0.44f, 0.45f);
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                mb.AddChamferedBox(pos + new Vector3(side * 1.15f, 1.75f, 0f),
+                    new Vector3(0.55f, 3.5f, 0.55f), 0.06f, stone,
+                    jitter: 0.03f, seed: NextSeed(), uvScale: 0.9f);
+            }
+            mb.AddChamferedBox(pos + new Vector3(0f, 3.65f, 0f), new Vector3(3.1f, 0.45f, 0.6f),
+                0.06f, stone * 0.94f, jitter: 0.03f, seed: NextSeed(), uvScale: 0.9f);
+
+            var tower = Emit(root, "BellTower", mb.ToMesh("BellTower"), _palette.Stone);
+            tower.transform.position = Vector3.zero;
+
+            var bell = new MeshBuilder();
+            var bronze = new Color(0.95f, 0.72f, 0.30f);
+            for (int r = 0; r < 6; r++)
+            {
+                float t0 = r / 6f, t1 = (r + 1) / 6f;
+                for (int s = 0; s < 12; s++)
+                {
+                    float a0 = 2f * Mathf.PI * s / 12, a1 = 2f * Mathf.PI * (s + 1) / 12;
+                    bell.AddQuad(BellPoint(pos, t0, a0), BellPoint(pos, t0, a1),
+                        BellPoint(pos, t1, a1), BellPoint(pos, t1, a0), bronze, 1.6f);
+                }
+            }
+            Emit(tower.transform, "BellBody", bell.ToMesh("BellBody"), _palette.Gold);
+
+            var glowGo = new GameObject("BellGlow");
+            glowGo.transform.SetParent(tower.transform, false);
+            glowGo.transform.position = pos + Vector3.up * 2.6f;
+            var glow = glowGo.AddComponent<Light>();
+            glow.type = LightType.Point;
+            glow.color = new Color(1f, 0.78f, 0.42f);
+            glow.intensity = 3.2f;
+            glow.range = 12f;
+            glow.shadows = LightShadows.None;
+
+            var marker = new GameObject("BellAnchor");
+            marker.transform.SetParent(tower.transform, false);
+            marker.transform.position = pos;
+            return marker;
+        }
+
+        static Vector3 BellPoint(Vector3 origin, float t, float phi)
+        {
+            float y = 3.35f - t * 1.05f;
+            float radius = Mathf.Lerp(0.16f, 0.52f, Mathf.Pow(t, 1.4f));
+            return origin + new Vector3(Mathf.Cos(phi) * radius, y, Mathf.Sin(phi) * radius);
+        }
+
+        GameObject Emit(Transform parent, string name, Mesh mesh, Material material,
+            bool castShadows = true, bool collide = false)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -55,6 +153,10 @@ namespace Hunter.Worldgen
             mr.shadowCastingMode = castShadows
                 ? UnityEngine.Rendering.ShadowCastingMode.On
                 : UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            // Only the surfaces a hunter can stand on or bump into get collision. Rubble
+            // and roof beams stay non-solid so movement never snags on scatter detail.
+            if (collide) go.AddComponent<MeshCollider>().sharedMesh = mesh;
             return go;
         }
 
@@ -78,7 +180,7 @@ namespace Hunter.Worldgen
                 },
                 baseColor, uvScale: 1.05f);
 
-            Emit(root, "Ground", mb.ToMesh("Ground"), _palette.Ground, castShadows: false);
+            Emit(root, "Ground", mb.ToMesh("Ground"), _palette.Ground, castShadows: false, collide: true);
 
             // A scatter of dislodged slabs tilted out of the pavement carries the "broken
             // ground" read that a smooth sheet alone cannot.
@@ -159,7 +261,7 @@ namespace Hunter.Worldgen
             mb.AddArch(new Vector3(0.1f, 6.4f, 3.0f), 4.3f, 0.85f, 2.1f, 13,
                 stone * 0.92f, collapseFrom: 0.62f);
 
-            Emit(root, "ForegroundFrame", mb.ToMesh("ForegroundFrame"), _palette.Stone);
+            Emit(root, "ForegroundFrame", mb.ToMesh("ForegroundFrame"), _palette.Stone, collide: true);
         }
 
         void BuildColonnade(Transform root)
@@ -209,7 +311,7 @@ namespace Hunter.Worldgen
                 }
             }
 
-            Emit(root, "Colonnade", mb.ToMesh("Colonnade"), _palette.Stone);
+            Emit(root, "Colonnade", mb.ToMesh("Colonnade"), _palette.Stone, collide: true);
         }
 
         /// Low walls between the columns at staggered depths. These are what create the
@@ -240,7 +342,7 @@ namespace Hunter.Worldgen
                 }
             }
 
-            Emit(root, "MidgroundWalls", mb.ToMesh("MidgroundWalls"), _palette.Stone);
+            Emit(root, "MidgroundWalls", mb.ToMesh("MidgroundWalls"), _palette.Stone, collide: true);
         }
 
         /// Far tower anchoring the vanishing point, matching the concept frame's skyline.
@@ -339,7 +441,7 @@ namespace Hunter.Worldgen
 
         /// Gold is the only saturated colour in the palette, so it doubles as the loot
         /// read: anything glowing warm is worth walking toward.
-        void BuildLootCache(Transform root, Vector3 pos)
+        GameObject BuildLootCache(Transform root, Vector3 pos)
         {
             var mb = new MeshBuilder();
             var gold = new Color(1.0f, 0.74f, 0.26f);
@@ -366,11 +468,16 @@ namespace Hunter.Worldgen
             light.intensity = 4.5f;
             light.range = 9f;
             light.shadows = LightShadows.None;
+
+            var anchor = new GameObject("CacheAnchor");
+            anchor.transform.SetParent(go.transform, false);
+            anchor.transform.position = pos;
+            return anchor;
         }
 
         /// Hooded figure built from a tapered cloak and a cowl. The concept frame reads the
         /// player as a silhouette, so the shape language matters far more than the topology.
-        void BuildHunter(Transform root, Vector3 pos)
+        GameObject BuildHunter(Transform root, Vector3 pos)
         {
             var mb = new MeshBuilder();
             var cloth = new Color(0.16f, 0.16f, 0.18f);
@@ -455,7 +562,7 @@ namespace Hunter.Worldgen
                 new Vector3(0.30f, 0.34f, 0.22f), 0.05f, cloth * 1.1f,
                 jitter: 0.02f, seed: NextSeed(), uvScale: 2.4f);
 
-            Emit(root, "Hunter", mb.ToMesh("Hunter", recalculateNormals: true), _palette.Cloth);
+            var hunterGo = Emit(root, "Hunter", mb.ToMesh("Hunter", recalculateNormals: true), _palette.Cloth);
 
             var lanternRoot = new GameObject("Lantern");
             lanternRoot.transform.SetParent(root, false);
@@ -479,6 +586,13 @@ namespace Hunter.Worldgen
             // Point-light shadows for the lantern produced heavy self-shadowing acne on
             // the pavement at the shadowmap resolution this scene can afford.
             lantern.shadows = LightShadows.None;
+
+            var anchor = new GameObject("HunterAnchor");
+            anchor.transform.SetParent(root, false);
+            anchor.transform.position = pos;
+            hunterGo.transform.SetParent(anchor.transform, true);
+            lanternRoot.transform.SetParent(anchor.transform, true);
+            return anchor;
         }
 
         static Vector3 Mantle(Vector3 origin, float t, float phi)
@@ -521,7 +635,7 @@ namespace Hunter.Worldgen
 
         /// Rival gold-hunters staged at increasing depth. Their only job in this frame is
         /// to prove the fog resolves figures as silhouettes before it resolves detail.
-        void BuildRivalSilhouettes(Transform root)
+        void BuildRivalSilhouettes(Transform root, SiteHandles handles)
         {
             var positions = new[]
             {
@@ -530,11 +644,12 @@ namespace Hunter.Worldgen
                 new Vector3(3.3f, 0f, 29.0f),
             };
 
-            var mb = new MeshBuilder();
             var dark = new Color(0.07f, 0.07f, 0.08f);
 
-            foreach (var p in positions)
+            for (int index = 0; index < positions.Length; index++)
             {
+                var p = positions[index];
+                var mb = new MeshBuilder();
                 const int segments = 10;
                 const int rings = 7;
                 var previous = new Vector3[segments];
@@ -572,9 +687,16 @@ namespace Hunter.Worldgen
                             dark, 1.4f);
                     }
                 }
-            }
 
-            Emit(root, "RivalHunters", mb.ToMesh("RivalHunters", recalculateNormals: true), _palette.Silhouette);
+                var rival = Emit(root, $"RivalHunter_{index}",
+                    mb.ToMesh($"RivalHunter_{index}", recalculateNormals: true), _palette.Silhouette);
+
+                var anchor = new GameObject($"RivalAnchor_{index}");
+                anchor.transform.SetParent(root, false);
+                anchor.transform.position = p;
+                rival.transform.SetParent(anchor.transform, true);
+                handles.Rivals.Add(anchor.transform);
+            }
         }
     }
 }

@@ -1,5 +1,9 @@
 using System.IO;
 using System.Reflection;
+using Hunter.Gameplay.AI;
+using Hunter.Gameplay.Actors;
+using Hunter.Gameplay.Combat;
+using Hunter.Gameplay.Run;
 using Hunter.Worldgen;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -313,12 +317,13 @@ namespace Hunter.EditorTools
             DynamicGI.UpdateEnvironment();
 
             var root = new GameObject("AurumMist").transform;
-            new RuinSiteGenerator(20260813, palette).Generate(root);
+            var handles = new RuinSiteGenerator(20260813, palette).Generate(root);
 
             BuildLighting(root);
             BuildReflectionProbe(root);
-            BuildCamera(root);
+            var camera = BuildCamera(root);
             BuildPostProcessing(root);
+            BuildGameplay(root, handles, camera);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
@@ -420,7 +425,7 @@ namespace Hunter.EditorTools
             probe.RenderProbe();
         }
 
-        static void BuildCamera(Transform root)
+        static OverShoulderCamera BuildCamera(Transform root)
         {
             var camGo = new GameObject("MainCamera");
             camGo.transform.SetParent(root, false);
@@ -443,6 +448,113 @@ namespace Hunter.EditorTools
             extra.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
             extra.antialiasingQuality = AntialiasingQuality.High;
             extra.renderShadows = true;
+
+            return camGo.AddComponent<OverShoulderCamera>();
+        }
+
+        /// Attaches behaviour to the generated site. Everything the raid loop needs is
+        /// wired here rather than hand-placed in a scene file, so the whole playable state
+        /// is reproducible from source and reviewable as a diff.
+        static void BuildGameplay(Transform root, RuinSiteGenerator.SiteHandles handles,
+            OverShoulderCamera camera)
+        {
+            var gameplayRoot = new GameObject("Gameplay");
+            gameplayRoot.transform.SetParent(root, false);
+
+            var player = BuildPlayerRig(handles.Hunter, camera);
+            var bell = handles.BellTower.gameObject.AddComponent<BellTower>();
+
+            var sovereignGo = new GameObject("MistSovereign");
+            sovereignGo.transform.SetParent(gameplayRoot.transform, false);
+            sovereignGo.transform.position = new Vector3(0f, 0f, 52f);
+            var sovereignLight = new GameObject("SovereignAura");
+            sovereignLight.transform.SetParent(sovereignGo.transform, false);
+            var aura = sovereignLight.AddComponent<Light>();
+            aura.type = LightType.Point;
+            aura.color = new Color(1f, 0.34f, 0.14f);
+            aura.intensity = 5f;
+            aura.range = 22f;
+            aura.shadows = LightShadows.None;
+            var sovereign = sovereignGo.AddComponent<MistSovereign>();
+
+            var runGo = new GameObject("RunController");
+            runGo.transform.SetParent(gameplayRoot.transform, false);
+            var run = runGo.AddComponent<RunController>();
+
+            var runSo = new SerializedObject(run);
+            runSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
+            runSo.FindProperty("playerHealth").objectReferenceValue = player.GetComponent<Damageable>();
+            runSo.FindProperty("bell").objectReferenceValue = bell;
+            runSo.FindProperty("extractionPoint").objectReferenceValue = handles.BellTower;
+            runSo.ApplyModifiedPropertiesWithoutUndo();
+
+            foreach (var cache in handles.LootCaches)
+            {
+                var lootable = cache.gameObject.AddComponent<Lootable>();
+                var so = new SerializedObject(lootable);
+                // The deepest cache is the one worth the walk.
+                bool elite = cache.position.z > 30f;
+                so.FindProperty("tier").enumValueIndex = elite ? 1 : 0;
+                so.FindProperty("minItems").intValue = elite ? 2 : 1;
+                so.FindProperty("maxItems").intValue = elite ? 4 : 3;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // Rivals get different aggression values so a raid does not feel like it is
+            // populated by one mind in three bodies.
+            float[] aggressions = { 0.72f, 0.34f, 0.55f };
+            for (int i = 0; i < handles.Rivals.Count; i++)
+            {
+                var rival = handles.Rivals[i];
+                var health = rival.gameObject.AddComponent<Damageable>();
+                var agent = rival.gameObject.AddComponent<RivalHunterAgent>();
+
+                var collider = rival.gameObject.AddComponent<CapsuleCollider>();
+                collider.height = 1.8f;
+                collider.radius = 0.4f;
+                collider.center = new Vector3(0f, 0.9f, 0f);
+
+                var so = new SerializedObject(agent);
+                so.FindProperty("aggression").floatValue = aggressions[i % aggressions.Length];
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                agent.Bind(run, player.transform, sovereign, bell, handles.PatrolPoints,
+                    aggressions[i % aggressions.Length]);
+            }
+
+            sovereign.Bind(run, player.transform);
+
+            var bootstrapGo = new GameObject("RunBootstrap");
+            bootstrapGo.transform.SetParent(gameplayRoot.transform, false);
+            var bootstrap = bootstrapGo.AddComponent<RunBootstrap>();
+            var bootSo = new SerializedObject(bootstrap);
+            bootSo.FindProperty("run").objectReferenceValue = run;
+            bootSo.FindProperty("playerCamera").objectReferenceValue = camera;
+            bootSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
+            bootSo.FindProperty("combat").objectReferenceValue = player.GetComponent<MeleeCombatant>();
+            bootSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        static GameObject BuildPlayerRig(Transform hunterAnchor, OverShoulderCamera camera)
+        {
+            var go = hunterAnchor.gameObject;
+
+            var controller = go.AddComponent<CharacterController>();
+            controller.height = 1.75f;
+            controller.radius = 0.32f;
+            controller.center = new Vector3(0f, 0.9f, 0f);
+            controller.slopeLimit = 50f;
+            controller.stepOffset = 0.4f;
+
+            go.AddComponent<Damageable>();
+            go.AddComponent<HunterController>();
+            var combat = go.AddComponent<MeleeCombatant>();
+            combat.BindCamera(camera);
+
+            camera.Target = go.transform;
+            camera.SnapToTarget();
+
+            return go;
         }
 
         static void BuildPostProcessing(Transform root)
