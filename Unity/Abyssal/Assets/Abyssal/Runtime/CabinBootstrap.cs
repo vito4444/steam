@@ -39,6 +39,12 @@ namespace Abyssal
 
         DrillControls _controls = DrillControls.NominalDrilling;
 
+        // 窗外那个东西的出现节奏。间隔很长是故意的：
+        // 它一旦变得可预期，恐怖就退化成了背景装饰。
+        const float PassbyInterval = 190f;
+        const float PassbyDuration = 26f;
+        float _passbyTimer;
+
         void Awake()
         {
             Cabin = new CabinBuilder();
@@ -67,6 +73,31 @@ namespace Abyssal
             // 掉帧时宁可让仿真慢下来也不能让它跳过临界点。
             Simulation.Step(_controls, Mathf.Min(dt, 0.25f));
             DriveInstruments(dt);
+            DriveUnderwater(dt);
+        }
+
+        /// <summary>
+        /// 窗外的深海。那个东西每隔几分钟才会经过一次，
+        /// 而且只在玩家没有直视舷窗的时候开始移动——
+        /// 让它成为余光里的事件，而不是一场表演。
+        /// </summary>
+        void DriveUnderwater(float dt)
+        {
+            if (Cabin.Underwater == null) return;
+
+            _passbyTimer += dt;
+            bool visible = false;
+            float progress = 0f;
+
+            if (_passbyTimer > PassbyInterval)
+            {
+                float elapsed = _passbyTimer - PassbyInterval;
+                progress = elapsed / PassbyDuration;
+                visible = progress <= 1f;
+                if (!visible) _passbyTimer = 0f;
+            }
+
+            Cabin.Underwater.Tick(dt, progress, visible);
         }
 
         /// <summary>把仿真状态推到面板上的每一个仪表、旋钮和指示灯。</summary>

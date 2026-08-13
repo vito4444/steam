@@ -25,6 +25,8 @@ namespace Abyssal.EditorTools
     {
         const string SceneDir = "Assets/Abyssal/Scenes";
 
+        static CabinBuilder _lastBuilder;
+
         static string OutDir =>
             System.Environment.GetEnvironmentVariable("ABYSSAL_SHOTS") ?? "/tmp/abyssal/shots";
 
@@ -64,9 +66,9 @@ namespace Abyssal.EditorTools
             new Benchmark { Id = "05-port-console", Position = new Vector3(-0.55f, 1.60f, -0.20f),
                             Euler = new Vector3(16f, -42f, 0f), Fov = 52f },
 
-            // 舷窗：检查外面是不是足够黑，以及窗框的金属质感。
-            new Benchmark { Id = "06-porthole", Position = new Vector3(0f, 1.74f, 0.10f),
-                            Euler = new Vector3(-13f, 0f, 0f), Fov = 50f },
+            // 舷窗：检查窗外的深海——探照灯、悬浮颗粒、钢结构剪影。
+            new Benchmark { Id = "06-porthole", Position = new Vector3(0f, 1.78f, 0.55f),
+                            Euler = new Vector3(2f, 0f, 0f), Fov = 52f },
 
             // 广角全景：不是玩家视角，用于快速看清整个舱室布局有没有破绽。
             new Benchmark { Id = "07-wide", Position = new Vector3(-1.15f, 2.05f, -1.05f),
@@ -85,6 +87,7 @@ namespace Abyssal.EditorTools
 
             var builder = new CabinBuilder();
             builder.Build();
+            _lastBuilder = builder;
 
             SeedInstrumentReadings(builder);
             var cam = CreateCamera(builder);
@@ -111,6 +114,53 @@ namespace Abyssal.EditorTools
         {
             var cam = BuildScene();
             Capture(cam);
+        }
+
+        /// <summary>
+        /// 拍同一个机位在四种事故状态下的画面。
+        ///
+        /// 这组图回答的是「单场景会不会看腻」这个问题：如果正常、警报、井喷、断电
+        /// 四张图放在一起看起来像四个不同的地方，那这个方案的画面就撑得住整局游戏。
+        /// </summary>
+        [MenuItem("Abyssal/Capture Event States")]
+        public static void CaptureEventStates()
+        {
+            var cam = BuildScene();
+            var builder = _lastBuilder;
+            if (builder?.Atmosphere == null)
+            {
+                Debug.LogError("ABYSSAL: atmosphere not built");
+                EditorApplication.Exit(6);
+                return;
+            }
+
+            (string id, CabinAtmosphere.State state, float severity)[] states =
+            {
+                ("state-1-normal", CabinAtmosphere.State.Normal, 0f),
+                ("state-2-alarm", CabinAtmosphere.State.Alarm, 0.7f),
+                ("state-3-blowout", CabinAtmosphere.State.Blowout, 1f),
+                ("state-4-blackout", CabinAtmosphere.State.BlackOut, 1f),
+            };
+
+            Directory.CreateDirectory(OutDir);
+
+            foreach (var (id, state, severity) in states)
+            {
+                builder.Atmosphere.Apply(state, severity);
+
+                // 旋转警报灯的亮度取决于扫描角度。批处理下时间不流动，
+                // 手工推进到光束正对舱内的角度，否则拍到的可能是它背对的那一瞬间。
+                builder.Atmosphere.Tick(0.42f);
+                builder.Atmosphere.PrewarmForCapture(2.5f);
+
+                // 断电时窗外的探照灯也会跟着灭——那是平台自己的电。
+                builder.Underwater?.SetFloodlight(
+                    state == CabinAtmosphere.State.BlackOut ? 0.18f : 1f);
+
+                CaptureSingle(cam, Benchmarks[0], id);
+            }
+
+            Debug.Log($"ABYSSAL: {states.Length} event-state shots written to {OutDir}");
         }
 
         [MenuItem("Abyssal/Build And Diagnose")]
@@ -293,47 +343,58 @@ namespace Abyssal.EditorTools
 
             foreach (var b in Benchmarks)
             {
-                cam.transform.position = b.Position;
-                cam.transform.eulerAngles = b.Euler;
-                cam.fieldOfView = b.Fov;
-
-                // 相机渲染到开了 MSAA 的 HDR 目标，但 ReadPixels 读不了多重采样的表面，
-                // 必须先 Blit 到一张单采样的 RT 完成 resolve。
-                // 少了这一步拿到的是一张纯黑图，而且不会有任何报错。
-                var msaa = new RenderTexture(width, height, 24, RenderTextureFormat.DefaultHDR)
-                {
-                    antiAliasing = 4,
-                };
-                var resolved = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32)
-                {
-                    antiAliasing = 1,
-                };
-
-                cam.targetTexture = msaa;
-                cam.Render();
-                cam.targetTexture = null;
-
-                Graphics.Blit(msaa, resolved);
-
-                RenderTexture.active = resolved;
-                var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
-                tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                tex.Apply();
-                RenderTexture.active = null;
-
-                string path = Path.Combine(OutDir, $"{b.Id}.png");
-                File.WriteAllBytes(path, tex.EncodeToPNG());
-
-                Object.DestroyImmediate(tex);
-                msaa.Release();
-                resolved.Release();
-                Object.DestroyImmediate(msaa);
-                Object.DestroyImmediate(resolved);
-
-                Debug.Log($"ABYSSAL: captured {b.Id} -> {path} ({new FileInfo(path).Length} bytes)");
+                CaptureSingle(cam, b, b.Id);
             }
 
             Debug.Log($"ABYSSAL: {Benchmarks.Length} benchmark shots written to {OutDir}");
+        }
+
+        /// <summary>
+        /// 渲染一个基准点。
+        ///
+        /// 相机渲染到开了 MSAA 的 HDR 目标，但 ReadPixels 读不了多重采样的表面，
+        /// 必须先 Blit 到一张单采样 RT 完成 resolve。
+        /// 少了这一步拿到的是一张纯黑图，而且不会有任何报错。
+        /// </summary>
+        static void CaptureSingle(Camera cam, Benchmark b, string id)
+        {
+            const int width = 1920, height = 1080;
+
+            cam.transform.position = b.Position;
+            cam.transform.eulerAngles = b.Euler;
+            cam.fieldOfView = b.Fov;
+
+            var msaa = new RenderTexture(width, height, 24, RenderTextureFormat.DefaultHDR)
+            {
+                antiAliasing = 4,
+            };
+            var resolved = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32)
+            {
+                antiAliasing = 1,
+            };
+
+            cam.targetTexture = msaa;
+            cam.Render();
+            cam.targetTexture = null;
+
+            Graphics.Blit(msaa, resolved);
+
+            RenderTexture.active = resolved;
+            var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+            tex.Apply();
+            RenderTexture.active = null;
+
+            string path = Path.Combine(OutDir, $"{id}.png");
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+
+            Object.DestroyImmediate(tex);
+            msaa.Release();
+            resolved.Release();
+            Object.DestroyImmediate(msaa);
+            Object.DestroyImmediate(resolved);
+
+            Debug.Log($"ABYSSAL: captured {id} -> {path} ({new FileInfo(path).Length} bytes)");
         }
     }
 }

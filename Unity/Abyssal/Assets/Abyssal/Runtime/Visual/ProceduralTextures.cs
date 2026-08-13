@@ -376,6 +376,62 @@ namespace Abyssal.Visual
             }
         }
 
+        /// <summary>
+        /// 中心亮、边缘平滑淡出的圆点，用作粒子贴图。
+        /// 衰减用的是平方而不是线性：线性衰减的点看起来像一个有边界的圆盘，
+        /// 平方衰减才像一颗被光照亮的悬浮颗粒。
+        /// </summary>
+        public static Texture2D SoftDot(int size = 64)
+        {
+            return Cached($"softdot:{size}", () =>
+            {
+                var p = new Painter(size, size, new Color32(0, 0, 0, 0));
+                float c = size * 0.5f;
+                float r = size * 0.5f;
+
+                for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float d = Mathf.Sqrt((x - c + 0.5f) * (x - c + 0.5f) +
+                                         (y - c + 0.5f) * (y - c + 0.5f)) / r;
+                    if (d >= 1f) continue;
+                    float a = (1f - d) * (1f - d);
+                    byte v = (byte)Mathf.Clamp(a * 255f, 0, 255);
+                    p.Pixels[y * size + x] = new Color32(255, 255, 255, v);
+                }
+
+                return p.ToTexture("SoftDot");
+            });
+        }
+
+        /// <summary>
+        /// 纵向渐变，v=0 处最亮、v=1 处全透。贴在光柱锥体上，
+        /// 让探照灯的光束从灯口向远端自然消散。
+        /// 边缘也做了收窄，避免光柱看起来像一块硬边的塑料板。
+        /// </summary>
+        public static Texture2D BeamGradient(int width = 64, int height = 256)
+        {
+            return Cached($"beam:{width}:{height}", () =>
+            {
+                var p = new Painter(width, height, new Color32(0, 0, 0, 0));
+                for (int y = 0; y < height; y++)
+                {
+                    float v = y / (float)(height - 1);
+                    // 沿轴向的衰减比线性更快，近灯口浓、远端迅速淡掉。
+                    float axial = Mathf.Pow(1f - v, 2.2f);
+                    for (int x = 0; x < width; x++)
+                    {
+                        // 横向也收一点边，让光柱有柔和的侧缘。
+                        float u = Mathf.Abs(x / (float)(width - 1) - 0.5f) * 2f;
+                        float lateral = 1f - u * u * 0.55f;
+                        byte a = (byte)Mathf.Clamp(axial * lateral * 255f, 0, 255);
+                        p.Pixels[y * width + x] = new Color32(255, 255, 255, a);
+                    }
+                }
+                return p.ToTexture("BeamGradient");
+            });
+        }
+
         /// <summary>指针贴图。单独一张，运行时靠旋转 Transform 驱动。</summary>
         public static Texture2D Needle(int size = 256)
         {

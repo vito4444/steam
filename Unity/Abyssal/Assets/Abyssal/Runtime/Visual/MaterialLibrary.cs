@@ -113,6 +113,53 @@ namespace Abyssal.Visual
             });
         }
 
+        /// <summary>
+        /// 加色混合的粒子材质，用于深海雪和蒸汽。
+        ///
+        /// 加色而不是透明混合：悬浮颗粒是被探照灯照亮的，它们只会让画面变亮，
+        /// 不会遮住后面的东西。用透明混合的话颗粒会在暗背景上留下一圈脏边。
+        /// </summary>
+        public static Material Particle(string key, Texture2D map, Color tint, float intensity)
+        {
+            return Cached($"particle:{key}:{intensity:F2}", () =>
+            {
+                var m = new Material(Unlit);
+                if (map != null) m.SetTexture("_BaseMap", map);
+                m.SetColor("_BaseColor", tint * intensity);
+                m.SetFloat("_Surface", 1f);
+                m.SetFloat("_Blend", 1f);
+                m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                m.SetFloat("_ZWrite", 0f);
+                m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                return m;
+            });
+        }
+
+        /// <summary>
+        /// 耐压玻璃。几乎全透，只留一点点带色的反光。
+        /// 完全透明的话玩家不会意识到中间隔着东西，反光太强又会挡住窗外的景象。
+        /// </summary>
+        public static Material Glass(string key, Color tint)
+        {
+            return Cached($"glass:{key}", () =>
+            {
+                var m = new Material(Lit);
+                m.SetColor("_BaseColor", tint);
+                m.SetFloat("_Metallic", 0.05f);
+                m.SetFloat("_Smoothness", 0.94f);
+                m.SetFloat("_Surface", 1f);
+                m.SetFloat("_Blend", 0f);
+                m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                m.SetFloat("_ZWrite", 0f);
+                m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                return m;
+            });
+        }
+
         /// <summary>带透明通道的贴花，用于指针和标签。</summary>
         public static Material Decal(string key, Texture2D map, Color tint)
         {

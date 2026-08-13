@@ -27,6 +27,14 @@ namespace Abyssal.Visual
         public GameObject Root { get; private set; }
         public Transform CameraAnchor { get; private set; }
 
+        /// <summary>舷窗外的深海。断电事件要通过它把探照灯关掉。</summary>
+        public UnderwaterWorld Underwater { get; private set; }
+
+        /// <summary>事故状态下的灯光、粒子与震动表现。</summary>
+        public CabinAtmosphere Atmosphere { get; private set; }
+
+        readonly List<Light> _mainLights = new List<Light>();
+
         public readonly Dictionary<string, Gauge> Gauges = new Dictionary<string, Gauge>();
         public readonly Dictionary<string, Knob> Knobs = new Dictionary<string, Knob>();
         public readonly Dictionary<string, Toggle> Levers = new Dictionary<string, Toggle>();
@@ -45,6 +53,7 @@ namespace Abyssal.Visual
             BuildPipework();
             BuildCabling();
             BuildLighting();
+            BuildAtmosphere();
             BuildCameraAnchor();
 
             return Root;
@@ -63,8 +72,25 @@ namespace Abyssal.Visual
             Box(shell.transform, "Overhead", new Vector3(0f, CabinHeight + 0.05f, CabinDepth * 0.5f - 1.2f),
                 Vector3.zero, new Vector3(CabinWidth, 0.10f, CabinDepth), MaterialLibrary.BulkheadSteel);
 
-            Box(shell.transform, "BulkheadFore", new Vector3(0f, CabinHeight * 0.5f, CabinDepth - 1.2f),
-                Vector3.zero, new Vector3(CabinWidth, CabinHeight, 0.10f), MaterialLibrary.BulkheadSteel);
+            // 前舱壁中央要给舷窗开洞，所以拆成四块围出来。
+            // 洞口 x 属于 [-0.62, 0.62]，y 属于 [1.30, 2.54]。
+            const float foreZ = CabinDepth - 1.2f;
+            const float holeHalfW = 0.52f;
+            const float holeBottom = 1.44f;
+            const float holeTop = 2.50f;
+
+            float sideWidth = CabinWidth * 0.5f - holeHalfW;
+            float sideCenter = holeHalfW + sideWidth * 0.5f;
+
+            Box(shell.transform, "BulkheadForePort", new Vector3(-sideCenter, CabinHeight * 0.5f, foreZ),
+                Vector3.zero, new Vector3(sideWidth, CabinHeight, 0.10f), MaterialLibrary.BulkheadSteel);
+            Box(shell.transform, "BulkheadForeStbd", new Vector3(sideCenter, CabinHeight * 0.5f, foreZ),
+                Vector3.zero, new Vector3(sideWidth, CabinHeight, 0.10f), MaterialLibrary.BulkheadSteel);
+            Box(shell.transform, "BulkheadForeSill", new Vector3(0f, holeBottom * 0.5f, foreZ),
+                Vector3.zero, new Vector3(holeHalfW * 2f, holeBottom, 0.10f), MaterialLibrary.BulkheadSteel);
+            Box(shell.transform, "BulkheadForeHead",
+                new Vector3(0f, (holeTop + CabinHeight) * 0.5f, foreZ), Vector3.zero,
+                new Vector3(holeHalfW * 2f, CabinHeight - holeTop, 0.10f), MaterialLibrary.BulkheadSteel);
 
             Box(shell.transform, "BulkheadAft", new Vector3(0f, CabinHeight * 0.5f, -1.25f),
                 Vector3.zero, new Vector3(CabinWidth, CabinHeight, 0.10f), MaterialLibrary.BulkheadSteel);
@@ -101,12 +127,38 @@ namespace Abyssal.Visual
 
             PopulateSlantPanel(slanted);
 
-            // 面板上方的垂直告警屏。
-            var upright = MakePanel(console.transform, "UprightPanel",
-                new Vector3(0f, 1.78f, 1.32f), new Vector3(4f, 0f, 0f),
-                new Vector2(2.72f, 0.46f), "WELL STATUS", 5);
+            // 面板上方的告警屏拆成左右两块，中间空出来给舷窗。
+            // 正前方留出视线通道是控制室的基本布局原则，全部堵死会让人待不住。
+            var portUpright = MakePanel(console.transform, "UprightPanelPort",
+                new Vector3(-0.87f, 1.74f, 1.30f), new Vector3(5f, 13f, 0f),
+                new Vector2(1.28f, 0.50f), "WELL STATUS", 5);
+            var stbdUpright = MakePanel(console.transform, "UprightPanelStbd",
+                new Vector3(0.87f, 1.74f, 1.30f), new Vector3(5f, -13f, 0f),
+                new Vector2(1.28f, 0.50f), "RIG STATUS", 9);
 
-            PopulateUprightPanel(upright);
+            PopulateUprightPanels(portUpright, stbdUpright);
+            BuildRadioStack(console.transform);
+        }
+
+        /// <summary>
+        /// 舷窗正下方的无线电台。它填掉了两块告警面板之间的空隙，
+        /// 也是玩家和外界唯一的联系——方案里那三百行无线电台词从这里出来。
+        /// </summary>
+        void BuildRadioStack(Transform parent)
+        {
+            var panel = MakePanel(parent, "RadioPanel",
+                new Vector3(0f, 1.62f, 1.24f), new Vector3(12f, 0f, 0f),
+                new Vector2(0.60f, 0.30f), "RADIO", 17);
+
+            InstrumentFactory.Screen(panel, new Vector2(0f, 0.06f), new Vector2(0.44f, 0.11f),
+                "CH 3 RIG FLOOR", 53);
+
+            AddLamp(panel, "tx", new Vector2(-0.22f, -0.09f), 0.036f,
+                    new Color(1.00f, 0.36f, 0.14f), "TX");
+            AddLamp(panel, "rx", new Vector2(-0.08f, -0.09f), 0.036f,
+                    new Color(0.32f, 0.92f, 0.52f), "RX");
+            AddKnob(panel, "squelch", new Vector2(0.09f, -0.09f), 0.056f, "SQL");
+            AddKnob(panel, "channel", new Vector2(0.24f, -0.09f), 0.056f, "CH");
         }
 
         void PopulateSlantPanel(Transform panel)
@@ -154,16 +206,20 @@ namespace Abyssal.Visual
                 new Color(1.00f, 0.76f, 0.30f), "HOLD");
         }
 
-        void PopulateUprightPanel(Transform panel)
+        void PopulateUprightPanels(Transform port, Transform stbd)
         {
-            // 一整排告警灯。绝大多数时间它们都是暗的，这让任何一个亮起都极其显眼。
-            (string key, string label, Color color)[] alarms =
+            // 告警灯。绝大多数时间它们都是暗的，这让任何一个亮起都极其显眼。
+            // 井控相关的四盏放左边，设备相关的六盏放右边，出事时视线不用来回扫。
+            (string key, string label, Color color)[] wellAlarms =
             {
                 ("kick", "KICK", new Color(1.00f, 0.22f, 0.16f)),
                 ("loss", "LOSS", new Color(1.00f, 0.55f, 0.12f)),
                 ("gas", "GAS", new Color(1.00f, 0.16f, 0.40f)),
-                ("torq", "TORQ", new Color(1.00f, 0.76f, 0.20f)),
                 ("stuck", "STUCK", new Color(1.00f, 0.62f, 0.10f)),
+            };
+            (string key, string label, Color color)[] rigAlarms =
+            {
+                ("torq", "TORQ", new Color(1.00f, 0.76f, 0.20f)),
                 ("temp", "TEMP", new Color(1.00f, 0.42f, 0.14f)),
                 ("wear", "BIT", new Color(0.98f, 0.85f, 0.30f)),
                 ("pump", "PUMP", new Color(0.35f, 0.80f, 1.00f)),
@@ -171,19 +227,26 @@ namespace Abyssal.Visual
                 ("comm", "COMM", new Color(0.35f, 0.80f, 1.00f)),
             };
 
-            for (int i = 0; i < alarms.Length; i++)
+            for (int i = 0; i < wellAlarms.Length; i++)
             {
-                float x = -1.17f + i * 0.26f;
-                AddLamp(panel, alarms[i].key, new Vector2(x, 0.10f), 0.050f,
-                        alarms[i].color, alarms[i].label);
+                AddLamp(port, wellAlarms[i].key, new Vector2(-0.45f + i * 0.30f, 0.13f), 0.056f,
+                        wellAlarms[i].color, wellAlarms[i].label);
+            }
+            for (int i = 0; i < rigAlarms.Length; i++)
+            {
+                AddLamp(stbd, rigAlarms[i].key, new Vector2(-0.52f + i * 0.208f, 0.13f), 0.048f,
+                        rigAlarms[i].color, rigAlarms[i].label);
             }
 
-            InstrumentFactory.Screen(panel, new Vector2(-0.72f, -0.10f), new Vector2(0.62f, 0.19f),
+            InstrumentFactory.Screen(port, new Vector2(-0.31f, -0.11f), new Vector2(0.56f, 0.20f),
                 "DEPTH TREND", 37);
-            InstrumentFactory.Screen(panel, new Vector2(0.72f, -0.10f), new Vector2(0.62f, 0.19f),
-                "PORE PRESS", 41);
-            AddGauge(panel, "depth", new Vector2(0f, -0.10f), 0.175f,
+            AddGauge(port, "depth", new Vector2(0.34f, -0.10f), 0.175f,
                 Dial("DEPTH", "METRES", 1800f, 3400f, danger: 2f, normalFrom: 0f, normalTo: 0f));
+
+            AddGauge(stbd, "pore", new Vector2(-0.34f, -0.10f), 0.175f,
+                Dial("PORE", "KPA/M", 8f, 20f, danger: 0.72f, normalFrom: 0.10f, normalTo: 0.55f));
+            InstrumentFactory.Screen(stbd, new Vector2(0.31f, -0.11f), new Vector2(0.56f, 0.20f),
+                "PORE PRESS", 41);
         }
 
         // ------------------------------------------------------------------ 台面道具
@@ -372,30 +435,56 @@ namespace Abyssal.Visual
                     new Color(1.00f, 0.10f, 0.30f), "ABANDON");
         }
 
+        /// <summary>
+        /// 舷窗。位置是按主视角构图定的：站姿眼高 1.68 m、俯角 15°、FOV 55° 时，
+        /// 它恰好落在视野上缘偏内的位置——玩家低头看仪表时它在余光里，
+        /// 抬头时它占满视线中央。
+        ///
+        /// 窗外接的是真正的三维深海（见 <see cref="UnderwaterWorld"/>），
+        /// 不是一块画着黑色的板子。
+        /// </summary>
         void BuildPorthole()
         {
             var port = new GameObject("Porthole");
             port.transform.SetParent(Root.transform, false);
-            port.transform.localPosition = new Vector3(0f, 2.10f, 3.74f);
+            port.transform.localPosition = new Vector3(0f, 1.97f, CabinDepth - 1.24f);
 
-            // 舷窗外是彻底的黑。这里不放任何光源，深海本来就没有光。
-            Primitive(PrimitiveType.Quad, "Void", port.transform,
-                new Vector3(0f, 0f, -0.02f), Vector3.zero, new Vector3(0.86f, 0.86f, 1f),
-                MaterialLibrary.Emissive("void", null, new Color(0.008f, 0.014f, 0.018f), 1f));
+            // 圆形窗框，盖住舱壁上那个方洞的边缘。
+            MeshShapes.Create("Frame", port.transform, MeshShapes.Ring(64, 0.70f),
+                MaterialLibrary.PipeSteel,
+                new Vector3(0f, 0f, -0.055f), Vector3.zero, new Vector3(1.54f, 1.54f, 1f));
 
-            Primitive(PrimitiveType.Cylinder, "Frame", port.transform,
-                new Vector3(0f, 0f, 0.02f), new Vector3(90f, 0f, 0f),
-                new Vector3(0.98f, 0.05f, 0.98f), MaterialLibrary.PipeSteel);
+            // 内圈的密封压条。
+            MeshShapes.Create("Gasket", port.transform, MeshShapes.Ring(64, 0.90f),
+                MaterialLibrary.RustAccent,
+                new Vector3(0f, 0f, -0.062f), Vector3.zero, new Vector3(1.12f, 1.12f, 1f));
+
+            // 玻璃。压得极暗且几乎全透，只保留一点点反光，
+            // 让玩家意识到自己隔着一层十几厘米厚的耐压玻璃在看外面。
+            MeshShapes.Create("Glass", port.transform, MeshShapes.Disc(64),
+                MaterialLibrary.Glass("porthole", new Color(0.42f, 0.60f, 0.66f, 0.10f)),
+                new Vector3(0f, 0f, -0.030f), Vector3.zero, new Vector3(1.06f, 1.06f, 1f));
 
             // 舷窗周围的加强螺栓。
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < 16; i++)
             {
-                float a = i / 12f * Mathf.PI * 2f;
+                float a = i / 16f * Mathf.PI * 2f;
                 Primitive(PrimitiveType.Cylinder, $"Bolt{i}", port.transform,
-                    new Vector3(Mathf.Cos(a) * 0.53f, Mathf.Sin(a) * 0.53f, -0.03f),
-                    new Vector3(90f, 0f, 0f), new Vector3(0.055f, 0.02f, 0.055f),
+                    new Vector3(Mathf.Cos(a) * 0.68f, Mathf.Sin(a) * 0.68f, -0.075f),
+                    new Vector3(90f, 0f, 0f), new Vector3(0.070f, 0.022f, 0.070f),
                     MaterialLibrary.RustAccent);
             }
+
+            // 窗台下沿的警示带和一块铭牌。
+            Box(port.transform, "Sill", new Vector3(0f, -0.82f, -0.06f), Vector3.zero,
+                new Vector3(1.44f, 0.09f, 0.10f), MaterialLibrary.Hazard);
+
+            InstrumentFactory.AddNameplate(port.transform, "VIEWPORT 1 - 3140 M",
+                new Vector3(0f, -0.93f, -0.085f), 0.56f);
+
+            // 窗外的世界。原点放在舷窗正前方，让探照灯和结构都在视线方向上。
+            Underwater = new UnderwaterWorld();
+            Underwater.Build(Root.transform, new Vector3(0f, 1.6f, CabinDepth - 0.6f));
         }
 
         void BuildPipework()
@@ -447,12 +536,12 @@ namespace Abyssal.Visual
             RenderSettings.ambientLight = new Color(0.030f, 0.024f, 0.017f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.040f, 0.030f, 0.021f);
-            RenderSettings.fogDensity = 0.050f;
+            RenderSettings.fogColor = new Color(0.020f, 0.029f, 0.034f);
+            RenderSettings.fogDensity = 0.042f;
 
             // 唯一投影的主光：控制台上方的工作灯。
             // 色温压到钨丝灯的水平（偏橙），舱内所有的暖调都来自这一盏。
-            var key = MakeLight(rig.transform, "WorkLamp", new Vector3(0f, 2.42f, 0.55f),
+            var key = MakeTrackedLight(rig.transform, "WorkLamp", new Vector3(0f, 2.42f, 0.55f),
                 LightType.Spot, new Color(1.00f, 0.70f, 0.42f), 11f, 7.5f);
             key.transform.localEulerAngles = new Vector3(62f, 0f, 0f);
             key.spotAngle = 96f;
@@ -462,30 +551,36 @@ namespace Abyssal.Visual
 
             // 补光：舱后方一盏很弱的冷光。它的作用不是照明而是制造色温对比——
             // 有了这一点冷，主光的暖才读得出来。
-            var fill = MakeLight(rig.transform, "AftFill", new Vector3(0f, 2.30f, -0.95f),
+            var fill = MakeTrackedLight(rig.transform, "AftFill", new Vector3(0f, 2.30f, -0.95f),
                 LightType.Point, new Color(0.28f, 0.44f, 0.60f), 5.2f, 5.0f);
             fill.shadows = LightShadows.None;
 
             // 侧台的局部照明，让左右两块面板不至于完全隐没。
-            MakeLight(rig.transform, "PortLamp", new Vector3(-1.62f, 1.86f, 0.30f),
+            MakeTrackedLight(rig.transform, "PortLamp", new Vector3(-1.62f, 1.86f, 0.30f),
                 LightType.Point, new Color(1.00f, 0.62f, 0.34f), 3.0f, 2.6f).shadows = LightShadows.None;
-            MakeLight(rig.transform, "StbdLamp", new Vector3(1.62f, 1.86f, 0.30f),
+            MakeTrackedLight(rig.transform, "StbdLamp", new Vector3(1.62f, 1.86f, 0.30f),
                 LightType.Point, new Color(1.00f, 0.62f, 0.34f), 3.0f, 2.6f).shadows = LightShadows.None;
 
             // 仪表盘自身的辉光。让主面板附近的空气有一点被点亮的感觉。
             // 强度必须压得很低，否则近距离的点光衰减会在每个表盘上烧出一个白斑，
             // 把刻度整个洗掉。
-            MakeLight(rig.transform, "PanelGlow", new Vector3(0f, 1.42f, 0.30f),
+            MakeTrackedLight(rig.transform, "PanelGlow", new Vector3(0f, 1.42f, 0.30f),
                 LightType.Point, new Color(0.90f, 0.72f, 0.48f), 0.55f, 2.6f).shadows = LightShadows.None;
 
             // 台面照明。没有它整个画面下三分之一是死黑的，
             // 视觉重心会飘到上方的告警屏上，和参考构图对不上。
-            var desk = MakeLight(rig.transform, "DeskLamp", new Vector3(0.05f, 1.74f, 0.02f),
+            var desk = MakeTrackedLight(rig.transform, "DeskLamp", new Vector3(0.05f, 1.74f, 0.02f),
                 LightType.Spot, new Color(1.00f, 0.78f, 0.52f), 6.5f, 2.4f);
             desk.transform.localEulerAngles = new Vector3(84f, 0f, 0f);
             desk.spotAngle = 104f;
             desk.innerSpotAngle = 34f;
             desk.shadows = LightShadows.None;
+        }
+
+        void BuildAtmosphere()
+        {
+            Atmosphere = new CabinAtmosphere();
+            Atmosphere.Build(Root.transform, _mainLights);
         }
 
         void BuildCameraAnchor()
@@ -582,6 +677,14 @@ namespace Abyssal.Visual
             light.intensity = intensity;
             light.range = range;
             light.shadows = LightShadows.None;
+            return light;
+        }
+
+        Light MakeTrackedLight(Transform parent, string name, Vector3 pos, LightType type,
+                               Color color, float intensity, float range)
+        {
+            var light = MakeLight(parent, name, pos, type, color, intensity, range);
+            _mainLights.Add(light);
             return light;
         }
     }

@@ -106,12 +106,63 @@ namespace Abyssal.Visual
             return mesh;
         }
 
+        static readonly Dictionary<int, Mesh> ConeCache = new Dictionary<int, Mesh>();
+
+        /// <summary>
+        /// 开口向 +Y 的空心锥面，顶点在原点，底面半径 0.5、高 1。
+        /// 双面渲染，用来做探照灯的体积光柱。
+        ///
+        /// UV 的 v 沿轴向从顶点的 0 走到底面的 1，配一张纵向渐变贴图
+        /// 就能让光柱在远端自然淡出。URP 没有内置体积光，
+        /// 这个做法便宜得多，而且在软件渲染下也能跑。
+        /// </summary>
+        public static Mesh Cone(int segments = 32)
+        {
+            if (ConeCache.TryGetValue(segments, out var cached) && cached != null) return cached;
+
+            var mesh = new Mesh { name = $"Cone{segments}" };
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+
+            for (int i = 0; i < segments; i++)
+            {
+                float t0 = i / (float)segments;
+                float t1 = (i + 1) / (float)segments;
+                float a0 = t0 * Mathf.PI * 2f;
+                float a1 = t1 * Mathf.PI * 2f;
+
+                Vector3 apex = Vector3.zero;
+                var b0 = new Vector3(Mathf.Cos(a0) * 0.5f, 1f, Mathf.Sin(a0) * 0.5f);
+                var b1 = new Vector3(Mathf.Cos(a1) * 0.5f, 1f, Mathf.Sin(a1) * 0.5f);
+
+                int baseIndex = verts.Count;
+                verts.Add(apex); verts.Add(b0); verts.Add(b1);
+                uvs.Add(new Vector2(t0, 0f)); uvs.Add(new Vector2(t0, 1f)); uvs.Add(new Vector2(t1, 1f));
+
+                // 正反两面都画。光柱是个空壳，从任何角度看都要能看见。
+                tris.Add(baseIndex); tris.Add(baseIndex + 1); tris.Add(baseIndex + 2);
+                tris.Add(baseIndex); tris.Add(baseIndex + 2); tris.Add(baseIndex + 1);
+            }
+
+            mesh.SetVertices(verts);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            ConeCache[segments] = mesh;
+            return mesh;
+        }
+
         public static void ClearCache()
         {
             foreach (var m in DiscCache.Values) if (m != null) Object.DestroyImmediate(m);
             foreach (var m in RingCache.Values) if (m != null) Object.DestroyImmediate(m);
+            foreach (var m in ConeCache.Values) if (m != null) Object.DestroyImmediate(m);
             DiscCache.Clear();
             RingCache.Clear();
+            ConeCache.Clear();
         }
 
         /// <summary>用给定网格建一个渲染对象。</summary>
