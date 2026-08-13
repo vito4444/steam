@@ -109,6 +109,10 @@ namespace Monster.Shift
 
         public IReadOnlyList<Decision> Decisions => _decisions;
         public int Position => _position;
+
+        /// <summary>How many vehicles turn up tonight. A save records verdicts and replays
+        /// them, and this is what it checks them against.</summary>
+        public int QueueLength => _queue.Count;
         public bool IsFinished => _position >= _queue.Count;
 
         public GeneratedSubject Current => IsFinished ? _queue[^1] : _queue[_position];

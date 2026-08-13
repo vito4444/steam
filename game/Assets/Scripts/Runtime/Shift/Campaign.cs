@@ -26,6 +26,8 @@ namespace Monster.Shift
         private readonly List<Notice> _pending = new();
         private readonly List<ShiftReport> _completed = new();
         private readonly List<Notice> _delivered = new();
+        private readonly List<List<Verdict>> _history = new();
+        private List<Verdict> _tonight = new();
 
         public Campaign(int seed) => Seed = seed;
 
@@ -47,8 +49,14 @@ namespace Monster.Shift
                 throw new InvalidOperationException("the campaign is over");
             }
 
+            _tonight = new List<Verdict>();
             return new ShiftDirector(Seed, ShiftIndex);
         }
+
+        /// <summary>Records a verdict for the save file. The director owns the decision
+        /// itself; this only remembers what was chosen, because that plus the seed is
+        /// enough to rebuild the entire campaign.</summary>
+        public void Record(Verdict verdict) => _tonight.Add(verdict);
 
         /// <summary>The mail waiting on the mat at the start of tonight's shift.</summary>
         public IReadOnlyList<Notice> MailFor(int shiftIndex)
@@ -85,10 +93,81 @@ namespace Monster.Shift
                 _pending.AddRange(ConsequenceWriter.For(decision, ShiftIndex));
             }
 
+            _history.Add(_tonight);
+            _tonight = new List<Verdict>();
             ShiftIndex++;
 
             return new NightlyStatement(report.ShiftIndex, report.Processed, director.Quota,
                 wage, deductions, shortfall, net, Credits, mail);
+        }
+
+        // --------------------------------------------------------------- saving --
+
+        public CampaignSave ToSave()
+        {
+            var save = new CampaignSave { seed = Seed };
+
+            foreach (var night in _history)
+            {
+                save.nights.Add(new CampaignSave.Night
+                {
+                    verdicts = night.Select(v => (int)v).ToList(),
+                });
+            }
+
+            // A night in progress is written too, so quitting mid-shift does not throw the
+            // evening away.
+            if (_tonight.Count > 0)
+            {
+                save.nights.Add(new CampaignSave.Night
+                {
+                    verdicts = _tonight.Select(v => (int)v).ToList(),
+                });
+            }
+
+            return save;
+        }
+
+        /// <summary>Rebuilds a campaign by replaying every recorded verdict. The returned
+        /// director is the partly played night, or null if the save landed on a boundary.
+        /// </summary>
+        public static Campaign Restore(CampaignSave save, out ShiftDirector inProgress)
+        {
+            if (save == null)
+            {
+                throw new ArgumentNullException(nameof(save));
+            }
+
+            if (!save.IsConsistent(out var problem))
+            {
+                throw new InvalidOperationException($"this save cannot be resumed: {problem}");
+            }
+
+            var campaign = new Campaign(save.seed);
+            inProgress = null;
+
+            foreach (var night in save.nights)
+            {
+                var director = campaign.BeginShift();
+
+                foreach (var verdict in night.verdicts)
+                {
+                    campaign.Record((Verdict)verdict);
+                    director.Decide((Verdict)verdict);
+                }
+
+                if (!director.IsFinished)
+                {
+                    // Stop here: this night is still being played, so it must not be closed
+                    // out or its consequences would be queued twice.
+                    inProgress = director;
+                    return campaign;
+                }
+
+                campaign.EndShift(director);
+            }
+
+            return campaign;
         }
 
         /// <summary>What the player would have earned had they been perfect. Not shown to
@@ -102,7 +181,9 @@ namespace Monster.Shift
                 var director = campaign.BeginShift();
                 while (!director.IsFinished)
                 {
-                    director.Decide(policy(director));
+                    var verdict = policy(director);
+                    campaign.Record(verdict);
+                    director.Decide(verdict);
                 }
 
                 campaign.EndShift(director);

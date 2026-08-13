@@ -147,6 +147,7 @@ namespace Monster.Presentation
                 return false;
             }
 
+            _campaign.Record(verdict);
             var decision = _director.Decide(verdict);
             DecisionMade?.Invoke(decision);
             RefreshLogbook(decision);
@@ -167,6 +168,7 @@ namespace Monster.Presentation
             if (_director.IsFinished)
             {
                 var statement = _campaign.EndShift(_director);
+                Save();
                 ShowStatement(statement);
                 ShowMail(statement.Mail);
                 ShiftEnded?.Invoke(statement);
@@ -182,7 +184,72 @@ namespace Monster.Presentation
             BeginShift(shiftIndex);
         }
 
+        [Tooltip("Write the campaign to disk at the end of every night.")]
+        [SerializeField] private bool saveProgress = true;
+
         public Campaign Campaign => _campaign;
+
+        /// <summary>Picks up where the player left off, or starts a new run if there is
+        /// nothing on disk. Returns the night that is now open.</summary>
+        public int ResumeOrBegin()
+        {
+            var save = saveProgress ? CampaignStore.Read() : null;
+
+            if (save == null)
+            {
+                BeginShift(0);
+                return 0;
+            }
+
+            ShiftDirector open;
+
+            try
+            {
+                _campaign = Campaign.Restore(save, out open);
+            }
+            catch (InvalidOperationException exception)
+            {
+                Debug.LogWarning($"[Booth] starting a new run: {exception.Message}");
+                BeginShift(0);
+                return 0;
+            }
+
+            if (_campaign.IsOver)
+            {
+                BeginShift(0);
+                return 0;
+            }
+
+            _director = open ?? _campaign.BeginShift();
+            shiftIndex = _campaign.ShiftIndex;
+
+            if (stage != null)
+            {
+                stage.SetPhase(CheckpointStage.Phase.AtTheWindow, immediate: true);
+            }
+
+            OpenShift();
+            return shiftIndex;
+        }
+
+        private void Save()
+        {
+            if (!saveProgress || _campaign == null)
+            {
+                return;
+            }
+
+            try
+            {
+                CampaignStore.Write(_campaign.ToSave());
+            }
+            catch (Exception exception)
+            {
+                // A failed write must not take the shift down with it. The player keeps
+                // playing; they just lose the resume.
+                Debug.LogError($"[Booth] the campaign could not be saved: {exception.Message}");
+            }
+        }
 
         public void BeginShift(int shift)
         {

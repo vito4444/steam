@@ -273,6 +273,8 @@ namespace Monster.SelfCheck
 
             void OnEnded(NightlyStatement statement) => lastStatement = statement;
 
+            CampaignStore.Delete();
+
             presenter.ShiftEnded += OnEnded;
             presenter.BeginShift(0);
 
@@ -316,6 +318,28 @@ namespace Monster.SelfCheck
 
             presenter.ShiftEnded -= OnEnded;
 
+            // Written by the last EndShift. Proving it round-trips here is the only place
+            // the save path is exercised in a real build rather than in the editor.
+            var resumable = false;
+            try
+            {
+                var save = CampaignStore.Read();
+                resumable = save != null && Campaign.Restore(save, out _).ShiftIndex == nights;
+            }
+            catch (Exception exception)
+            {
+                _logLines.Add($"Error: the campaign written during the run could not be resumed: " +
+                              $"{exception.Message}");
+            }
+
+            if (!resumable)
+            {
+                _logLines.Add("Error: the campaign written during the run did not resume to night " +
+                              nights.ToString(CultureInfo.InvariantCulture));
+            }
+
+            CampaignStore.Delete();
+
             Debug.Log($"[SelfCheck] played {nights} nights: {processed} vehicles processed, " +
                       $"{withheld} credits withheld");
 
@@ -350,9 +374,10 @@ namespace Monster.SelfCheck
                 "      \"name\": \"campaign\",\n" +
                 "      \"nights_played\": {0},\n" +
                 "      \"vehicles_processed\": {1},\n" +
-                "      \"credits_withheld\": {2}\n" +
+                "      \"credits_withheld\": {2},\n" +
+                "      \"save_resumed\": {3}\n" +
                 "    }}",
-                nights, processed, withheld));
+                nights, processed, withheld, resumable ? "true" : "false"));
         }
 
         private static IEnumerator CaptureTo(Camera camera, string path)
