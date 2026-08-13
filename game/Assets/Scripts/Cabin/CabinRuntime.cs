@@ -60,12 +60,21 @@ namespace Maner.Cabin
 
             Comms = CommsSystem.BuildFirstShift();
 
-            foreach (var arg in System.Environment.GetCommandLineArgs())
+            // 时间缩放让无人值守自检能在几十秒内跑完一个五分多钟的班次，
+            // 从而覆盖到结算这类只在班次末尾才出现的画面。仿真本身是固定步长的，
+            // 加速只是每帧多推几步，不影响数值结果。
+            string[] args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
             {
-                if (arg == "-manerAutoPilot")
+                if (args[i] == "-manerAutoPilot")
                 {
                     autoPilot = new RobotOperator();
-                    break;
+                }
+                else if (args[i] == "-manerTimeScale" && i + 1 < args.Length &&
+                         float.TryParse(args[i + 1], System.Globalization.NumberStyles.Float,
+                             System.Globalization.CultureInfo.InvariantCulture, out float scale))
+                {
+                    timeScale = Mathf.Clamp(scale, 0.1f, 40f);
                 }
             }
 
@@ -90,22 +99,28 @@ namespace Maner.Cabin
                 return;
             }
 
-            double delta = Time.deltaTime * timeScale;
+            accumulator += Time.deltaTime * timeScale;
 
-            if (autoPilot != null && Director.Phase == ShiftPhase.Running)
+            // 机器人操作员必须与仿真同频，不能每帧只调一次。
+            // 早期版本把它放在步进循环外面，时间缩放开到 8 倍时它的控制频率
+            // 相对仿真就降了 8 倍，反应跟不上，罐笼到站时会轻微撞击——
+            // 单元测试里逐步驱动所以一切正常，只有实机跑完整班次才暴露。
+            const double dt = ShaftSimulation.FixedDeltaTime;
+            int maxSteps = Mathf.CeilToInt(8f * Mathf.Max(1f, timeScale));
+            int steps = 0;
+
+            while (accumulator >= dt && steps < maxSteps)
             {
-                autoPilot.Tick(Director.ShiftTime, Director, Simulation, Console);
-            }
+                if (autoPilot != null && Director.Phase == ShiftPhase.Running)
+                {
+                    autoPilot.Tick(Director.ShiftTime, Director, Simulation, Console);
+                }
 
-            Console.DrainPulses(Simulation);
-            Simulation.SetInputs(Console.BuildInputs());
-            int steps = Simulation.Advance(delta, ref accumulator);
-
-            if (steps > 0)
-            {
-                double simulated = steps * ShaftSimulation.FixedDeltaTime;
-                Director.Tick(simulated, Simulation, Console);
-                Comms.Tick(Director.ShiftTime, simulated);
+                Console.DrainPulses(Simulation);
+                Simulation.SetInputs(Console.BuildInputs());
+                Simulation.Step();
+                Director.Tick(dt, Simulation, Console);
+                Comms.Tick(Director.ShiftTime, dt);
 
                 // 自动驾驶下顺手把电话也接了，否则未接来电会一直扣士气。
                 if (autoPilot != null && Comms.State == CallState.Ringing)
@@ -116,6 +131,9 @@ namespace Maner.Cabin
                         Comms.Reply(0, Director.ShiftTime);
                     }
                 }
+
+                accumulator -= dt;
+                steps++;
             }
 
             Console.PushGaugeReadings(Simulation);

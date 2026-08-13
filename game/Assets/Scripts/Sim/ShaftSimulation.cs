@@ -86,12 +86,13 @@ namespace Maner.Sim
         }
 
         /// <summary>按真实时间推进，内部拆成整数个固定步长。返回实际推进的步数。</summary>
-        public int Advance(double deltaTime, ref double accumulator)
+        public int Advance(double deltaTime, ref double accumulator, int maxStepsPerCall = 8)
         {
             accumulator += deltaTime;
             int steps = 0;
-            // 单帧最多补 8 步，避免长时间卡顿后出现螺旋式追赶。
-            while (accumulator >= FixedDeltaTime && steps < 8)
+            // 限制单帧补步数，避免长时间卡顿后出现螺旋式追赶。
+            // 自检时的时间缩放会相应放宽这个上限。
+            while (accumulator >= FixedDeltaTime && steps < maxStepsPerCall)
             {
                 Step();
                 accumulator -= FixedDeltaTime;
