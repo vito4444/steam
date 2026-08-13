@@ -52,6 +52,10 @@ namespace Maner.Cabin
             {
                 var visual = ControlMeshFactory.Build(def, PanelRoots[(int)def.Panel], Materials);
                 Visuals[def.Id] = visual;
+                if (def.IsInteractive)
+                {
+                    visual.AttachAudio(def);
+                }
                 visual.SnapValue(def.Kind == ControlKind.Gauge ? 0.0 : def.DefaultValue);
             }
 

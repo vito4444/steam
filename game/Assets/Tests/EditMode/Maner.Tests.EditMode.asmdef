@@ -6,7 +6,8 @@
         "UnityEditor.TestRunner",
         "Maner.Sim",
         "Maner.Controls",
-        "Maner.Shift"
+        "Maner.Shift",
+        "Maner.Cabin"
     ],
     "includePlatforms": [
         "Editor"

@@ -81,7 +81,34 @@ maner_unity -executeMethod Maner.EditorTools.ManerBootstrap.Run -logFile /tmp/bo
 | 无人值守运行与截图 | `tools/selfcheck.sh` | 输出 3 张 1920×1080 PNG，附帧时间统计 |
 | 画面差距量化 | `tools/compare.py` | 输出并排对比图与中文差距报告 |
 
-## 7. 已知限制
+## 7. 无头环境下踩过的坑
+
+以下问题的共同特征是**静默失效**：不报错、不警告，在编辑器里也完全看不出来，
+只有在构建产物的实机截图里才会暴露。它们几乎占掉了控制舱视觉实现的全部调试时间，
+记录在此以免重蹈。
+
+| 现象 | 根因 | 处理 |
+| --- | --- | --- |
+| 全场材质变成白色默认材质 | 运行时用 `Shader.Find` 取的 shader 没有被任何资产引用，构建时不打包 | 写入 Graphics Settings 的 Always Included Shaders |
+| 整间屋子被冲成惨白 | 改了 `RenderSettings.ambient*` 但没调用 `DynamicGI.UpdateEnvironment()`，引擎继续用场景默认的天空环境光 | 修改后显式刷新环境 |
+| 灯亮着但对画面零贡献，平行光却正常 | URP 的着色器变体剥离把附加光源与自发光变体整批裁掉，因为没有资产用到它们 | 关闭 URP Global Settings 里的变体剥离 |
+| 主光源完全不出光 | 光源位于灯泡玻璃球体的球心，被自己的灯泡投影遮蔽 | 灯泡渲染器关闭投影 |
+| 表盘只剩一圈框和一根针 | 用代码把 URP Lit 切成透明模式没生效，玻璃罩以不透明状态盖住了表盘面 | 移除玻璃罩；如需透明优先用 Unlit |
+| 面板与表盘面整个不可见 | `MeshBuilder` 的四边形绕序反向，面被背面剔除 | 修正绕序为 0-1-2 / 0-2-3 |
+| 丝印文字看着像被镜像 | 位图缓冲区按「左上为原点、Y 向下」绘制，与 Unity 纹理坐标原点在左下相反 | 上传前垂直翻转缓冲区 |
+| 贴图正确但显示为一块纯色 | 运行时创建的材质其 `_BaseMap_ST` 未必是 (1,1,0,0) | 显式设置 tiling 与 offset |
+| 点光源强度调 20 倍几乎无变化 | Unity 6 URP 使用物理光照单位，点光源以坎德拉计量，衰减远比预期陡 | 小空间内改用平行光承担主照明 |
+| 构建报告成功但产物是旧代码 | 脚本有编译错误时 Unity 会退回上一次成功编译的程序集继续出包，且返回码为 0 | `tools/build.sh` 显式检查日志中的 `error CS` |
+
+诊断这类问题的有效手段有三个，都已固化到仓库里：
+
+1. `tools/calibrate_lighting.py`——在同一份构建里扫描参数组合，避免每改一个数就重新构建。
+2. `Maner.EditorTools.ManerDiagnostics`——生成只有一块地、一个盒子、一盏灯的最小场景，
+   把变量降到最低来判断某个引擎特性到底是否工作。
+3. 运行时命令行开关（`-manerNoPostFX`、`-manerNoFill`、`-manerPanelDebug` 等）——
+   在一份构建里做 A/B 二分。
+
+## 8. 已知限制
 
 1. **IL2CPP 无法交叉构建。** Windows 目标的 IL2CPP 后端必须在 Windows 机器上构建。
    开发期使用 Mono 后端，发行前需要在 Windows 上做一次 IL2CPP 构建并重新验证。

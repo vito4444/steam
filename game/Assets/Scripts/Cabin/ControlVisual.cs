@@ -34,6 +34,10 @@ namespace Maner.Cabin
         Quaternion movingBaseRotation;
         float displayed;
         float target;
+        AudioSource audioSource;
+        ControlDefinition definition;
+        bool definitionValid;
+        bool sustaining;
 
         public float Displayed => displayed;
 
@@ -60,15 +64,78 @@ namespace Maner.Cabin
             ApplyPose();
         }
 
+        /// <summary>
+        /// 挂上音源。三段音里的持续段只在活动件真的在动时循环播放，
+        /// 起始段与结束段分别在开始动与停下时触发——这样阀轮转到一半松手，
+        /// 声音会跟着停，而不是把一整段音效播完。
+        /// </summary>
+        public void AttachAudio(in ControlDefinition def)
+        {
+            definition = def;
+            definitionValid = true;
+
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.loop = false;
+            audioSource.spatialBlend = 1f;
+            audioSource.rolloffMode = AudioRolloffMode.Linear;
+            audioSource.minDistance = 0.35f;
+            audioSource.maxDistance = 4.5f;
+            audioSource.dopplerLevel = 0f;
+        }
+
         void Update()
         {
             if (Mathf.Abs(target - displayed) < 1e-5f)
             {
+                if (sustaining)
+                {
+                    StopSustain();
+                    PlaySegment(ProceduralAudio.Segment.End, false);
+                }
                 return;
+            }
+
+            if (!sustaining && definitionValid)
+            {
+                PlaySegment(ProceduralAudio.Segment.Begin, false);
+                if (definition.IsContinuous)
+                {
+                    PlaySegment(ProceduralAudio.Segment.Sustain, true);
+                }
+                sustaining = true;
             }
 
             displayed = Mathf.MoveTowards(displayed, target, ResponseSpeed * Time.deltaTime);
             ApplyPose();
+        }
+
+        void PlaySegment(ProceduralAudio.Segment segment, bool loop)
+        {
+            if (audioSource == null || !definitionValid)
+            {
+                return;
+            }
+
+            var clip = ProceduralAudio.Get(definition, segment);
+            if (clip == null)
+            {
+                return;
+            }
+
+            audioSource.loop = loop;
+            audioSource.clip = clip;
+            audioSource.Play();
+        }
+
+        void StopSustain()
+        {
+            sustaining = false;
+            if (audioSource != null && audioSource.loop)
+            {
+                audioSource.Stop();
+                audioSource.loop = false;
+            }
         }
 
         void ApplyPose()

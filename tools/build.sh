@@ -30,6 +30,14 @@ build_one() {
   maner_unity -executeMethod "$method" -manerBuildPath "$output" -logFile "$log"
   local code=$?
 
+  # Unity 在脚本有编译错误时会退回上一次成功编译的程序集继续出包，
+  # 并且照样返回 0。不显式检查日志的话，构建脚本会报告「成功」而产物是旧代码。
+  if grep -qE 'error CS[0-9]+' "$log"; then
+    echo "编译错误，构建产物不可信：" >&2
+    grep -E 'error CS[0-9]+' "$log" | sort -u | head -20 >&2
+    return 1
+  fi
+
   grep -E '^\[ManerBuild\]' "$log" || true
   if [[ $code -ne 0 ]]; then
     echo "构建失败，完整日志: $log" >&2

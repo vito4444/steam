@@ -4,6 +4,7 @@
     "references": [
         "Maner.Sim",
         "Maner.Controls",
+        "Maner.Shift",
         "Unity.RenderPipelines.Universal.Runtime",
         "Unity.RenderPipelines.Core.Runtime"
     ],

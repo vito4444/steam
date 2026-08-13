@@ -4,18 +4,28 @@
 
 ## 当前状态
 
-**方案选型阶段。** 已完成市场调研与候选方案设计，等待确定具体方案后进入垂直切片开发。
-工程骨架、构建管线与无人值守自检管线已搭建完成并验证通过，与具体方案无关，选定任何方案都可直接使用。
+**垂直切片开发中。** 已选定方案 A《深井调度站》：第一人称单场景机械操作模拟，
+玩家是一座三千米深井唯一的地面调度员，整局游戏待在一间控制舱里，
+靠一整面控制台把井下的人活着送上来。
+
+<img src="docs/progress/milestone-02-running.jpg" alt="控制舱实机画面" width="100%" />
 
 | 交付物 | 位置 | 状态 |
 | --- | --- | --- |
 | Steam 市场调研报告 | [`docs/research/steam-market-research-2026.md`](docs/research/steam-market-research-2026.md) | 完成 |
-| 五个候选游戏方案 | [`docs/concepts/maner-game-proposals.md`](docs/concepts/maner-game-proposals.md) | 完成，待决策 |
-| 方案概念图 | [`docs/concepts/images/`](docs/concepts/images/) | 完成 |
-| Unity 工程骨架 | [`game/`](game/) | 完成 |
-| Windows 构建管线 | [`tools/build.sh`](tools/build.sh) | 已验证产出 PE32+ 可执行文件 |
-| 无人值守自检管线 | [`tools/selfcheck.sh`](tools/selfcheck.sh) | 已验证输出 1920×1080 截图与帧统计 |
-| 画面差距量化工具 | [`tools/compare.py`](tools/compare.py) | 已验证 |
+| 五个候选方案与决策 | [`docs/concepts/maner-game-proposals.md`](docs/concepts/maner-game-proposals.md) | 完成，已选定方案 A |
+| 确定性仿真核心 | `game/Assets/Scripts/Sim/` | 卷扬机、通风、供电三套耦合子系统 |
+| 控制台与控件 | `game/Assets/Scripts/Controls/` | 8 种原型、28 个可交互控件、12 块表盘 |
+| 程序化控制舱 | `game/Assets/Scripts/Cabin/` | 几何、丝印、表盘、光照、音效全部由代码生成 |
+| 班次与叙事 | `game/Assets/Scripts/Shift/` | 班次导演、故障系统、电话分支、存档 |
+| Windows 构建 | [`tools/build.sh`](tools/build.sh) | PE32+ 可执行文件，92.8 MB |
+| 无人值守自检 | [`tools/selfcheck.sh`](tools/selfcheck.sh) | 1920×1080 截图与帧统计 |
+| 画面差距量化 | [`tools/compare.py`](tools/compare.py) | 影调对齐概念图，误差在 8% 以内 |
+| 照明自动标定 | [`tools/calibrate_lighting.py`](tools/calibrate_lighting.py) | 参数扫描与影调距离排序 |
+| 自动化测试 | `game/Assets/Tests/` | 58 项全通过 |
+
+工程内**没有任何建模、贴图或录音资产**：房间、面板、控件、仪表刻度、面板丝印、
+控件音效与环境声全部在运行时由代码生成，电话语音由 espeak-ng 合成后经无线电链路处理。
 
 ## 目录结构
 
