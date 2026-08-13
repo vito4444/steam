@@ -28,7 +28,9 @@ namespace Monster.EditorTools
             " !\"#$%&'()*+,-./0123456789:;<=>?@" +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
             "abcdefghijklmnopqrstuvwxyz{|}~" +
-            "\u2588\u2591\u2500\u2502\u2026\u00b0";
+            "\u2588\u2591\u2500\u2502\u2026\u00b0" +
+            // The block ramp the intercom draws its voice trace with.
+            "\u2581\u2582\u2583\u2584\u2585\u2586\u2587";
 
         [MenuItem("MONSTER/Setup/Build Typeface")]
         public static TMP_FontAsset Build()

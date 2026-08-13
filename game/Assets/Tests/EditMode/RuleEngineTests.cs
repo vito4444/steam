@@ -329,6 +329,8 @@ namespace Monster.Tests
         public void PaperworkProblemsDoNotMakeSomeoneInhuman()
         {
             var generator = new SubjectGenerator();
+            // C-17 is deliberately not here: a bearer who names a district other than the
+            // one on their permit is a body-signal problem, not a clerical one.
             var paperworkOnly = new[] { "C-01", "C-02", "C-03", "C-04", "C-05", "C-14", "C-15", "C-16" };
             var samples = 0;
 
@@ -371,6 +373,7 @@ namespace Monster.Tests
             ReflectionConsistent = true,
             SecondVoiceUnderTheFirst = false,
             CargoDeclarationMatchesScan = true,
+            SpokenDistrictMatchesPermit = true,
             IsHuman = true,
         };
 
@@ -394,6 +397,7 @@ namespace Monster.Tests
                 case "C-14": subject.ResponseDelaySeconds = 4.2f; break;
                 case "C-15": subject.IssuingOffice = "Northgate"; break;
                 case "C-16": subject.CargoDeclarationMatchesScan = false; break;
+                case "C-17": subject.SpokenDistrictMatchesPermit = false; break;
                 default: throw new ArgumentOutOfRangeException(nameof(criterionId), criterionId, null);
             }
         }

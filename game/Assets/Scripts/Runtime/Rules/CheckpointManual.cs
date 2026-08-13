@@ -20,6 +20,7 @@ namespace Monster.Rules
             ["C-03#2"] = 12,
             ["C-16#1"] = 15,
             ["C-06#2"] = 18,
+            ["C-17#1"] = 4,
         };
 
         public static CriteriaManual Build()
@@ -126,6 +127,11 @@ namespace Monster.Rules
                 "Where the cargo declaration does not match the underside scan. HOLD.",
                 Verdict.Hold,
                 Condition.Flag(FlagField.CargoDeclarationMatchesScan, false)));
+
+            manual.Issue(new Criterion("C-17", 1,
+                "Where the district a bearer names aloud is not the district on the permit. REFER.",
+                Verdict.Refer,
+                Condition.Flag(FlagField.SpokenDistrictMatchesPermit, false)));
 
             return manual;
         }

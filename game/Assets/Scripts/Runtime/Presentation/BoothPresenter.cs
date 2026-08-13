@@ -24,7 +24,7 @@ namespace Monster.Presentation
         [SerializeField] private PrintedSurface permit;
         [SerializeField] private PrintedSurface biometrics;
         [SerializeField] private PrintedSurface cabin;
-        [SerializeField] private PrintedSurface underside;
+        [SerializeField] private PrintedSurface intercom;
         [SerializeField] private PrintedSurface manual;
         [SerializeField] private PrintedSurface logbook;
 
@@ -37,10 +37,13 @@ namespace Monster.Presentation
 
         private ShiftDirector _director;
         private Coroutine _vehicleCycle;
+        private Coroutine _pendingReply;
 
         public ShiftDirector Director => _director;
 
         public event Action<Decision> DecisionMade;
+        public event Action<Question> QuestionAsked;
+        public event Action<Reply> ReplyReceived;
         public event Action<ShiftReport> ShiftEnded;
 
         public void Configure(int seed, int shift)
@@ -50,15 +53,45 @@ namespace Monster.Presentation
         }
 
         public void Bind(PrintedSurface permitSurface, PrintedSurface biometricsSurface,
-            PrintedSurface cabinSurface, PrintedSurface undersideSurface,
+            PrintedSurface cabinSurface, PrintedSurface intercomSurface,
             PrintedSurface manualSurface, PrintedSurface logbookSurface)
         {
             permit = permitSurface;
             biometrics = biometricsSurface;
             cabin = cabinSurface;
-            underside = undersideSurface;
+            intercom = intercomSurface;
             manual = manualSurface;
             logbook = logbookSurface;
+        }
+
+        /// <summary>Puts a question through the glass. The reply lands after however long
+        /// this particular bearer takes to start answering, which is the whole point: the
+        /// pause is felt in real time as well as printed, and asking costs time the player
+        /// is short of.</summary>
+        public bool Ask(Question question)
+        {
+            if (_director == null || _director.IsFinished || _pendingReply != null)
+            {
+                return false;
+            }
+
+            _pendingReply = StartCoroutine(AwaitReply(question));
+            return true;
+        }
+
+        private IEnumerator AwaitReply(Question question)
+        {
+            var subject = _director.Current.Attributes;
+            var reply = Interrogation.Ask(subject, question);
+
+            Show(intercom, DocumentBuilder.IntercomWaiting(question));
+            QuestionAsked?.Invoke(question);
+
+            yield return new WaitForSeconds(Mathf.Max(0.05f, reply.DelaySeconds));
+
+            Show(intercom, DocumentBuilder.IntercomReply(reply));
+            ReplyReceived?.Invoke(reply);
+            _pendingReply = null;
         }
 
         public void RegisterSwitch(DeskInteractable control) => switches.Add(control);
@@ -183,6 +216,24 @@ namespace Monster.Presentation
 
         private void OnSwitchThrown(DeskInteractable control)
         {
+            // Verdict switches and intercom keys are the same kind of control; the payload
+            // says which. A question key is prefixed so a typo cannot silently become a
+            // verdict.
+            if (control.Payload != null && control.Payload.StartsWith("Q:", StringComparison.Ordinal))
+            {
+                if (Enum.TryParse<Question>(control.Payload[2..], true, out var question))
+                {
+                    Ask(question);
+                }
+                else
+                {
+                    Debug.LogError($"[Booth] intercom key '{control.name}' has an unknown question " +
+                                   $"'{control.Payload}'");
+                }
+
+                return;
+            }
+
             if (!Enum.TryParse<Verdict>(control.Payload, true, out var verdict))
             {
                 Debug.LogError($"[Booth] switch '{control.name}' has an unrecognised payload '{control.Payload}'");
@@ -199,10 +250,17 @@ namespace Monster.Presentation
                 return;
             }
 
+            // A new vehicle means a new voice; anything the last one said is gone.
+            if (_pendingReply != null)
+            {
+                StopCoroutine(_pendingReply);
+                _pendingReply = null;
+            }
+
             Show(permit, _director.Permit);
             Show(biometrics, _director.Biometrics);
             Show(cabin, _director.Cabin);
-            Show(underside, _director.Underside);
+            Show(intercom, DocumentBuilder.IntercomIdle());
         }
 
         /// <summary>The binder shows every page ever issued, current and superseded, in the
@@ -264,7 +322,7 @@ namespace Monster.Presentation
             permit?.Clear();
             biometrics?.Clear();
             cabin?.Clear();
-            underside?.Clear();
+            intercom?.Clear();
         }
 
         private static void Show(PrintedSurface surface, DocumentContent content) => surface?.Show(content);

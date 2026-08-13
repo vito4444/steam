@@ -120,12 +120,53 @@ namespace Monster.Rules
                 "CABIN 02",
                 new[]
                 {
-                    new DocumentField("SUBJECT", "PRESENT"),
-                    new DocumentField("AUDIO", subject.SecondVoiceUnderTheFirst ? "LAYERED" : "SINGLE"),
-                    new DocumentField("DELAY", subject.ResponseDelaySeconds.ToString("F1", Invariant) + "S"),
+                    new DocumentField("SUBJ", "PRESENT"),
+                    new DocumentField("CARGO", subject.CargoDeclarationMatchesScan ? "MATCHED" : "DIVERGENT"),
+                    new DocumentField("MASS", subject.CargoDeclarationMatchesScan ? "NOMINAL" : "OVER"),
                 },
                 null,
                 PortraitCode.AsObserved(subject),
+                ScreenLabelWidth);
+
+        /// <summary>The intercom before anything has been asked.</summary>
+        public static DocumentContent IntercomIdle() =>
+            new(
+                "INTERCOM 14",
+                new[]
+                {
+                    new DocumentField("CHANNEL", "OPEN"),
+                    new DocumentField("LAST", "NO TRAFFIC"),
+                },
+                "PRESS TO SPEAK",
+                null,
+                ScreenLabelWidth);
+
+        /// <summary>The intercom while a question is out and nothing has come back.</summary>
+        public static DocumentContent IntercomWaiting(Question question) =>
+            new(
+                "INTERCOM 14",
+                new[]
+                {
+                    new DocumentField("ASKED", Interrogation.PromptFor(question)),
+                    new DocumentField("REPLY", "..."),
+                },
+                "AWAITING RESPONSE",
+                null,
+                ScreenLabelWidth);
+
+        /// <summary>The intercom with a reply on it: what was said, how long the bearer took
+        /// to start saying it, and the trace of the channel while they spoke.</summary>
+        public static DocumentContent IntercomReply(in Reply reply) =>
+            new(
+                "INTERCOM 14",
+                new[]
+                {
+                    new DocumentField("ASKED", reply.Prompt),
+                    new DocumentField("REPLY", reply.Answer),
+                    new DocumentField("PAUSE", Interrogation.FormatDelay(reply.DelaySeconds)),
+                },
+                Interrogation.VoiceTrace(reply, 20),
+                null,
                 ScreenLabelWidth);
 
         public static DocumentContent UndersideScan(in SubjectAttributes subject) =>
@@ -167,9 +208,14 @@ namespace Monster.Rules
                 nameof(SubjectAttributes.PupilsReactToLight),
                 nameof(SubjectAttributes.SkinTemperatureC),
                 nameof(SubjectAttributes.VisibleLimbCount),
-                nameof(SubjectAttributes.SecondVoiceUnderTheFirst),
-                nameof(SubjectAttributes.ResponseDelaySeconds),
                 nameof(SubjectAttributes.CargoDeclarationMatchesScan),
+
+                // Obtained by putting a question through the intercom rather than read off
+                // a monitor: the reply strip prints how long the pause was and draws the
+                // voice trace, and the district answer is what C-17 turns on.
+                nameof(SubjectAttributes.ResponseDelaySeconds),
+                nameof(SubjectAttributes.SecondVoiceUnderTheFirst),
+                nameof(SubjectAttributes.SpokenDistrictMatchesPermit),
             };
 
             // These two are read by comparing portrait grids rather than by reading a

@@ -41,6 +41,11 @@ namespace Monster.Rules
         public bool SecondVoiceUnderTheFirst;
         public bool CargoDeclarationMatchesScan;
 
+        /// <summary>Whether the district the bearer names aloud is the one printed on the
+        /// permit. Only discoverable by asking, which is what gives the interrogation
+        /// something to be for.</summary>
+        public bool SpokenDistrictMatchesPermit;
+
         // -------------------------------------------------------------- ground truth --
         /// <summary>Never displayed and never referenced by a criterion. Used only to
         /// score the ending and to write the delayed consequences.</summary>
@@ -64,6 +69,7 @@ namespace Monster.Rules
             && ReflectionConsistent == other.ReflectionConsistent
             && SecondVoiceUnderTheFirst == other.SecondVoiceUnderTheFirst
             && CargoDeclarationMatchesScan == other.CargoDeclarationMatchesScan
+            && SpokenDistrictMatchesPermit == other.SpokenDistrictMatchesPermit
             && IsHuman == other.IsHuman;
 
         public override bool Equals(object obj) => obj is SubjectAttributes other && Equals(other);
@@ -88,6 +94,7 @@ namespace Monster.Rules
             hash.Add(ReflectionConsistent);
             hash.Add(SecondVoiceUnderTheFirst);
             hash.Add(CargoDeclarationMatchesScan);
+            hash.Add(SpokenDistrictMatchesPermit);
             hash.Add(IsHuman);
             return hash.ToHashCode();
         }
@@ -118,6 +125,7 @@ namespace Monster.Rules
         ReflectionConsistent,
         SecondVoiceUnderTheFirst,
         CargoDeclarationMatchesScan,
+        SpokenDistrictMatchesPermit,
     }
 
     public enum TextField
@@ -149,6 +157,7 @@ namespace Monster.Rules
             FlagField.ReflectionConsistent => subject.ReflectionConsistent,
             FlagField.SecondVoiceUnderTheFirst => subject.SecondVoiceUnderTheFirst,
             FlagField.CargoDeclarationMatchesScan => subject.CargoDeclarationMatchesScan,
+            FlagField.SpokenDistrictMatchesPermit => subject.SpokenDistrictMatchesPermit,
             _ => throw new ArgumentOutOfRangeException(nameof(field), field, null),
         };
 

@@ -202,15 +202,23 @@ namespace Monster.EditorTools
         private static Material ScreenOverlayMaterial()
         {
             const string path = "Assets/Materials/PhosphorOverlay.mat";
-            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
+
+            // Always recreated. A cached material holds its texture by GUID, so
+            // regenerating the texture on its own leaves the reference dangling; URP then
+            // samples white, the overlay becomes an opaque black rectangle, and every
+            // monitor in the booth goes blank with no error anywhere.
+            AssetDatabase.DeleteAsset(path);
 
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
             var material = new Material(shader) { name = "PhosphorOverlay" };
-            material.SetTexture("_BaseMap", ScreenOverlayTexture());
+            var overlay = ScreenOverlayTexture();
+            if (overlay == null)
+            {
+                Debug.LogError("[Atmosphere] the phosphor overlay texture is missing; the monitors " +
+                               "would render as opaque black rectangles");
+            }
+
+            material.SetTexture("_BaseMap", overlay);
             material.SetColor("_BaseColor", new Color(0f, 0f, 0f, 1f));
             SetTransparent(material);
 
@@ -248,8 +256,10 @@ namespace Monster.EditorTools
 
                     // Corner falloff follows the rounded rectangle a CRT tube actually is,
                     // not a circle, so the middle of each edge stays clear.
+                    // Softer than the first pass, which reached 92 percent black in the
+                    // corners and swallowed the top line of every readout.
                     var corner = Mathf.Pow(Mathf.Abs(u), 4f) + Mathf.Pow(Mathf.Abs(v), 4f);
-                    var vignette = Mathf.Clamp01((corner - 0.45f) / 0.85f) * 0.92f;
+                    var vignette = Mathf.Clamp01((corner - 0.75f) / 1.20f) * 0.80f;
 
                     var grain = (float)random.NextDouble() * 0.05f;
                     var alpha = Mathf.Clamp01(scanline + vignette + grain);
@@ -282,12 +292,9 @@ namespace Monster.EditorTools
 
         private static Material AdditiveMaterial(string name, Color tint, Texture2D texture)
         {
+            // Recreated for the same reason ScreenOverlayMaterial is.
             var path = $"Assets/Materials/{name}.mat";
-            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (existing != null)
-            {
-                return existing;
-            }
+            AssetDatabase.DeleteAsset(path);
 
             var material = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = name };
             material.SetColor("_BaseColor", tint);
@@ -297,6 +304,11 @@ namespace Monster.EditorTools
             }
 
             SetTransparent(material, additive: true);
+
+            if (texture == null)
+            {
+                Debug.LogError($"[Atmosphere] '{name}' has no texture and will render as a solid quad");
+            }
 
             MonsterSetup.EnsureFolder("Assets/Materials");
             AssetDatabase.CreateAsset(material, path);

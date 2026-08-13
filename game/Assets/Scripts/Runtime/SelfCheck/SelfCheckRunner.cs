@@ -50,6 +50,9 @@ namespace Monster.SelfCheck
 
             [Tooltip("Pose the road outside before capturing. -1 leaves it alone.")]
             public int stagePhase = -1;
+
+            [Tooltip("Put this question through the intercom and wait for the reply. -1 asks nothing.")]
+            public int askQuestion = -1;
         }
 
         [SerializeField] private List<Checkpoint> checkpoints = new();
@@ -148,6 +151,37 @@ namespace Monster.SelfCheck
                         {
                             boothCamera.SnapLookAt(checkpoint.lookAt.position);
                         }
+                    }
+                }
+
+                // Asking is the one checkpoint that has to wait on the game rather than on
+                // a fixed settle: the whole point of the intercom is that the pause before
+                // an answer is however long this bearer takes.
+                if (presenter != null && checkpoint.askQuestion >= 0)
+                {
+                    var replied = false;
+
+                    void OnReply(Reply _) => replied = true;
+
+                    presenter.ReplyReceived += OnReply;
+                    if (!presenter.Ask((Question)checkpoint.askQuestion))
+                    {
+                        _logLines.Add($"Error: checkpoint '{checkpoint.name}' could not put a question " +
+                                      "through the intercom");
+                        replied = true;
+                    }
+
+                    var giveUp = Time.realtimeSinceStartup + 12f;
+                    while (!replied && Time.realtimeSinceStartup < giveUp)
+                    {
+                        yield return null;
+                    }
+
+                    presenter.ReplyReceived -= OnReply;
+
+                    if (!replied)
+                    {
+                        _logLines.Add($"Error: no reply arrived for checkpoint '{checkpoint.name}'");
                     }
                 }
 

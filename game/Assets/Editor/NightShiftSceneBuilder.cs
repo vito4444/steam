@@ -64,6 +64,8 @@ namespace Monster.EditorTools
         private static readonly List<Transform> ScreenAnchors = new();
         private static readonly List<Transform> Switches = new();
         private static readonly List<Transform> SwitchLabelAnchors = new();
+        private static readonly List<Transform> IntercomKeys = new();
+        private static readonly List<Transform> IntercomKeyLabels = new();
         private static Transform _permitPaper;
         private static Transform _permitAnchor;
         private static Transform _manualPages;
@@ -87,6 +89,8 @@ namespace Monster.EditorTools
             ScreenAnchors.Clear();
             Switches.Clear();
             SwitchLabelAnchors.Clear();
+            IntercomKeys.Clear();
+            IntercomKeyLabels.Clear();
             _permitPaper = null;
             _permitAnchor = null;
             _manualPages = null;
@@ -121,6 +125,7 @@ namespace Monster.EditorTools
                 _manualPages, _manualAnchor,
                 _logAnchor,
                 ScreenAnchors, Switches, SwitchLabelAnchors,
+                IntercomKeys, IntercomKeyLabels,
                 camera.gameObject));
             BuildSelfCheck(camera);
 
@@ -275,11 +280,10 @@ namespace Monster.EditorTools
         {
             var crtShell = Mat("CRTShell", new Color(0.215f, 0.205f, 0.170f), 0.22f);
 
-            // Screen emission is deliberately low. The first render had these at 1.7 and
-            // the green flooded the entire frame, drowning the desk lamp that is supposed
-            // to be the key light. The CRTs are a secondary source, not the subject.
-            var crtScreen = Mat("CRTScreen", new Color(0.010f, 0.020f, 0.014f), 0.50f, 0f,
-                new Color(0.036f, 0.180f, 0.076f));
+            // Unlit, because a phosphor screen emits and does not reflect. As a Lit
+            // material the desk lamp fell across the nearest monitor and washed its face
+            // from green to pale yellow, which no CRT has ever done.
+            var crtScreen = UnlitMat("CRTScreen", new Color(0.030f, 0.150f, 0.064f));
             var brass = Mat("Brass", new Color(0.62f, 0.47f, 0.19f), 0.66f, 0.85f);
             var paper = Mat("Paper", new Color(0.660f, 0.636f, 0.552f), 0.05f, 0f, null,
                 Grunge("Grunge_Paper", 256, 3.0f, 0.55f, 0.0f, 2231), 1f);
@@ -383,6 +387,23 @@ namespace Monster.EditorTools
                 SwitchLabelAnchors.Add(Anchor($"LabelText_{i}", panel,
                     new Vector3(0.020f + i * 0.075f, 0.019f, -0.070f),
                     Quaternion.Euler(90f, 0f, 0f)));
+            }
+
+            // Intercom keypad. Deliberately across the desk from the verdict switches:
+            // one row asks a question and the other ends someone's night.
+            var keypad = new GameObject("IntercomKeypad").transform;
+            keypad.SetParent(parent, false);
+            keypad.SetPositionAndRotation(new Vector3(-0.78f, DeskTopY + 0.026f, 0.80f),
+                Quaternion.Euler(-18f, 12f, 0f));
+            Box("Plate", keypad, Vector3.zero, new Vector3(0.320f, 0.024f, 0.130f), darkPlastic);
+            Box("Grille", keypad, new Vector3(0f, 0.014f, 0.044f), new Vector3(0.250f, 0.004f, 0.030f), brass);
+            for (var i = 0; i < 4; i++)
+            {
+                var x = -0.114f + i * 0.076f;
+                IntercomKeys.Add(Box($"Key_{i}", keypad, new Vector3(x, 0.024f, -0.014f),
+                    new Vector3(0.054f, 0.022f, 0.038f), brass).transform);
+                IntercomKeyLabels.Add(Anchor($"KeyLabel_{i}", keypad,
+                    new Vector3(x, 0.014f, -0.052f), Quaternion.Euler(90f, 0f, 0f)));
             }
 
             // Stamp and ink pad.
@@ -495,7 +516,7 @@ namespace Monster.EditorTools
             // guessed in Euler degrees. This is the pool of warm light the whole shot is
             // built around, and the first pass missed the desk entirely.
             var keyPosition = origin + new Vector3(0.170f, 0.360f, 0.048f);
-            var keyTarget = new Vector3(0.02f, DeskTopY, 0.62f);
+            var keyTarget = new Vector3(0.06f, DeskTopY, 0.44f);
             _lampOrigin = keyPosition;
             _lampTarget = keyTarget;
             var light = new GameObject("Key").AddComponent<Light>();
@@ -504,9 +525,9 @@ namespace Monster.EditorTools
                 Quaternion.LookRotation(keyTarget - keyPosition, Vector3.up));
             light.type = LightType.Spot;
             light.color = new Color(1.00f, 0.735f, 0.455f);
-            light.intensity = 15f;
+            light.intensity = 17f;
             light.range = 4.5f;
-            light.spotAngle = 104f;
+            light.spotAngle = 84f;
             light.innerSpotAngle = 26f;
             light.shadows = LightShadows.Hard;
             light.shadowStrength = 0.80f;
@@ -728,14 +749,15 @@ namespace Monster.EditorTools
             // or the manual all get caught rather than only whatever the idle shot happens
             // to include.
             // 2 = AtTheWindow, 1 = Approaching, 3 = Admitted, matching CheckpointStage.Phase.
-            var poses = new (string name, Transform lookAt, int subject, bool leanIn, int stage)[]
+            var poses = new (string name, Transform lookAt, int subject, bool leanIn, int stage, int ask)[]
             {
-                ("booth_idle", null, 0, false, 2),
-                ("permit", _permitPaper, 2, true, 2),
-                ("monitors", ScreenAnchors.Count > 1 ? ScreenAnchors[1] : null, 2, false, 2),
-                ("manual", _manualPages, 5, true, 2),
-                ("approach", null, 3, false, 1),
-                ("admitted", null, 3, false, 3),
+                ("booth_idle", null, 0, false, 2, -1),
+                ("permit", _permitPaper, 2, true, 2, -1),
+                ("monitors", ScreenAnchors.Count > 1 ? ScreenAnchors[1] : null, 2, false, 2, -1),
+                ("manual", _manualPages, 5, true, 2, -1),
+                ("approach", null, 3, false, 1, -1),
+                ("admitted", null, 3, false, 3, -1),
+                ("intercom", ScreenAnchors.Count > 0 ? ScreenAnchors[0] : null, 4, false, 2, 0),
             };
 
             var serialized = new SerializedObject(runner);
@@ -752,6 +774,7 @@ namespace Monster.EditorTools
                 entry.FindPropertyRelative("subjectIndex").intValue = poses[i].subject;
                 entry.FindPropertyRelative("leanIn").boolValue = poses[i].leanIn;
                 entry.FindPropertyRelative("stagePhase").intValue = poses[i].stage;
+                entry.FindPropertyRelative("askQuestion").intValue = poses[i].ask;
             }
 
             serialized.FindProperty("reportAnchor").objectReferenceValue = _logAnchor;
@@ -930,6 +953,35 @@ namespace Monster.EditorTools
             material.DisableKeyword("_ALPHATEST_ON");
             material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        /// <summary>A material that ignores room lighting. For anything that is a source
+        /// rather than a surface.</summary>
+        private static Material UnlitMat(string name, Color baseColor)
+        {
+            if (Materials.TryGetValue(name, out var cached))
+            {
+                return cached;
+            }
+
+            var path = $"{MaterialsFolder}/{name}.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else
+            {
+                material.shader = shader;
+            }
+
+            material.SetColor("_BaseColor", baseColor);
+            EditorUtility.SetDirty(material);
+            Materials[name] = material;
             return material;
         }
 

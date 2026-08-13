@@ -121,6 +121,8 @@ namespace Monster.Rules
                 (_, s) => s[0].IssuingOffice = "Northgate"),
             new("C-16", nameof(SubjectAttributes.CargoDeclarationMatchesScan),
                 (_, s) => s[0].CargoDeclarationMatchesScan = false),
+            new("C-17", nameof(SubjectAttributes.SpokenDistrictMatchesPermit),
+                (_, s) => s[0].SpokenDistrictMatchesPermit = false),
         };
 
         public static IReadOnlyCollection<string> KnownViolations =>
@@ -205,7 +207,10 @@ namespace Monster.Rules
             // Ground truth. Anything that trips a body-signal criterion is not a person;
             // paperwork problems are just paperwork problems, and that distinction is what
             // makes refusing a human a different mistake from passing something else.
-            var bodySignals = new[] { "C-06", "C-07", "C-08", "C-09", "C-10", "C-11", "C-12", "C-13" };
+            var bodySignals = new[]
+            {
+                "C-06", "C-07", "C-08", "C-09", "C-10", "C-11", "C-12", "C-13", "C-17",
+            };
             subject.IsHuman = !applied.Any(id => bodySignals.Contains(id));
 
             return new GeneratedSubject(subject, applied, seed);
@@ -235,6 +240,7 @@ namespace Monster.Rules
                 ReflectionConsistent = true,
                 SecondVoiceUnderTheFirst = false,
                 CargoDeclarationMatchesScan = true,
+                SpokenDistrictMatchesPermit = true,
 
                 IsHuman = true,
             };

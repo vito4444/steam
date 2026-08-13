@@ -3,6 +3,7 @@ using Monster.Audio;
 using Monster.Interaction;
 using Monster.Presentation;
 using Monster.Rules;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -52,6 +53,8 @@ namespace Monster.EditorTools
                 IReadOnlyList<Transform> screenAnchors,
                 IReadOnlyList<Transform> switchMeshes,
                 IReadOnlyList<Transform> switchLabelAnchors,
+                IReadOnlyList<Transform> intercomKeys,
+                IReadOnlyList<Transform> intercomKeyLabels,
                 GameObject camera)
             {
                 StageBarrierArm = stageBarrierArm;
@@ -67,6 +70,8 @@ namespace Monster.EditorTools
                 ScreenAnchors = screenAnchors;
                 SwitchMeshes = switchMeshes;
                 SwitchLabelAnchors = switchLabelAnchors;
+                IntercomKeys = intercomKeys;
+                IntercomKeyLabels = intercomKeyLabels;
                 Camera = camera;
             }
 
@@ -83,6 +88,8 @@ namespace Monster.EditorTools
             public IReadOnlyList<Transform> ScreenAnchors { get; }
             public IReadOnlyList<Transform> SwitchMeshes { get; }
             public IReadOnlyList<Transform> SwitchLabelAnchors { get; }
+            public IReadOnlyList<Transform> IntercomKeys { get; }
+            public IReadOnlyList<Transform> IntercomKeyLabels { get; }
             public GameObject Camera { get; }
         }
 
@@ -99,12 +106,15 @@ namespace Monster.EditorTools
             var manual = BuildManualSurface(handles.ManualAnchor, font);
             var logbook = BuildLogSurface(handles.LogAnchor, font);
 
-            var underside = BuildScreenSurface(handles.ScreenAnchors[0], font, "Underside");
+                        // The intercom prints whole sentences rather than short readings, so its type
+            // is smaller than the other two screens'.
+            var intercom = BuildScreenSurface(handles.ScreenAnchors[0], font, "Intercom",
+                withFooter: true, bodyMillimetres: 29f);
             var biometrics = BuildScreenSurface(handles.ScreenAnchors[1], font, "Biometrics");
             var cabin = BuildScreenSurface(handles.ScreenAnchors[2], font, "Cabin", withPortrait: true);
 
             var presenter = new GameObject("Booth").AddComponent<BoothPresenter>();
-            presenter.Bind(permit, biometrics, cabin, underside, manual, logbook);
+            presenter.Bind(permit, biometrics, cabin, intercom, manual, logbook);
 
             var stage = presenter.gameObject.AddComponent<CheckpointStage>();
             stage.Rig(handles.StageBarrierArm, handles.StageVehicle, handles.StageSubject,
@@ -116,6 +126,7 @@ namespace Monster.EditorTools
             presenter.gameObject.AddComponent<BoothAudio>().Bind(presenter);
 
             BuildSwitches(handles.SwitchMeshes, handles.SwitchLabelAnchors, font, presenter);
+            BuildIntercomKeys(handles.IntercomKeys, handles.IntercomKeyLabels, font, presenter);
             MakeInspectable(handles.PermitMesh, "permit", 0.46f, new Vector3(0f, 1f, -0.34f));
             MakeInspectable(handles.ManualMesh, "manual", 0.42f, new Vector3(0f, 1f, -0.34f));
 
@@ -123,7 +134,7 @@ namespace Monster.EditorTools
             handles.Camera.AddComponent<DeskInteractor>().Input = new LegacyInputSource();
 
             var printed = permit != null && manual != null && logbook != null
-                          && underside != null && biometrics != null && cabin != null;
+                          && intercom != null && biometrics != null && cabin != null;
             Debug.Log(printed
                 ? "[Booth] six printed surfaces, four switches and the presenter attached"
                 : "[Booth] ERROR: not every printed surface was created");
@@ -183,15 +194,15 @@ namespace Monster.EditorTools
         }
 
         private static PrintedSurface BuildScreenSurface(Transform anchor, TMP_FontAsset font, string name,
-            bool withPortrait = false)
+            bool withPortrait = false, bool withFooter = false, float bodyMillimetres = 38f)
         {
             var surface = anchor.gameObject.AddComponent<PrintedSurface>();
             surface.name = name;
 
-            var title = TextFromTop(anchor, "Title", font, Mm(26f), PhosphorColour,
-                0.500f, 0.028f, 0.134f, -0.008f, TextAlignmentOptions.TopLeft, FontStyles.Bold);
-            var body = TextFromTop(anchor, "Body", font, Mm(38f), PhosphorColour,
-                withPortrait ? 0.320f : 0.500f, 0.200f, 0.094f,
+            var title = TextFromTop(anchor, "Title", font, Mm(24f), PhosphorColour,
+                0.500f, 0.024f, 0.124f, -0.008f, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+            var body = TextFromTop(anchor, "Body", font, Mm(bodyMillimetres), PhosphorColour,
+                withPortrait ? 0.320f : 0.500f, 0.200f, 0.090f,
                 withPortrait ? -0.092f : -0.008f, TextAlignmentOptions.TopLeft);
 
             TextMeshPro portrait = null;
@@ -201,7 +212,17 @@ namespace Monster.EditorTools
                     0.190f, 0.180f, 0.090f, 0.158f, TextAlignmentOptions.Top);
             }
 
-            surface.Bind(title, body, portrait, null);
+            TextMeshPro footer = null;
+            if (withFooter)
+            {
+                // The intercom's voice trace: two rows of block characters under the reply,
+                // drawn tight so the ramp reads as a waveform rather than as text.
+                footer = TextFromTop(anchor, "Footer", font, Mm(19f), PhosphorColour,
+                    0.500f, 0.060f, -0.036f, -0.008f, TextAlignmentOptions.TopLeft);
+                footer.lineSpacing = -28f;
+            }
+
+            surface.Bind(title, body, portrait, footer);
             return surface;
         }
 
@@ -235,6 +256,36 @@ namespace Monster.EditorTools
         }
 
         // -------------------------------------------------------------------- helpers --
+
+        /// <summary>The four intercom keys. Separate from the verdict switches on purpose:
+        /// one row decides a person's night and the other only asks a question, and mixing
+        /// them on the same plate would invite the wrong one being thrown under time
+        /// pressure.</summary>
+        private static void BuildIntercomKeys(IReadOnlyList<Transform> keys,
+            IReadOnlyList<Transform> labelAnchors, TMP_FontAsset font, BoothPresenter presenter)
+        {
+            var questions = new[] { Question.District, Question.Purpose, Question.IssuingOffice, Question.Destination };
+            var captions = new[] { "DIST", "PURP", "OFFC", "DEST" };
+
+            for (var i = 0; i < keys.Count && i < questions.Length; i++)
+            {
+                if (i < labelAnchors.Count && labelAnchors[i] != null)
+                {
+                    Text(labelAnchors[i], "Text", font, Mm(13f), EngravedColour,
+                        new Vector2(0.058f, 0.012f), Vector3.zero, TextAlignmentOptions.Center,
+                        FontStyles.Bold).text = captions[i];
+                }
+
+                var key = keys[i];
+                var collider = key.gameObject.AddComponent<BoxCollider>();
+                collider.size = new Vector3(1.9f, 3.0f, 1.9f);
+
+                var interactable = key.gameObject.AddComponent<DeskInteractable>();
+                interactable.Configure(DeskInteractable.Behaviour.Operate, $"Q:{questions[i]}", 0.20f,
+                    new Vector3(0f, 1f, -0.4f), key.GetComponentsInChildren<Renderer>());
+                presenter.RegisterSwitch(interactable);
+            }
+        }
 
         private static void MakeInspectable(Transform mesh, string payload, float distance, Vector3 offset)
         {

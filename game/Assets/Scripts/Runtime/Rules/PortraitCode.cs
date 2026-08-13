@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Monster.Rules
@@ -55,8 +56,11 @@ namespace Monster.Rules
                 return truth;
             }
 
-            // Flip three cells chosen deterministically from the same subject, so the
-            // difference is stable across runs but not in a fixed position.
+            // Swap lit cells with unlit ones rather than flipping cells outright. Flipping
+            // changed how many cells were lit, which pushed some faces to thirteen of
+            // sixteen and made them read as a solid block with nothing to compare against.
+            // A swap moves the pattern without changing its density, and it guarantees the
+            // difference is exactly two cells per swap.
             unchecked
             {
                 var hash = 2166136261u;
@@ -66,11 +70,27 @@ namespace Monster.Rules
                 }
 
                 var bits = truth._bits;
-                for (var i = 0; i < 3; i++)
+
+                // Chosen from the original pattern, all distinct, before anything is
+                // applied. Picking them one at a time from the pattern as it changed let a
+                // second swap undo the first, and the "mismatched" face came out identical
+                // to the permit.
+                var litCells = CellsInState(bits, true);
+                var unlitCells = CellsInState(bits, false);
+                var swaps = Math.Min(1 + (int)(hash % 2u), Math.Min(litCells.Count, unlitCells.Count));
+
+                for (var swap = 0; swap < swaps; swap++)
                 {
-                    var index = (int)(hash % 16);
-                    bits ^= (ushort)(1 << index);
                     hash = hash * 16777619u + 7u;
+                    var lit = litCells[(int)(hash % (uint)litCells.Count)];
+                    litCells.Remove(lit);
+
+                    hash = hash * 16777619u + 13u;
+                    var unlit = unlitCells[(int)(hash % (uint)unlitCells.Count)];
+                    unlitCells.Remove(unlit);
+
+                    bits &= (ushort)~(1 << lit);
+                    bits |= (ushort)(1 << unlit);
                 }
 
                 return new PortraitCode(bits);
@@ -129,6 +149,20 @@ namespace Monster.Rules
             return count;
         }
 
+        private static List<int> CellsInState(ushort bits, bool lit)
+        {
+            var matches = new List<int>(16);
+            for (var i = 0; i < 16; i++)
+            {
+                if (((bits & (1 << i)) != 0) == lit)
+                {
+                    matches.Add(i);
+                }
+            }
+
+            return matches;
+        }
+
         /// <summary>Nudges a pattern towards six to ten lit cells. Anything outside that
         /// range is a grey square or a black square and cannot be compared by eye.</summary>
         private static ushort Balance(ushort bits)
@@ -145,18 +179,30 @@ namespace Monster.Rules
                 return n;
             }
 
-            var index = 0;
-            while (Population(bits) < 6 && index < 16)
+            // Stepping by three only ever visited six of the sixteen cells, so a pattern
+            // that was too dense in the other ten could not be thinned and came out as a
+            // near-solid block with nothing to compare. Every cell is a candidate now, in a
+            // fixed order so the result stays deterministic.
+            var order = new[] { 0, 3, 6, 9, 12, 15, 1, 4, 7, 10, 13, 2, 5, 8, 11, 14 };
+
+            foreach (var index in order)
             {
+                if (Population(bits) >= 6)
+                {
+                    break;
+                }
+
                 bits |= (ushort)(1 << index);
-                index += 3;
             }
 
-            index = 0;
-            while (Population(bits) > 10 && index < 16)
+            foreach (var index in order)
             {
+                if (Population(bits) <= 10)
+                {
+                    break;
+                }
+
                 bits &= (ushort)~(1 << index);
-                index += 3;
             }
 
             return bits;
