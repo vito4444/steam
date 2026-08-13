@@ -14,6 +14,13 @@ SCENE="${1:-Assets/Scenes/Station.unity}"
 SECONDS_TO_RUN="${2:-22}"
 # 传 -playtest 让游戏自动走一遍班次流程，用于验证整条玩法链路。
 PLAYTEST_FLAG="${3:--playtest}"
+# 分辨率。软件渲染下这是帧率的决定性因素，而演练脚本每一步都是 WaitForSeconds，
+# 每次等待至少要跨一帧——帧率掉到一秒几帧，一段名义上两秒半的抄写会实际耗掉几十秒，
+# 现象是演练日志停在中间，极容易被误判成玩法逻辑坏了。
+# 要出高清展示图时传 1920x1080，日常验证用默认值。
+RESOLUTION="${4:-1280x720}"
+SCREEN_WIDTH="${RESOLUTION%x*}"
+SCREEN_HEIGHT="${RESOLUTION#*x}"
 OUT_DIR="${ARTIFACTS}/playtest"
 BUILD_DIR="${ARTIFACTS}/build/StandaloneLinux64"
 LOG="${LOG_DIR}/playtest.log"
@@ -57,15 +64,20 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "启动 Xvfb ${DISPLAY_NUM}"
-Xvfb "${DISPLAY_NUM}" -screen 0 1920x1080x24 -nolisten tcp &
+# 清掉存档再跑。游戏会恢复班次中途的进度，上一次演练抄到一半留下的字符
+# 会和这一次抄的接在一起，抄收结果凭空多出一倍——看上去像抄写逻辑重复执行了。
+# 演练要验证的是从零开始的完整链路，每次都得是新档。
+rm -rf "${HOME}/.config/unity3d/DefaultCompany/Decoder" 2>/dev/null || true
+
+echo "启动 Xvfb ${DISPLAY_NUM} ${SCREEN_WIDTH}x${SCREEN_HEIGHT}"
+Xvfb "${DISPLAY_NUM}" -screen 0 "${SCREEN_WIDTH}x${SCREEN_HEIGHT}x24" -nolisten tcp &
 XVFB_PID=$!
 sleep 2
 
 echo "运行游戏 ${SECONDS_TO_RUN} 秒"
 DISPLAY="${DISPLAY_NUM}" LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
     "${BUILD_DIR}/Decoder" \
-    -screen-width 1920 -screen-height 1080 -screen-fullscreen 0 \
+    -screen-width "${SCREEN_WIDTH}" -screen-height "${SCREEN_HEIGHT}" -screen-fullscreen 0 \
     ${PLAYTEST_FLAG:-} \
     -logFile "${PLAYER_LOG}" &
 PLAYER_PID=$!
@@ -96,7 +108,7 @@ for delay in 5 9 13 17 21; do
     fi
 
     OUT="${OUT_DIR}/playtest_$(printf '%02d' "${SHOT_INDEX}")_t${delay}s.png"
-    ffmpeg -loglevel error -y -f x11grab -video_size 1920x1080 \
+    ffmpeg -loglevel error -y -f x11grab -video_size "${SCREEN_WIDTH}x${SCREEN_HEIGHT}" \
         -i "${DISPLAY_NUM}.0" -frames:v 1 "${OUT}"
     echo "  抓帧 ${OUT}"
     SHOT_INDEX=$((SHOT_INDEX + 1))

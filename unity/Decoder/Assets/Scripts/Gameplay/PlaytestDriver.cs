@@ -33,7 +33,29 @@ namespace Decoder.Gameplay
                 return;
             }
 
+            // 步长可以从命令行压小。无 GPU 环境下这个场景只有每秒零点几帧，
+            // 而脚本每一步都是 WaitForSeconds、每次等待至少跨一帧，
+            // 默认步长下整套流程要跑好几分钟才走得完，
+            // 现象是演练日志停在中间——极容易被误判成玩法逻辑坏了。
+            var speed = ReadFloatArgument("-playtestSpeed", stepSeconds);
+            stepSeconds = Mathf.Max(0.05f, speed);
+
             StartCoroutine(RunScript());
+        }
+
+        private static float ReadFloatArgument(string name, float fallback)
+        {
+            var args = Environment.GetCommandLineArgs();
+            for (var i = 0; i < args.Length - 1; i++)
+            {
+                if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase)
+                    && float.TryParse(args[i + 1], out var value))
+                {
+                    return value;
+                }
+            }
+
+            return fallback;
         }
 
         private static bool HasCommandLineFlag(string flag)
