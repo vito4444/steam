@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using Undertown.Core.Sim;
 using Undertown.Core.World;
 
 namespace Undertown.Game.Presentation
@@ -27,14 +28,16 @@ namespace Undertown.Game.Presentation
         [SerializeField] private Tilemap _overlay;
 
         private GridMap _map;
+        private DigOrders _digs;
         private int _activeDepth;
 
         public int ActiveDepth => _activeDepth;
         public bool ViewingSurface => _activeDepth == GridMap.SurfaceDepth;
 
-        public void Bind(GridMap map)
+        public void Bind(GridMap map, DigOrders digs = null)
         {
             _map = map;
+            _digs = digs;
             _activeDepth = GridMap.SurfaceDepth;
             Redraw();
         }
@@ -93,8 +96,13 @@ namespace Undertown.Game.Presentation
                 return null;
             }
 
-            // Underground, show the whole town overhead so chambers can be sited away from
-            // roads and buildings, which is where inspectors actually walk and tap.
+            // Outstanding dig orders take priority over the town overhead: the player needs to
+            // see what they have queued before they need to see what is above it.
+            if (_digs != null && _digs.IsOrdered(new Coord(x, y, _activeDepth)))
+                return ProceduralTileArt.DigOrderMarker;
+
+            // Otherwise show the whole town overhead so chambers can be sited away from roads
+            // and buildings, which is where inspectors actually walk and tap.
             return ProceduralTileArt.TileFor(_map.Get(new Coord(x, y, GridMap.SurfaceDepth)));
         }
 

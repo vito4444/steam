@@ -29,6 +29,19 @@ namespace Undertown.Core.Buildings
 
         public BuildingDef Def => BuildingCatalog.Get(Kind);
 
+        public bool Working => AssignedWorkers > 0;
+
+        /// <summary>Starts or stops the workshop. Returns the new state.</summary>
+        public bool ToggleWork()
+        {
+            var def = Def;
+            if (def == null || def.WorkerSlots <= 0) return false;
+
+            AssignedWorkers = Working ? 0 : def.WorkerSlots;
+            if (!Working) Starved = false;
+            return Working;
+        }
+
         public bool Covers(Coord cell)
         {
             var def = Def;

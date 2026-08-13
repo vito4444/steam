@@ -51,6 +51,49 @@ namespace Undertown.Game.Presentation
                 ? _declaredHollowMarker
                 : _declaredHollowMarker = MarkerTile("hollow_declared", new Color32(0x5E, 0x8C, 0x6A, 0xFF), hatched: false);
 
+        private static Sprite _selection;
+        private static Tile _digOrderMarker;
+
+        /// <summary>A hollow square for the cursor and for drag selection.</summary>
+        public static Sprite SelectionSprite
+        {
+            get
+            {
+                if (_selection != null) return _selection;
+
+                var texture = new Texture2D(PixelsPerTile, PixelsPerTile, TextureFormat.RGBA32, mipChain: false)
+                {
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp,
+                    name = "ui_selection",
+                };
+
+                var pixels = new Color32[PixelsPerTile * PixelsPerTile];
+                var clear = new Color32(0, 0, 0, 0);
+                var line = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
+
+                for (int y = 0; y < PixelsPerTile; y++)
+                for (int x = 0; x < PixelsPerTile; x++)
+                {
+                    bool border = x < 2 || y < 2 || x >= PixelsPerTile - 2 || y >= PixelsPerTile - 2;
+                    pixels[y * PixelsPerTile + x] = border ? line : clear;
+                }
+
+                texture.SetPixels32(pixels);
+                texture.Apply(false);
+                _selection = Sprite.Create(
+                    texture, new Rect(0, 0, PixelsPerTile, PixelsPerTile), new Vector2(0.5f, 0.5f),
+                    PixelsPerTile, 0, SpriteMeshType.FullRect);
+                return _selection;
+            }
+        }
+
+        /// <summary>Earth the player has marked for digging but nobody has reached yet.</summary>
+        public static Tile DigOrderMarker =>
+            _digOrderMarker != null
+                ? _digOrderMarker
+                : _digOrderMarker = MarkerTile("dig_order", new Color32(0xE0, 0xB5, 0x4A, 0xFF), hatched: true);
+
         public static Color32 ColorOf(TileKind kind) =>
             Palette.TryGetValue(kind, out var c) ? c : new Color32(0xFF, 0x00, 0xFF, 0xFF);
 

@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+using Undertown.Core.Buildings;
 using Undertown.Core.Economy;
 using Undertown.Core.Sim;
+using Undertown.Game.InputHandling;
 
 namespace Undertown.Game.UI
 {
@@ -35,10 +37,18 @@ namespace Undertown.Game.UI
         private readonly Dictionary<MaterialId, Text> _ledgerRows = new Dictionary<MaterialId, Text>();
         private Text _spoilText;
         private Text _layerText;
+        private Text _toolText;
+        private Text _logText;
 
-        public void Bind(TownState town)
+        private PlayerTools _tools;
+        private readonly List<(Button button, BuildingKind kind)> _buildSlots = new List<(Button, BuildingKind)>();
+        private Button _excavateButton;
+        private Button _demolishButton;
+
+        public void Bind(TownState town, PlayerTools tools)
         {
             _town = town;
+            _tools = tools;
             Build();
             Refresh();
         }
@@ -169,20 +179,61 @@ namespace Undertown.Game.UI
             var title = UiFactory.Label(section.transform, "Title", "BUILD", 20, ProceduralUiArt.InkDim);
             UiFactory.Place((RectTransform)title.transform, 16f, 174f, 200f, 24f);
 
-            // Placeholder slots. Wiring these to real placement is the next increment; the
-            // slots exist now so the bar's proportions can be judged against the target art.
-            string[] slots = { "Lodge", "Sawpit", "Clay", "Field", "Brewery", "Store", "House", "Tunnel", "Still", "Wall" };
+            // Surface trades on the top row, the works below on the bottom, so the two halves
+            // of the town are never one misclick apart.
+            var slots = new (BuildingKind kind, string caption)[]
+            {
+                (BuildingKind.House, "House"),
+                (BuildingKind.Sawpit, "Sawpit"),
+                (BuildingKind.ClayPit, "Clay Pit"),
+                (BuildingKind.Field, "Field"),
+                (BuildingKind.Brewery, "Brewery"),
+                (BuildingKind.Warehouse, "Store"),
+                (BuildingKind.Tunnel, "Tunnel"),
+                (BuildingKind.Still, "Still"),
+                (BuildingKind.UnderStore, "Cellar"),
+                (BuildingKind.FalseWall, "False Wall"),
+            };
+
             for (int i = 0; i < slots.Length; i++)
             {
                 float x = 16f + (i % 5) * 106f;
                 float y = 104f - (i / 5) * 66f;
 
-                var slot = UiFactory.Panel(section.transform, $"Slot_{slots[i]}");
-                UiFactory.Place((RectTransform)slot.transform, x, y, 98f, 60f);
-
-                var caption = UiFactory.Label(slot.transform, "Caption", slots[i], 16, ProceduralUiArt.InkDim, TextAnchor.MiddleCenter);
-                UiFactory.Stretch((RectTransform)caption.transform, 4f, 4f, 4f, 4f);
+                var kind = slots[i].kind;
+                var button = MakeButton(section.transform, $"Slot_{kind}", slots[i].caption, x, y, 98f, 60f);
+                button.onClick.AddListener(() => _tools.SelectBuilding(kind));
+                _buildSlots.Add((button, kind));
             }
+
+            _excavateButton = MakeButton(section.transform, "Excavate", "Dig  (E)", 16f, 8f, 152f, 52f);
+            _excavateButton.onClick.AddListener(() => _tools.SelectExcavate());
+
+            _demolishButton = MakeButton(section.transform, "Demolish", "Demolish  (X)", 176f, 8f, 152f, 52f);
+            _demolishButton.onClick.AddListener(() => _tools.SelectDemolish());
+
+            var cancel = MakeButton(section.transform, "Cancel", "Cancel  (Esc)", 336f, 8f, 152f, 52f);
+            cancel.onClick.AddListener(() => _tools.Cancel());
+        }
+
+        private static Button MakeButton(Transform parent, string name, string caption,
+            float x, float y, float width, float height)
+        {
+            var panel = UiFactory.Panel(parent, name);
+            UiFactory.Place((RectTransform)panel.transform, x, y, width, height);
+
+            var button = panel.gameObject.AddComponent<Button>();
+            button.targetGraphic = panel;
+
+            var colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.25f, 1.2f, 1.1f);
+            colors.pressedColor = new Color(0.8f, 0.78f, 0.72f);
+            button.colors = colors;
+
+            var label = UiFactory.Label(panel.transform, "Caption", caption, 16, ProceduralUiArt.InkDim, TextAnchor.MiddleCenter);
+            UiFactory.Stretch((RectTransform)label.transform, 4f, 4f, 4f, 4f);
+            return button;
         }
 
         private void BuildLayerBadge(Transform canvas)
@@ -196,6 +247,29 @@ namespace Undertown.Game.UI
 
             _layerText = UiFactory.Label(badge.transform, "Text", "", 20, ProceduralUiArt.Ink, TextAnchor.MiddleCenter);
             UiFactory.Stretch((RectTransform)_layerText.transform, 8f, 4f, 8f, 4f);
+
+            var toolBadge = UiFactory.Panel(canvas, "ToolBadge");
+            var toolRect = (RectTransform)toolBadge.transform;
+            toolRect.anchorMin = toolRect.anchorMax = new Vector2(0f, 1f);
+            toolRect.pivot = new Vector2(0f, 1f);
+            toolRect.anchoredPosition = new Vector2(16f, -68f);
+            toolRect.sizeDelta = new Vector2(520f, 40f);
+
+            _toolText = UiFactory.Label(toolBadge.transform, "Text", "", 18, ProceduralUiArt.Contraband, TextAnchor.MiddleCenter);
+            UiFactory.Stretch((RectTransform)_toolText.transform, 8f, 4f, 8f, 4f);
+            toolBadge.gameObject.SetActive(false);
+
+            // The log is where the audit explains itself. A player who is told only that
+            // suspicion went up has no way to work out which of their arrangements failed.
+            var logPanel = UiFactory.Panel(canvas, "Log");
+            var logRect = (RectTransform)logPanel.transform;
+            logRect.anchorMin = logRect.anchorMax = new Vector2(1f, 1f);
+            logRect.pivot = new Vector2(1f, 1f);
+            logRect.anchoredPosition = new Vector2(-16f, -16f);
+            logRect.sizeDelta = new Vector2(560f, 220f);
+
+            _logText = UiFactory.Label(logPanel.transform, "Text", "", 16, ProceduralUiArt.InkDim, TextAnchor.UpperLeft);
+            UiFactory.Stretch((RectTransform)_logText.transform, 12f, 10f, 12f, 10f);
         }
 
         private void Refresh()
@@ -241,6 +315,46 @@ namespace Undertown.Game.UI
                     ? (Color)ProceduralUiArt.Contraband
                     : (Color)ProceduralUiArt.Ink;
             }
+
+            RefreshTool();
+            RefreshLog();
+        }
+
+        private void RefreshTool()
+        {
+            if (_toolText == null || _tools == null) return;
+
+            string description = _tools.Describe();
+            var badge = _toolText.transform.parent.gameObject;
+            badge.SetActive(description != null);
+            if (description != null) _toolText.text = description;
+
+            // Highlight whichever slot is armed, so the cursor's behaviour is never a mystery.
+            foreach (var slot in _buildSlots)
+            {
+                bool armed = _tools.Mode == ToolMode.Place && _tools.Selected == slot.kind;
+                slot.button.image.color = armed ? new Color(1.4f, 1.25f, 0.9f) : Color.white;
+            }
+
+            if (_excavateButton != null)
+                _excavateButton.image.color = _tools.Mode == ToolMode.Excavate ? new Color(1.4f, 1.25f, 0.9f) : Color.white;
+            if (_demolishButton != null)
+                _demolishButton.image.color = _tools.Mode == ToolMode.Demolish ? new Color(1.4f, 1.25f, 0.9f) : Color.white;
+        }
+
+        private void RefreshLog()
+        {
+            if (_logText == null) return;
+
+            var log = _town.Log;
+            int lines = Mathf.Min(9, log.Count);
+            var sb = new StringBuilder();
+            for (int i = log.Count - lines; i < log.Count; i++)
+            {
+                sb.Append(log[i]);
+                if (i < log.Count - 1) sb.Append('\n');
+            }
+            _logText.text = sb.ToString();
         }
 
         public void SetLayerLabel(string text) { if (_layerText != null) _layerText.text = text; }

@@ -58,6 +58,10 @@ namespace Undertown.Core.Sim
         public AuditReport LastAudit;
         public readonly List<string> LastFindings = new List<string>();
 
+        public int LastSettledSeason = -1;
+        public SettlementReport LastSettlement;
+        public bool GameOver;
+
         public int Suspicion { get; private set; }
         public int Coin;
         public int BlackCoin;
@@ -66,6 +70,29 @@ namespace Undertown.Core.Sim
         /// <summary>Spoil heaped in the open. Every pile past what a quarry would explain is evidence.</summary>
         public int SurfaceSpoil;
         public const int SpoilTolerated = 40;
+
+        public readonly DigOrders Digs = new DigOrders();
+
+        /// <summary>
+        /// Cells where a worker can change layer. Only entrances provide one, which is why
+        /// they are worth building and worth disguising.
+        /// </summary>
+        public IReadOnlyList<Coord> ShaftCells
+        {
+            get
+            {
+                _shaftCache.Clear();
+                for (int i = 0; i < Buildings.Count; i++)
+                {
+                    var building = Buildings[i];
+                    if (building.Kind != BuildingKind.HiddenEntrance) continue;
+                    _shaftCache.Add(building.Origin);
+                }
+                return _shaftCache;
+            }
+        }
+
+        private readonly List<Coord> _shaftCache = new List<Coord>();
 
         public DeterministicRandom Rng;
 

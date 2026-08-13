@@ -90,9 +90,42 @@ namespace Undertown.Core.Buildings
                     town.Map.Set(origin.Offset(dx, dy), TileKind.Dirt);
             }
 
-            var building = new Building(kind, origin) { AssignedWorkers = def.WorkerSlots };
+            // Lawful workshops staff themselves; illicit ones start idle. Running the still is
+            // a decision the player makes and answers for, not something the town does to them
+            // while they are learning what an audit is.
+            var building = new Building(kind, origin)
+            {
+                AssignedWorkers = def.Illicit ? 0 : def.WorkerSlots,
+            };
             town.Buildings.Add(building);
             return building;
+        }
+
+        /// <summary>
+        /// Tears a building down and returns half its materials, rounded down. Salvage from
+        /// lawful buildings is written into the books; salvage from the works below is not,
+        /// which quietly widens the same timber hole that everything underground widens.
+        /// </summary>
+        public static bool Demolish(TownState town, Building building)
+        {
+            if (building == null || !town.Buildings.Remove(building)) return false;
+
+            var def = building.Def;
+            if (def != null)
+            {
+                for (int i = 0; i < def.Cost.Length; i++)
+                {
+                    int salvage = def.Cost[i].Amount / 2;
+                    if (salvage <= 0) continue;
+
+                    town.Stock.Add(def.Cost[i].Material, salvage);
+                    if (!def.Illicit) town.Books.RecordProduction(def.Cost[i].Material, salvage);
+                }
+
+                town.Record($"{def.Name} pulled down at {building.Origin}");
+            }
+
+            return true;
         }
     }
 }

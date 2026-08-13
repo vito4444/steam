@@ -59,6 +59,42 @@ namespace Undertown.Core.Agents
             return null;
         }
 
+        /// <summary>
+        /// Routes between the surface and the tunnels. Workers cannot walk through rock, so a
+        /// journey to another layer has to go via a shaft - which is the whole reason
+        /// entrances are worth building and worth disguising. The returned path contains the
+        /// vertical step as a single move between two cells sharing an X and Y.
+        /// </summary>
+        public static List<Coord> FindAcrossLayers(GridMap map, Coord start, Coord goal, IReadOnlyList<Coord> shafts)
+        {
+            if (start.Depth == goal.Depth) return Find(map, start, goal, !start.IsSurface);
+            if (shafts == null || shafts.Count == 0) return null;
+
+            List<Coord> best = null;
+            for (int i = 0; i < shafts.Count; i++)
+            {
+                var shaft = shafts[i];
+                var nearSide = shaft.AtDepth(start.Depth);
+                var farSide = shaft.AtDepth(goal.Depth);
+
+                var toShaft = Find(map, start, nearSide, !start.IsSurface);
+                if (toShaft == null) continue;
+
+                var fromShaft = Find(map, farSide, goal, !goal.IsSurface);
+                if (fromShaft == null) continue;
+
+                int length = toShaft.Count + fromShaft.Count;
+                if (best != null && length >= best.Count) continue;
+
+                var combined = new List<Coord>(length);
+                combined.AddRange(toShaft);
+                combined.AddRange(fromShaft);
+                best = combined;
+            }
+
+            return best;
+        }
+
         private static bool Passable(GridMap map, Coord cell, bool underground)
         {
             var kind = map.Get(cell);

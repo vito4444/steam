@@ -50,15 +50,47 @@ namespace Undertown.Game.Presentation
         /// <summary>Call after the viewed layer changes so the fading follows the camera.</summary>
         public void ApplyLayerVisibility(int activeDepth)
         {
+            _activeDepth = activeDepth;
             foreach (var pair in _sprites)
             {
-                var def = pair.Key.Def;
+                if (pair.Value == null) continue;
+                pair.Value.sortingOrder = pair.Key.Origin.Depth == activeDepth ? 6 : 4;
+            }
+            RefreshTint();
+        }
+
+        private int _activeDepth;
+
+        private void LateUpdate()
+        {
+            if (_town != null) RefreshTint();
+        }
+
+        /// <summary>
+        /// A stopped workshop is drawn cold and dim. Whether the still is running is the
+        /// single most consequential piece of state in the game, so it cannot be something
+        /// the player has to click the building to find out.
+        /// </summary>
+        private void RefreshTint()
+        {
+            foreach (var pair in _sprites)
+            {
+                var building = pair.Key;
+                var def = building.Def;
                 if (def == null || pair.Value == null) continue;
 
-                int buildingDepth = pair.Key.Origin.Depth;
-                bool onActiveLayer = buildingDepth == activeDepth;
-                pair.Value.color = onActiveLayer ? Color.white : new Color(1f, 1f, 1f, 0.35f);
-                pair.Value.sortingOrder = onActiveLayer ? 6 : 4;
+                bool onActiveLayer = building.Origin.Depth == _activeDepth;
+                float alpha = onActiveLayer ? 1f : 0.35f;
+
+                if (def.WorkerSlots > 0 && !building.Working)
+                {
+                    pair.Value.color = new Color(0.52f, 0.55f, 0.62f, alpha);
+                    continue;
+                }
+
+                pair.Value.color = building.Starved
+                    ? new Color(0.85f, 0.72f, 0.5f, alpha)
+                    : new Color(1f, 1f, 1f, alpha);
             }
         }
 

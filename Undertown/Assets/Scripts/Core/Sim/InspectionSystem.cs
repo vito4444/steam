@@ -21,10 +21,18 @@ namespace Undertown.Core.Sim
 
         public static void Tick(TownState town, int ticks)
         {
+            if (town.GameOver) return;
+
             MaybeBeginVisit(town);
 
             var inspector = town.ActiveInspector;
-            if (inspector == null || inspector.Task == InspectorTask.Gone) return;
+            if (inspector == null || inspector.Task == InspectorTask.Gone)
+            {
+                // The season closes only once the auditor has been and gone, so his findings
+                // are part of the reckoning rather than arriving after it.
+                if (SeasonSettlement.IsDue(town)) SeasonSettlement.Settle(town);
+                return;
+            }
 
             switch (inspector.Task)
             {

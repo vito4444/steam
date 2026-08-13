@@ -4,6 +4,7 @@ using Undertown.Core.Buildings;
 using Undertown.Core.Economy;
 using Undertown.Core.Sim;
 using Undertown.Core.World;
+using Undertown.Game.InputHandling;
 using Undertown.Game.Presentation;
 using Undertown.Game.UI;
 
@@ -25,6 +26,7 @@ namespace Undertown.Game.Bootstrap
         private WorldRenderer _renderer;
         private BuildingRenderer _buildings;
         private AgentRenderer _agents;
+        private PlayerController _controller;
         private HudController _hud;
         private Camera _camera;
         private float _tickAccumulator;
@@ -44,13 +46,14 @@ namespace Undertown.Game.Bootstrap
             AgentSystem.Populate(_town);
 
             _renderer = BuildRenderer();
-            _renderer.Bind(map);
+            _renderer.Bind(map, _town.Digs);
 
             _buildings = BuildBuildingRenderer(_town, _renderer.ActiveDepth);
             _agents = BuildAgentRenderer(_town, _renderer.ActiveDepth);
 
             _camera = BuildCamera(settings, _town);
-            _hud = BuildHud(_town);
+            _controller = BuildController(_town, _renderer, _buildings, _camera);
+            _hud = BuildHud(_town, _controller.Tools);
             UpdateLayerBadge();
 
             Debug.Log($"[SMOKE] boot ok seed={_seed} map={settings.Width}x{settings.Height}x{settings.DepthCount} " +
@@ -71,8 +74,6 @@ namespace Undertown.Game.Bootstrap
                 AgentSystem.Tick(_town, wholeMinutes);
                 InspectionSystem.Tick(_town, wholeMinutes);
             }
-
-            if (Input.GetKeyDown(KeyCode.Tab)) SwitchLayer();
         }
 
         /// <summary>Exposed so the screenshot harness can document both layers from one run.</summary>
@@ -83,6 +84,9 @@ namespace Undertown.Game.Bootstrap
             _agents.SetActiveDepth(_renderer.ActiveDepth);
             UpdateLayerBadge();
         }
+
+        /// <summary>Exposed for the screenshot harness, which arms tools without a mouse.</summary>
+        public PlayerTools Tools => _controller != null ? _controller.Tools : null;
 
         /// <summary>
         /// Fast-forwards the simulation. Used by the screenshot harness to document states
@@ -169,11 +173,33 @@ namespace Undertown.Game.Bootstrap
             return renderer;
         }
 
-        private static HudController BuildHud(TownState town)
+        private PlayerController BuildController(TownState town, WorldRenderer world, BuildingRenderer buildings, Camera camera)
+        {
+            var ghostObject = new GameObject("PlacementGhost");
+            var ghost = ghostObject.AddComponent<PlacementGhost>();
+
+            var controller = gameObject.AddComponent<PlayerController>();
+            controller.Bind(town, world, buildings, camera, ghost);
+            controller.WorldChanged += () => world.Redraw();
+            controller.LayerToggleRequested += SwitchLayer;
+
+            // uGUI buttons need an event system, and nothing else in a script-built scene
+            // creates one.
+            if (UnityEngine.EventSystems.EventSystem.current == null)
+            {
+                var events = new GameObject("EventSystem");
+                events.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                events.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
+            return controller;
+        }
+
+        private static HudController BuildHud(TownState town, PlayerTools tools)
         {
             var go = new GameObject("Hud");
             var hud = go.AddComponent<HudController>();
-            hud.Bind(town);
+            hud.Bind(town, tools);
             return hud;
         }
 

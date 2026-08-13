@@ -28,6 +28,18 @@ namespace Undertown.Tests
             return town;
         }
 
+        /// <summary>
+        /// Starts the illicit works. They begin idle, because running them is the decision
+        /// the game turns on - so any test about what happens when they run has to make that
+        /// decision explicitly, exactly as a player would.
+        /// </summary>
+        private static void StartTheStill(TownState town)
+        {
+            foreach (var building in town.Buildings)
+                if (building.Def != null && building.Def.Illicit && building.Def.WorkerSlots > 0)
+                    building.ToggleWork();
+        }
+
         private static void Run(TownState town, int minutes)
         {
             const int chunk = 15;
@@ -58,6 +70,7 @@ namespace Undertown.Tests
         public void OnlyTheLawfulChainReachesTheBooks()
         {
             var town = NewTown();
+            StartTheStill(town);
             Run(town, 3000);
 
             Assert.Greater(town.Stock.Get(MaterialId.Ale), 0, "the brewery must have produced");
@@ -77,6 +90,7 @@ namespace Undertown.Tests
         public void GrainEatenByTheStillLeavesAHoleInTheBooks()
         {
             var town = NewTown();
+            StartTheStill(town);
             Run(town, 3000);
 
             var grain = town.Books.Flow(MaterialId.Grain);
@@ -91,6 +105,7 @@ namespace Undertown.Tests
         public void AnInspectorArrivesOnTheTenthDayAndLeavesAgain()
         {
             var town = NewTown();
+            StartTheStill(town);
 
             Run(town, SimClock.TicksPerDay * 9 + 9 * 60);
             Assert.IsNotNull(town.ActiveInspector, "an inspector is due on day 10");
@@ -105,6 +120,7 @@ namespace Undertown.Tests
         public void ASingleVisitToASingleCellarIsNotFatal()
         {
             var town = NewTown();
+            StartTheStill(town);
             Run(town, SimClock.TicksPerDay * 11);
 
             Assert.Less(town.Suspicion, TownState.AnnexationThreshold,
@@ -150,6 +166,7 @@ namespace Undertown.Tests
         public void OneInspectionReportsAChamberAtMostOnce()
         {
             var town = NewTown();
+            StartTheStill(town);
             Run(town, SimClock.TicksPerDay * 11);
 
             int discoveries = 0;

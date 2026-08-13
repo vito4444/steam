@@ -17,12 +17,76 @@ namespace Undertown.Core.Sim
             for (int i = 0; i < town.Villagers.Count; i++)
             {
                 var villager = town.Villagers[i];
-                if (!villager.HasDestination)
+
+                if (villager.HasDestination)
                 {
-                    AssignWork(town, villager);
+                    Step(town, villager, ticks);
                     continue;
                 }
-                Step(town, villager, ticks);
+
+                if (TryDig(town, villager, ticks)) continue;
+                AssignWork(town, villager);
+            }
+        }
+
+        /// <summary>
+        /// Diggers work the excavation queue before anything else. A cell finished here
+        /// produces a load of spoil, and spoil left in the open is evidence that needs no
+        /// auditor to find - so ordering a large dig is also ordering a disposal problem.
+        /// </summary>
+        private static bool TryDig(TownState town, Villager villager, int ticks)
+        {
+            if (villager.Role != VillagerRole.Digger) return false;
+            if (town.Digs.Count == 0) return false;
+
+            if (!town.Digs.TryFindNearest(villager.Position, out var target))
+            {
+                RouteToDigFace(town, villager);
+                return villager.HasDestination;
+            }
+
+            // Has to be standing next to the face to swing at it.
+            if (target.ManhattanTo(villager.Position) > 1)
+            {
+                RouteTo(town, villager, target);
+                return villager.HasDestination;
+            }
+
+            if (!town.Digs.AddWork(town.Map, target, ticks)) return true;
+
+            int spoil = town.Map.Excavate(target);
+            town.SurfaceSpoil += spoil;
+            town.Record($"{villager.Name} broke through at {target}");
+            return true;
+        }
+
+        /// <summary>Sends a digger to the layer the outstanding orders are on.</summary>
+        private static void RouteToDigFace(TownState town, Villager villager)
+        {
+            var pending = town.Digs.Pending;
+            if (pending.Count == 0) return;
+            RouteTo(town, villager, pending[0]);
+        }
+
+        /// <summary>
+        /// Paths to a cell adjacent to the target, crossing layers by way of a shaft when the
+        /// target is not on the layer the worker is standing on.
+        /// </summary>
+        private static void RouteTo(TownState town, Villager villager, Coord target)
+        {
+            for (int i = 0; i < Coord.Neighbours4.Length; i++)
+            {
+                var stand = target.Offset(Coord.Neighbours4[i].X, Coord.Neighbours4[i].Y);
+                if (!town.Map.InBounds(stand)) continue;
+                if (!Tiles.IsOpenUnderground(town.Map.Get(stand)) && !Tiles.IsWalkableSurface(town.Map.Get(stand))) continue;
+
+                var path = villager.Position.Depth == stand.Depth
+                    ? Pathfinder.Find(town.Map, villager.Position, stand, underground: !stand.IsSurface)
+                    : Pathfinder.FindAcrossLayers(town.Map, villager.Position, stand, town.ShaftCells);
+
+                if (path == null || path.Count < 2) continue;
+                villager.SetPath(path);
+                return;
             }
         }
 
