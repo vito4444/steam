@@ -22,17 +22,19 @@ fi
 WIN_SUPPORT="$EDITOR_ROOT/Editor/Data/PlaybackEngines/WindowsStandaloneSupport"
 if [[ ! -d "$WIN_SUPPORT" ]]; then
   log "installing windows-mono module"
-  # Unity ships the Windows player support for Linux hosts as an Apple .pkg (xar archive).
+  # Unity ships Windows player support for Linux hosts as an Apple .pkg: a xar archive
+  # whose Payload is a gzipped cpio. 7z unwraps the xar and the gzip in one pass, leaving
+  # a bare cpio named Payload~ whose root is already the module tree.
   WORK="$DL_DIR/winmono_extract"
   rm -rf "$WORK" && mkdir -p "$WORK"
   ( cd "$WORK" && 7z x -y "$DL_DIR/WinMono.pkg" >/dev/null )
-  PAYLOAD="$(find "$WORK" -name 'Payload*' -type f | head -1)"
-  [[ -n "$PAYLOAD" ]] || { echo "payload not found inside pkg" >&2; exit 1; }
-  mkdir -p "$WORK/payload" && ( cd "$WORK/payload" && 7z x -y "$PAYLOAD" -so 2>/dev/null | cpio -idm --quiet )
-  SRC="$(find "$WORK/payload" -maxdepth 6 -type d -name 'WindowsStandaloneSupport' | head -1)"
-  [[ -n "$SRC" ]] || { echo "WindowsStandaloneSupport not found in payload" >&2; find "$WORK/payload" -maxdepth 4 -type d >&2; exit 1; }
-  mkdir -p "$(dirname "$WIN_SUPPORT")"
-  cp -a "$SRC" "$WIN_SUPPORT"
+  PAYLOAD="$(find "$WORK" -name 'Payload~' -type f | head -1)"
+  [[ -n "$PAYLOAD" ]] || { echo "Payload~ not found inside pkg" >&2; find "$WORK" -maxdepth 3 >&2; exit 1; }
+  ( cd "$WORK" && cpio -idm --quiet < "$PAYLOAD" && rm -f "$PAYLOAD" )
+  [[ -f "$WORK/UnityEditor.WindowsStandalone.Extensions.dll" ]] || {
+    echo "extracted tree does not look like WindowsStandaloneSupport" >&2; ls "$WORK" >&2; exit 1; }
+  mkdir -p "$WIN_SUPPORT"
+  cp -a "$WORK/." "$WIN_SUPPORT"/
   rm -rf "$WORK"
 else
   log "windows-mono module already present"

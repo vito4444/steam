@@ -1,0 +1,19 @@
+{
+    "name": "Undertown.EditorTools",
+    "rootNamespace": "Undertown.EditorTools",
+    "references": [
+        "Undertown.Core",
+        "Undertown.Game"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
