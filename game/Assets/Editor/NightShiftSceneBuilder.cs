@@ -71,6 +71,11 @@ namespace Monster.EditorTools
         private static Transform _logAnchor;
         private static Vector3 _lampOrigin;
         private static Vector3 _lampTarget;
+        private static Transform _barrierArm;
+        private static Transform _vehicleRoot;
+        private static Transform _subjectRoot;
+        private static readonly List<Light> Headlights = new();
+        private static readonly List<Light> Taillights = new();
 
         [MenuItem("MONSTER/Build Night Shift Booth Scene")]
         public static void Build()
@@ -89,6 +94,11 @@ namespace Monster.EditorTools
             _logAnchor = null;
             _lampOrigin = Vector3.zero;
             _lampTarget = Vector3.zero;
+            _barrierArm = null;
+            _vehicleRoot = null;
+            _subjectRoot = null;
+            Headlights.Clear();
+            Taillights.Clear();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -106,6 +116,7 @@ namespace Monster.EditorTools
 
             var camera = BuildCamera();
             BoothContentBuilder.Populate(new BoothContentBuilder.Handles(
+                _barrierArm, _vehicleRoot, _subjectRoot, Headlights.ToArray(), Taillights.ToArray(),
                 _permitPaper, _permitAnchor,
                 _manualPages, _manualAnchor,
                 _logAnchor,
@@ -592,17 +603,22 @@ namespace Monster.EditorTools
                 Mat("BarrierPost", new Color(0.16f, 0.16f, 0.15f), 0.30f, 0.6f));
             Box("Housing", barrier, new Vector3(-2.05f, 1.28f, 0f), new Vector3(0.26f, 0.26f, 0.24f),
                 Mat("BarrierHousing", new Color(0.34f, 0.30f, 0.10f), 0.35f, 0.4f));
+            // The arm hangs off a pivot at the post. Eight loose segments could not lift.
+            _barrierArm = Anchor("ArmPivot", barrier, new Vector3(-2.05f, 1.22f, 0f), Quaternion.identity);
             for (var i = 0; i < 8; i++)
             {
-                Box($"Arm_{i}", barrier, new Vector3(-1.62f + i * 0.62f, 1.22f, 0f),
+                Box($"Arm_{i}", _barrierArm, new Vector3(0.43f + i * 0.62f, 0f, 0f),
                     new Vector3(0.62f, 0.09f, 0.09f), i % 2 == 0 ? barrierWhite : barrierRed);
             }
+            Box("ArmTip", _barrierArm, new Vector3(5.10f, 0f, 0f),
+                new Vector3(0.10f, 0.14f, 0.14f), barrierRed);
 
             // The subject. Never clearly seen: it stands in fog, backlit by taillights, and
             // its proportions are wrong rather than its features being monstrous. Arms are
             // long, the head sits high, and it does not move.
             var subject = new GameObject("Subject").transform;
             subject.SetParent(parent, false);
+            _subjectRoot = subject;
             subject.SetPositionAndRotation(new Vector3(0.52f, 0f, 4.95f), Quaternion.Euler(0f, 184f, 0f));
             Box("Legs", subject, new Vector3(0f, 0.46f, 0f), new Vector3(0.28f, 0.92f, 0.21f), figure);
             Box("Torso", subject, new Vector3(0f, 1.31f, 0f), new Vector3(0.44f, 0.80f, 0.25f), figure);
@@ -616,21 +632,53 @@ namespace Monster.EditorTools
             // The vehicle it stepped out of, reduced to two taillights and a dark mass.
             var vehicle = new GameObject("Vehicle").transform;
             vehicle.SetParent(parent, false);
+            _vehicleRoot = vehicle;
             vehicle.localPosition = new Vector3(-0.34f, 0f, 8.20f);
             Box("Body", vehicle, new Vector3(0f, 0.85f, 0f), new Vector3(2.05f, 1.55f, 4.60f),
                 Mat("VehicleBody", new Color(0.030f, 0.032f, 0.036f), 0.30f, 0.4f));
             foreach (var side in new[] { -0.78f, 0.78f })
             {
-                Box($"Tail_{side:F1}", vehicle, new Vector3(side, 0.92f, -2.31f),
+                Box($"Tail_{side:F1}", vehicle, new Vector3(side, 0.92f, 2.31f),
                     new Vector3(0.34f, 0.16f, 0.04f), tail);
+                BoothAtmosphere.Glare($"TailGlare_{side:F1}", vehicle,
+                    new Vector3(side, 1.00f, 2.36f), 2.4f, new Color(0.90f, 0.11f, 0.07f));
                 var lamp = new GameObject($"TailLight_{side:F1}").AddComponent<Light>();
                 lamp.transform.SetParent(vehicle, false);
-                lamp.transform.localPosition = new Vector3(side, 0.92f, -2.55f);
+                lamp.transform.localPosition = new Vector3(side, 0.92f, 2.55f);
                 lamp.type = LightType.Point;
                 lamp.color = new Color(1.00f, 0.13f, 0.08f);
                 lamp.intensity = 9f;
                 lamp.range = 11f;
                 lamp.shadows = LightShadows.None;
+                Taillights.Add(lamp);
+            }
+
+            // Headlamps point back down the road at the booth. Aimed slightly down so they
+            // pool on the asphalt rather than shining straight into the window, which at
+            // this distance would wash out the whole shot.
+            var headlampGlass = Mat("Headlamp", new Color(0.10f, 0.10f, 0.09f), 0.6f, 0f,
+                new Color(1.00f, 0.94f, 0.78f) * 4.0f);
+            foreach (var side in new[] { -0.74f, 0.74f })
+            {
+                Box($"Headlamp_{side:F1}", vehicle, new Vector3(side, 0.86f, -2.32f),
+                    new Vector3(0.30f, 0.18f, 0.05f), headlampGlass);
+                BoothAtmosphere.Glare($"HeadGlare_{side:F1}", vehicle,
+                    new Vector3(side, 1.05f, -2.38f), 5.0f, new Color(2.10f, 1.85f, 1.45f));
+                BoothAtmosphere.Glare($"HeadCore_{side:F1}", vehicle,
+                    new Vector3(side, 0.86f, -2.40f), 1.1f, new Color(3.40f, 3.10f, 2.60f));
+
+                var beam = new GameObject($"HeadLight_{side:F1}").AddComponent<Light>();
+                beam.transform.SetParent(vehicle, false);
+                beam.transform.localPosition = new Vector3(side, 0.86f, -2.45f);
+                beam.transform.localRotation = Quaternion.Euler(9f, 180f, 0f);
+                beam.type = LightType.Spot;
+                beam.color = new Color(1.00f, 0.93f, 0.80f);
+                beam.intensity = 16f;
+                beam.range = 22f;
+                beam.spotAngle = 62f;
+                beam.innerSpotAngle = 20f;
+                beam.shadows = LightShadows.None;
+                Headlights.Add(beam);
             }
         }
 
@@ -679,12 +727,15 @@ namespace Monster.EditorTools
             // different part of the loop, so a regression in the paperwork, the monitors
             // or the manual all get caught rather than only whatever the idle shot happens
             // to include.
-            var poses = new (string name, Transform lookAt, int subject, bool leanIn)[]
+            // 2 = AtTheWindow, 1 = Approaching, 3 = Admitted, matching CheckpointStage.Phase.
+            var poses = new (string name, Transform lookAt, int subject, bool leanIn, int stage)[]
             {
-                ("booth_idle", null, 0, false),
-                ("permit", _permitPaper, 2, true),
-                ("monitors", ScreenAnchors.Count > 1 ? ScreenAnchors[1] : null, 2, false),
-                ("manual", _manualPages, 5, true),
+                ("booth_idle", null, 0, false, 2),
+                ("permit", _permitPaper, 2, true, 2),
+                ("monitors", ScreenAnchors.Count > 1 ? ScreenAnchors[1] : null, 2, false, 2),
+                ("manual", _manualPages, 5, true, 2),
+                ("approach", null, 3, false, 1),
+                ("admitted", null, 3, false, 3),
             };
 
             var serialized = new SerializedObject(runner);
@@ -700,6 +751,7 @@ namespace Monster.EditorTools
                 entry.FindPropertyRelative("lookAt").objectReferenceValue = poses[i].lookAt;
                 entry.FindPropertyRelative("subjectIndex").intValue = poses[i].subject;
                 entry.FindPropertyRelative("leanIn").boolValue = poses[i].leanIn;
+                entry.FindPropertyRelative("stagePhase").intValue = poses[i].stage;
             }
 
             serialized.FindProperty("reportAnchor").objectReferenceValue = _logAnchor;

@@ -47,6 +47,9 @@ namespace Monster.SelfCheck
 
             [Tooltip("Lean over the target, as the player does when reading a document.")]
             public bool leanIn;
+
+            [Tooltip("Pose the road outside before capturing. -1 leaves it alone.")]
+            public int stagePhase = -1;
         }
 
         [SerializeField] private List<Checkpoint> checkpoints = new();
@@ -124,6 +127,12 @@ namespace Monster.SelfCheck
                 if (presenter != null && checkpoint.subjectIndex >= 0)
                 {
                     presenter.ShowSubject(checkpoint.subjectIndex);
+                }
+
+                var stage = presenter != null ? presenter.Stage : null;
+                if (stage != null && checkpoint.stagePhase >= 0)
+                {
+                    stage.SetPhase((CheckpointStage.Phase)checkpoint.stagePhase, immediate: true);
                 }
 
                 if (boothCamera != null)

@@ -44,7 +44,9 @@ namespace Monster.EditorTools
 
         public readonly struct Handles
         {
-            public Handles(Transform permitMesh, Transform permitAnchor,
+            public Handles(Transform stageBarrierArm, Transform stageVehicle, Transform stageSubject,
+                Light[] headlights, Light[] taillights,
+                Transform permitMesh, Transform permitAnchor,
                 Transform manualMesh, Transform manualAnchor,
                 Transform logAnchor,
                 IReadOnlyList<Transform> screenAnchors,
@@ -52,6 +54,11 @@ namespace Monster.EditorTools
                 IReadOnlyList<Transform> switchLabelAnchors,
                 GameObject camera)
             {
+                StageBarrierArm = stageBarrierArm;
+                StageVehicle = stageVehicle;
+                StageSubject = stageSubject;
+                Headlights = headlights;
+                Taillights = taillights;
                 PermitMesh = permitMesh;
                 PermitAnchor = permitAnchor;
                 ManualMesh = manualMesh;
@@ -63,6 +70,11 @@ namespace Monster.EditorTools
                 Camera = camera;
             }
 
+            public Transform StageBarrierArm { get; }
+            public Transform StageVehicle { get; }
+            public Transform StageSubject { get; }
+            public Light[] Headlights { get; }
+            public Light[] Taillights { get; }
             public Transform PermitMesh { get; }
             public Transform PermitAnchor { get; }
             public Transform ManualMesh { get; }
@@ -93,6 +105,11 @@ namespace Monster.EditorTools
 
             var presenter = new GameObject("Booth").AddComponent<BoothPresenter>();
             presenter.Bind(permit, biometrics, cabin, underside, manual, logbook);
+
+            var stage = presenter.gameObject.AddComponent<CheckpointStage>();
+            stage.Rig(handles.StageBarrierArm, handles.StageVehicle, handles.StageSubject,
+                handles.Headlights, handles.Taillights);
+            presenter.BindStage(stage);
 
             var audio = presenter.gameObject.AddComponent<AudioSource>();
             audio.playOnAwake = false;

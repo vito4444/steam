@@ -27,6 +27,32 @@ namespace Monster.EditorTools
             }
         }
 
+        /// <summary>A billboard of additive glow for a lamp seen through fog.
+        ///
+        /// Unity's fog attenuates geometry but does not scatter light, so a headlamp two
+        /// hundred metres down a foggy road is two hard pixels rather than a glare. This
+        /// puts the glare in by hand, which is what makes an approaching vehicle read as
+        /// approaching rather than as a pair of dots.</summary>
+        public static GameObject Glare(string name, Transform parent, Vector3 localPosition,
+            float size, Color tint)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            go.transform.localScale = new Vector3(size, size, 1f);
+
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+
+            var renderer = go.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = AdditiveMaterial($"Glare_{name}", tint,
+                GradientTexture("GlareSprite", 1f, radial: true));
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            return go;
+        }
+
         // ----------------------------------------------------------------- light shaft --
 
         private static void BuildLightShaft(Transform booth, Vector3 apex, Vector3 target)
@@ -294,6 +320,11 @@ namespace Monster.EditorTools
                 : (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             material.SetFloat("_ZWrite", 0f);
             material.SetFloat("_AlphaClip", 0f);
+
+            // Billboards and the light shaft are viewed from whichever side happens to face
+            // the camera; backface culling on them is only ever a way to lose them.
+            material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
+            material.doubleSidedGI = true;
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             material.DisableKeyword("_ALPHATEST_ON");
             material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;

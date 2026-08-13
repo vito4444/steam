@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -32,7 +33,10 @@ namespace Monster.Presentation
         // control dead in the build with nothing to indicate why.
         [SerializeField] private List<DeskInteractable> switches = new();
 
+        [SerializeField] private CheckpointStage stage;
+
         private ShiftDirector _director;
+        private Coroutine _vehicleCycle;
 
         public ShiftDirector Director => _director;
 
@@ -58,6 +62,10 @@ namespace Monster.Presentation
         }
 
         public void RegisterSwitch(DeskInteractable control) => switches.Add(control);
+
+        public void BindStage(CheckpointStage checkpointStage) => stage = checkpointStage;
+
+        public CheckpointStage Stage => stage;
 
         private void OnEnable()
         {
@@ -89,6 +97,19 @@ namespace Monster.Presentation
             DecisionMade?.Invoke(decision);
             RefreshLogbook(decision);
 
+            // The paperwork changes at once and the vehicle cycle plays out alongside it.
+            // Gating the decision on the animation would make the loop untestable and would
+            // punish a player who reads faster than a boom gate lifts.
+            if (stage != null && isActiveAndEnabled)
+            {
+                if (_vehicleCycle != null)
+                {
+                    StopCoroutine(_vehicleCycle);
+                }
+
+                _vehicleCycle = StartCoroutine(CycleVehicle(verdict));
+            }
+
             if (_director.IsFinished)
             {
                 var report = _director.BuildReport();
@@ -110,6 +131,18 @@ namespace Monster.Presentation
         {
             shiftIndex = shift;
             _director = new ShiftDirector(campaignSeed, shift);
+
+            if (_vehicleCycle != null)
+            {
+                StopCoroutine(_vehicleCycle);
+                _vehicleCycle = null;
+            }
+
+            if (stage != null)
+            {
+                stage.SetPhase(CheckpointStage.Phase.AtTheWindow, immediate: true);
+            }
+
             RefreshDesk();
             RefreshManual();
             RefreshLogbook(null);
@@ -121,6 +154,31 @@ namespace Monster.Presentation
         {
             _director.SkipTo(queuePosition);
             RefreshDesk();
+        }
+
+        private IEnumerator CycleVehicle(Verdict verdict)
+        {
+            stage.SetPhase(CheckpointStage.PhaseFor(verdict));
+            while (!stage.PhaseComplete)
+            {
+                yield return null;
+            }
+
+            if (_director == null || _director.IsFinished)
+            {
+                stage.SetPhase(CheckpointStage.Phase.Clear);
+                _vehicleCycle = null;
+                yield break;
+            }
+
+            stage.SetPhase(CheckpointStage.Phase.Approaching);
+            while (!stage.PhaseComplete)
+            {
+                yield return null;
+            }
+
+            stage.SetPhase(CheckpointStage.Phase.AtTheWindow);
+            _vehicleCycle = null;
         }
 
         private void OnSwitchThrown(DeskInteractable control)
