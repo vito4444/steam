@@ -1,26 +1,27 @@
 {
   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
+  "_comment_ambient": "这三个值走 RenderSettings.ambientXxxColor，是 gamma 空间的颜色，引擎会自己转成线性。写 0.009 这种量级等于线性 0.0007，比后处理里 0.004 的暗部抬升还小一个数量级，改了完全看不出区别。要让环境光真的托住暗部，量级得在 0.05 以上。",
   "ambientSky": [
-    0.0048,
-    0.0056,
-    0.0072
+    0.042,
+    0.047,
+    0.058
   ],
   "ambientEquator": [
-    0.0032,
-    0.0036,
-    0.0046
+    0.031,
+    0.034,
+    0.042
   ],
   "ambientGround": [
-    0.0012,
-    0.0012,
-    0.0016
+    0.019,
+    0.019,
+    0.022
   ],
   "fogDensity": 0.05,
   "lights": {
     "keyLampWarm": {
       "intensity": 3.6,
-      "range": 3.1,
-      "spotAngle": 86.0
+      "range": 2.4,
+      "spotAngle": 72.0
     },
     "fillCrtGreen": {
       "intensity": 1.45,
@@ -32,9 +33,9 @@
       "spotAngle": 54.0
     },
     "bounceDeskWarm": {
-      "intensity": 1.9,
-      "range": 2.0,
-      "spotAngle": 92.0
+      "intensity": 1.45,
+      "range": 2.1,
+      "spotAngle": 140.0
     },
     "practicalNeon": {
       "intensity": 1.6,
@@ -53,11 +54,12 @@
   },
   "emission": {
     "crtScreen": 1.45,
-    "neonLamp": 3.0,
+    "neonLamp": 1.5,
     "meterFace": 0.3,
     "dialStrip": 0.45,
     "frostedGlass": 0.85,
     "labelPlate": 0.16,
-    "indicatorLamp": 2.0
+    "indicatorLamp": 1.5,
+    "lampBulb": 2.6
   }
 }
