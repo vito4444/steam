@@ -237,6 +237,15 @@ namespace Undertown.Game.Presentation
                     if (within > 0.84f) tone = Darken(tone, 20);
                     else if (within < 0.14f) tone = Lighten(tone, 12);
 
+                    // Bundles laid up the slope, crossing the courses. Courses alone gave a
+                    // roof banded like a deckchair; what a thatched roof actually shows at
+                    // this distance is the grain of the straw running eaves to ridge, with
+                    // the courses stepping across it.
+                    float along = ridgeAlongX ? u : v;
+                    int bundle = Mathf.Abs(Mathf.RoundToInt(along * 16f)) % 3;
+                    if (bundle == 0) tone = Darken(tone, 9);
+                    else if (bundle == 2) tone = Lighten(tone, 6);
+
                     // Enough roughness that the courses are not ruled lines. Straw is combed,
                     // not machined.
                     int fray = (Mathf.RoundToInt(u * 40f) * 7 + Mathf.RoundToInt(v * 40f) * 13) % 13;
@@ -1005,6 +1014,8 @@ namespace Undertown.Game.Presentation
             if (kind == BuildingKind.ClayPit) Diggings(px, w, h, cw, ch, ox, oy, ground);
 
             Palings(px, w, h, cw, ch, ox, oy);
+            if (kind == BuildingKind.Sawpit) Sawdust(px, w, h, cw, ch, ox, oy);
+            if (kind == BuildingKind.Sawpit) PlankStack(px, w, h, cw, ch, ox, oy);
             if (kind == BuildingKind.Sawpit) LogPile(px, w, h, cw, ch, ox, oy);
             if (kind == BuildingKind.Sawpit) SawFrame(px, w, h, cw, ch, ox, oy);
             if (kind == BuildingKind.Field) Sheaves(px, w, h, cw, ch, ox, oy);
@@ -1171,6 +1182,79 @@ namespace Undertown.Game.Presentation
         /// end is the whole tell - it is the one part of a log that says it has been felled and
         /// crosscut rather than grown where it lies.
         /// </summary>
+        /// <summary>
+        /// Cut boards stacked to season, on the near side of the pit.
+        ///
+        /// A sawmill whose yard held one small stack of rounds and nothing else looked closed.
+        /// What a working one is full of is the output: squared timber, stacked where it can
+        /// be got at, taking up more room than the logs it came from.
+        /// </summary>
+        private static void PlankStack(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            // Freshly sawn, so much paler than the bark and the fencing around it. Timber
+            // cut to the same brown as everything else in the yard disappeared into it.
+            var top = new Color32(0xC2, 0x9C, 0x60, 0xFF);
+            var topSeam = new Color32(0x94, 0x74, 0x44, 0xFF);
+            var south = new Color32(0x74, 0x56, 0x34, 0xFF);
+            var east = new Color32(0x96, 0x74, 0x46, 0xFF);
+
+            const int lift = 13;
+            float u0 = cw * 0.40f;
+            float u1 = cw * 0.88f;
+            float v0 = ch * 0.05f;
+            float v1 = ch * 0.36f;
+
+            const int fill = 150;
+            for (int i = 0; i <= fill; i++)
+            for (int j = 0; j <= fill; j++)
+            {
+                float u = Mathf.Lerp(u0, u1, i / (float)fill);
+                float v = Mathf.Lerp(v0, v1, j / (float)fill);
+                var p = Iso.Project(u, v, ox, oy);
+
+                // Seams between boards run the length of the stack.
+                bool seam = Mathf.RoundToInt(v * 11f) % 3 == 0;
+                Plot(px, w, h, p.x, p.y + 4 + lift, seam ? topSeam : top);
+            }
+
+            // Near faces last, so the ends of the boards read in front of the top.
+            for (int i = 0; i <= fill; i++)
+            {
+                float t = i / (float)fill;
+                var ps = Iso.Project(Mathf.Lerp(u0, u1, t), v0, ox, oy);
+                var pe = Iso.Project(u1, Mathf.Lerp(v0, v1, t), ox, oy);
+
+                for (int d = 0; d < lift; d++)
+                {
+                    bool course = d % 3 == 0;
+                    Plot(px, w, h, ps.x, ps.y + 4 + d, course ? Darken(south, 16) : south);
+                    Plot(px, w, h, pe.x, pe.y + 4 + d, course ? Darken(east, 16) : east);
+                }
+            }
+        }
+
+        /// <summary>Heaps of sawdust and offcuts, swept clear of where the work happens.</summary>
+        private static void Sawdust(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            var dust = new Color32(0x8E, 0x74, 0x44, 0xFF);
+            var dustLit = new Color32(0xA6, 0x8A, 0x54, 0xFF);
+
+            for (int heap = 0; heap < 2; heap++)
+            {
+                float u = heap == 0 ? cw * 0.86f : cw * 0.12f;
+                float v = heap == 0 ? ch * 0.20f : ch * 0.86f;
+                var p = Iso.Project(u, v, ox, oy);
+
+                for (int dy = -4; dy <= 4; dy++)
+                for (int dx = -9; dx <= 9; dx++)
+                {
+                    if (dx * dx + dy * dy * 5 > 81) continue;
+                    if (Hash(dx + heap * 31, dy) % 7 == 0) continue;
+                    Plot(px, w, h, p.x + dx, p.y + 5 + dy, dy < 0 ? dustLit : dust);
+                }
+            }
+        }
+
         private static void LogPile(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
         {
             var bark = new Color32(0x54, 0x3C, 0x24, 0xFF);
@@ -1316,8 +1400,8 @@ namespace Undertown.Game.Presentation
                     };
                     var roofs = new[]
                     {
-                        C(0x7A, 0x60, 0x30), C(0x68, 0x50, 0x26), C(0x84, 0x6C, 0x38),
-                        C(0x5C, 0x48, 0x22), C(0x72, 0x58, 0x2C), C(0x7E, 0x66, 0x34),
+                        C(0x7E, 0x64, 0x32), C(0x70, 0x59, 0x2B), C(0x88, 0x70, 0x3A),
+                        C(0x67, 0x51, 0x27), C(0x76, 0x5C, 0x2E), C(0x82, 0x6A, 0x36),
                         C(0x46, 0x4E, 0x56), // slate
                         C(0x7C, 0x40, 0x2C), // fired tile
                     };
