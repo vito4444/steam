@@ -1,0 +1,69 @@
+{
+  "version": "0.1.0-566f54c",
+  "unity": "6000.5.8f1",
+  "platform": "LinuxPlayer",
+  "graphics_device": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "graphics_api": "OpenGLCore",
+  "screen": "1280x720",
+  "checkpoints": [
+    {
+      "name": "booth_idle",
+      "image": "booth_idle.png",
+      "frame_ms": 54.66,
+      "fps": 18.3,
+      "visible_renderers": 165,
+      "triangles": 3270,
+      "active_lights": 9,
+      "shadow_casting_lights": 2,
+      "mono_heap_mb": 3.7,
+      "total_reserved_mb": 157.1
+    },
+    {
+      "name": "permit",
+      "image": "permit.png",
+      "frame_ms": 51.92,
+      "fps": 19.3,
+      "visible_renderers": 165,
+      "triangles": 3270,
+      "active_lights": 9,
+      "shadow_casting_lights": 2,
+      "mono_heap_mb": 4.6,
+      "total_reserved_mb": 159.1
+    },
+    {
+      "name": "monitors",
+      "image": "monitors.png",
+      "frame_ms": 54.86,
+      "fps": 18.2,
+      "visible_renderers": 165,
+      "triangles": 3270,
+      "active_lights": 9,
+      "shadow_casting_lights": 2,
+      "mono_heap_mb": 3.7,
+      "total_reserved_mb": 159.1
+    },
+    {
+      "name": "manual",
+      "image": "manual.png",
+      "frame_ms": 47.50,
+      "fps": 21.1,
+      "visible_renderers": 165,
+      "triangles": 3270,
+      "active_lights": 9,
+      "shadow_casting_lights": 2,
+      "mono_heap_mb": 4.4,
+      "total_reserved_mb": 159.1
+    },
+    {
+      "name": "morning_report",
+      "image": "morning_report.png",
+      "processed": 15,
+      "correct": 15,
+      "net_pay": 75
+    }
+  ],
+  "error_count": 0,
+  "errors": [
+
+  ]
+}

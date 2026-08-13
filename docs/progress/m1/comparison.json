@@ -1,0 +1,83 @@
+{
+  "current": "docs/progress/m1/selfcheck_booth_idle.png",
+  "regression": {
+    "mean_abs_difference": 0.16426,
+    "max_abs_difference": 0.99608,
+    "changed_pixel_fraction": 0.99753,
+    "heatmap": "diff_vs_previous.png"
+  },
+  "art_direction": {
+    "value_distribution_distance": 1.8722,
+    "mean_luma": {
+      "render": 0.175,
+      "concept": 0.1147
+    },
+    "contrast_stddev": {
+      "render": 0.1536,
+      "concept": 0.1133
+    },
+    "mean_rgb": {
+      "render": [
+        0.2255,
+        0.1659,
+        0.1159
+      ],
+      "concept": [
+        0.1357,
+        0.113,
+        0.0684
+      ]
+    },
+    "warm_cool_balance": {
+      "render": 0.1096,
+      "concept": 0.0673
+    },
+    "thirds_mean_rgb": {
+      "render": [
+        [
+          0.1583,
+          0.1085,
+          0.0987
+        ],
+        [
+          0.2736,
+          0.2137,
+          0.1262
+        ],
+        [
+          0.2448,
+          0.1756,
+          0.1229
+        ]
+      ],
+      "concept": [
+        [
+          0.0985,
+          0.088,
+          0.0619
+        ],
+        [
+          0.1183,
+          0.11,
+          0.0678
+        ],
+        [
+          0.1904,
+          0.1412,
+          0.0756
+        ]
+      ]
+    },
+    "light_pool_centroid": {
+      "render": [
+        0.354,
+        0.6412
+      ],
+      "concept": [
+        0.4178,
+        0.6393
+      ],
+      "distance": 0.0638
+    }
+  }
+}

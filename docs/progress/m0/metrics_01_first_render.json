@@ -1,0 +1,26 @@
+{
+  "version": "0.1.0-46fb881+dirty",
+  "unity": "6000.5.8f1",
+  "platform": "LinuxPlayer",
+  "graphics_device": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "graphics_api": "OpenGLCore",
+  "screen": "1280x720",
+  "checkpoints": [
+    {
+      "name": "booth_idle",
+      "image": "booth_idle.png",
+      "frame_ms": 22.55,
+      "fps": 44.4,
+      "visible_renderers": 88,
+      "triangles": 2144,
+      "active_lights": 8,
+      "shadow_casting_lights": 2,
+      "mono_heap_mb": 1.6,
+      "total_reserved_mb": 129.1
+    }
+  ],
+  "error_count": 0,
+  "errors": [
+
+  ]
+}
