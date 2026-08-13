@@ -48,7 +48,7 @@ namespace Monster.Presentation
         private int _mailPage;
         private int _manualPage;
 
-        private const int ManualCriteriaPerPage = 5;
+        private const int ManualCriteriaPerPage = 4;
         private const int ManualLabelWidth = 9;
 
         /// <summary>Characters per line, sized to the page rather than guessed. The binder
@@ -302,10 +302,12 @@ namespace Monster.Presentation
         {
             shiftIndex = shift;
 
-            // The campaign is rebuilt up to the requested night rather than resumed,
-            // because the only callers are the start of a run and the self-check, which
-            // wants a specific night without having played the ones before it.
+            // A fresh campaign jumped straight to the requested night. Campaign.BeginShift
+            // is sequential by design, so without the skip this silently opened night one
+            // whatever it was asked for -- which went unnoticed until the self-check tried
+            // to photograph a binder that had amendments in it.
             _campaign = new Campaign(campaignSeed);
+            _campaign.SkipToShift(shift);
             _director = _campaign.BeginShift();
 
             if (_vehicleCycle != null)
@@ -466,11 +468,22 @@ namespace Monster.Presentation
             foreach (var page in pages.Skip(_manualPage * ManualCriteriaPerPage).Take(ManualCriteriaPerPage))
             {
                 var lines = Wrap(page.PrintedText, ManualLineWidth);
-                fields.Add(new DocumentField($"{page.Id}/{page.Revision}", lines[0]));
 
-                for (var i = 1; i < lines.Count; i++)
+                // The night the page arrived goes in the label column under its number,
+                // where the continuation lines leave it empty anyway. Without it a player
+                // holding two revisions of one criterion cannot tell which the office
+                // grades against, which is unfair rather than difficult.
+                var stamps = new[]
                 {
-                    fields.Add(new DocumentField(string.Empty, lines[i]));
+                    $"{page.Id}/{page.Revision}",
+                    $"NIGHT {_director.Manual.ArrivalOf(page) + 1}",
+                };
+
+                for (var i = 0; i < Math.Max(lines.Count, stamps.Length); i++)
+                {
+                    fields.Add(new DocumentField(
+                        i < stamps.Length ? stamps[i] : string.Empty,
+                        i < lines.Count ? lines[i] : string.Empty));
                 }
 
                 fields.Add(new DocumentField(string.Empty, string.Empty));

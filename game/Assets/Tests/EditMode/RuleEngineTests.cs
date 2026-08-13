@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Monster.Shift;
 using Monster.Rules;
 using NUnit.Framework;
 
@@ -137,6 +138,52 @@ namespace Monster.Tests
         }
 
         // ------------------------------------------------------------------ evaluation --
+
+        /// <summary>The binder prints the night each page arrived, and that is the only
+        /// thing a player has to work out which of two revisions the office is grading
+        /// against. If an amendment ever arrived on or before the page it replaces, the
+        /// printed nights would contradict the rule that later revisions win and the
+        /// player would be misled by the one piece of evidence they have.</summary>
+        [Test]
+        public void AnAmendmentAlwaysArrivesAfterThePageItReplaces()
+        {
+            var manual = CheckpointManual.AsOfShift(Campaign.TotalShifts - 1);
+
+            foreach (var group in manual.AllPages.GroupBy(p => p.Id))
+            {
+                var revisions = group.OrderBy(p => p.Revision).ToList();
+
+                for (var i = 1; i < revisions.Count; i++)
+                {
+                    var earlier = manual.ArrivalOf(revisions[i - 1]);
+                    var later = manual.ArrivalOf(revisions[i]);
+
+                    Assert.Greater(later, earlier,
+                        $"{revisions[i].Id} revision {revisions[i].Revision} is printed as arriving " +
+                        $"on night {later + 1}, the same night or earlier than revision " +
+                        $"{revisions[i - 1].Revision} it supersedes");
+                }
+            }
+        }
+
+        /// <summary>Every page carries an arrival night, including the ones that were in
+        /// the binder on the first shift. A page with nothing printed on it is a page the
+        /// player cannot place.</summary>
+        [Test]
+        public void EveryPageInTheBinderKnowsWhenItArrived()
+        {
+            for (var night = 0; night < Campaign.TotalShifts; night++)
+            {
+                var manual = CheckpointManual.AsOfShift(night);
+
+                foreach (var page in manual.AllPages)
+                {
+                    Assert.LessOrEqual(manual.ArrivalOf(page), night,
+                        $"{page.Id}/{page.Revision} is in the night {night + 1} binder but is " +
+                        $"printed as arriving on night {manual.ArrivalOf(page) + 1}");
+                }
+            }
+        }
 
         [Test]
         public void ASubjectViolatingNothingPasses()

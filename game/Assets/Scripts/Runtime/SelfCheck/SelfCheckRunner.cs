@@ -56,6 +56,9 @@ namespace Monster.SelfCheck
 
             [Tooltip("Turn to the next page of the binder before capturing.")]
             public bool turnPage;
+
+            [Tooltip("Which night's binder and queue to set up. -1 leaves the current one.")]
+            public int night = -1;
         }
 
         [SerializeField] private List<Checkpoint> checkpoints = new();
@@ -133,6 +136,14 @@ namespace Monster.SelfCheck
                 // Each checkpoint starts from the home pose and a known subject, so no
                 // capture depends on the one before it and the images stay comparable
                 // between runs even if a checkpoint is inserted or removed.
+                // A late night is worth photographing because the binder only contains
+                // amendments by then; on night one every page is an original and the
+                // supersession the game is built around is invisible.
+                if (presenter != null && checkpoint.night >= 0)
+                {
+                    presenter.BeginShift(checkpoint.night);
+                }
+
                 if (presenter != null && checkpoint.subjectIndex >= 0)
                 {
                     presenter.ShowSubject(checkpoint.subjectIndex);

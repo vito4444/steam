@@ -15,8 +15,19 @@ namespace Monster.Rules
     public sealed class CriteriaManual
     {
         private readonly List<Criterion> _pages = new();
+        private readonly Dictionary<string, int> _arrival = new(StringComparer.Ordinal);
 
         public IReadOnlyList<Criterion> AllPages => _pages;
+
+        /// <summary>The night a page turned up in the binder.
+        ///
+        /// Printed on the page, because without it the binder is unfair rather than
+        /// difficult: a player holding two revisions of the same criterion has no way to
+        /// tell which the office is grading against. With it they can, but only by
+        /// noticing -- which is the mechanic. Deliberately not a strike-through on the
+        /// superseded page, which would do the noticing for them.</summary>
+        public int ArrivalOf(Criterion criterion) =>
+            criterion != null && _arrival.TryGetValue(PageKey(criterion), out var shift) ? shift : 0;
 
         public CriteriaManual Issue(Criterion criterion)
         {
@@ -62,6 +73,7 @@ namespace Monster.Rules
                 if (arrival <= shiftIndex)
                 {
                     result.Issue(page);
+                    result._arrival[key] = arrival;
                 }
             }
 

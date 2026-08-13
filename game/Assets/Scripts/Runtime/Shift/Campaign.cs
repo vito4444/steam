@@ -42,6 +42,25 @@ namespace Monster.Shift
 
         public bool IsOver => ShiftIndex >= TotalShifts;
 
+        /// <summary>Jumps forward without playing the nights in between.
+        ///
+        /// Only two callers should ever want this: the self-check, which needs to
+        /// photograph a late binder without playing twenty-one nights first, and starting a
+        /// fresh run at a chosen night. Nothing happened on the skipped nights, so nothing
+        /// is queued for them and no wage is paid -- which is exactly why it must not be
+        /// used to advance a real campaign.</summary>
+        public void SkipToShift(int shiftIndex)
+        {
+            if (shiftIndex < 0 || shiftIndex >= TotalShifts)
+            {
+                throw new ArgumentOutOfRangeException(nameof(shiftIndex), shiftIndex,
+                    $"a campaign runs from night 1 to night {TotalShifts}");
+            }
+
+            ShiftIndex = shiftIndex;
+            _tonight = new List<Verdict>();
+        }
+
         public ShiftDirector BeginShift()
         {
             if (IsOver)

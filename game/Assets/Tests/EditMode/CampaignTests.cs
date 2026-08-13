@@ -282,6 +282,33 @@ namespace Monster.Tests
                 $"{n.Kind}:{n.ArrivesOnShift}:{string.Join(" ", n.Lines)}"));
         }
 
+        /// <summary>BeginShift on the presenter takes a night and used to ignore it,
+        /// because Campaign.BeginShift is sequential and a fresh campaign always started at
+        /// night one. Nothing caught it until a screenshot of night twenty-two came back
+        /// captioned NIGHT 1.</summary>
+        [Test]
+        public void SkippingForwardOpensTheNightItWasAskedFor()
+        {
+            var campaign = new Campaign(CampaignSeed);
+            campaign.SkipToShift(21);
+
+            var director = campaign.BeginShift();
+
+            Assert.AreEqual(21, director.ShiftIndex);
+            Assert.AreEqual(ShiftDirector.QuotaFor(21), director.Quota);
+            Assert.Greater(director.Manual.Superseded.Count, 0,
+                "night twenty-two's binder holds no amendments, so it is not a late binder");
+        }
+
+        [Test]
+        public void SkippingOutsideTheCampaignIsRefused()
+        {
+            var campaign = new Campaign(CampaignSeed);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => campaign.SkipToShift(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => campaign.SkipToShift(Campaign.TotalShifts));
+        }
+
         [Test]
         public void TheCampaignRefusesToRunPastItsLastNight()
         {

@@ -922,17 +922,21 @@ namespace Monster.EditorTools
             // or the manual all get caught rather than only whatever the idle shot happens
             // to include.
             // 2 = AtTheWindow, 1 = Approaching, 3 = Admitted, matching CheckpointStage.Phase.
-            var poses = new (string name, Transform lookAt, int subject, bool leanIn, int stage, int ask)[]
+            var poses = new (string name, Transform lookAt, int subject, bool leanIn, int stage, int ask, int night)[]
             {
-                ("booth_idle", null, 0, false, 2, -1),
-                ("permit", _permitPaper, 2, true, 2, -1),
-                ("monitors", ScreenAnchors.Count > 1 ? ScreenAnchors[1] : null, 2, false, 2, -1),
-                ("manual", _manualPages, 5, true, 2, -1),
-                ("approach", null, 3, false, 1, -1),
-                ("admitted", null, 3, false, 3, -1),
-                ("intercom", ScreenAnchors.Count > 0 ? ScreenAnchors[0] : null, 4, false, 2, 0),
-                ("mail", _mailAnchor, 1, true, 2, -1),
-                ("manual_page2", _manualPages, 5, true, 2, -1),
+                ("booth_idle", null, 0, false, 2, -1, -1),
+                ("permit", _permitPaper, 2, true, 2, -1, -1),
+                ("monitors", ScreenAnchors.Count > 1 ? ScreenAnchors[1] : null, 2, false, 2, -1, -1),
+                ("manual", _manualPages, 5, true, 2, -1, -1),
+                ("approach", null, 3, false, 1, -1, -1),
+                ("admitted", null, 3, false, 3, -1, -1),
+                ("intercom", ScreenAnchors.Count > 0 ? ScreenAnchors[0] : null, 4, false, 2, 0, -1),
+                ("mail", _mailAnchor, 1, true, 2, -1, -1),
+
+                // Night 22: late enough that the binder holds amendments, which is the
+                // only state in which supersession can be photographed at all.
+                ("manual_amended", _manualPages, 5, true, 2, -1, 21),
+                ("manual_page2", _manualPages, 5, true, 2, -1, -1),
             };
 
             var serialized = new SerializedObject(runner);
@@ -951,6 +955,7 @@ namespace Monster.EditorTools
                 entry.FindPropertyRelative("stagePhase").intValue = poses[i].stage;
                 entry.FindPropertyRelative("askQuestion").intValue = poses[i].ask;
                 entry.FindPropertyRelative("turnPage").boolValue = poses[i].name.EndsWith("_page2");
+                entry.FindPropertyRelative("night").intValue = poses[i].night;
             }
 
             serialized.FindProperty("reportAnchor").objectReferenceValue = _logAnchor;
