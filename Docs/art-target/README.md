@@ -83,24 +83,59 @@ that the shipping UI has not replaced yet.
 | UI layout | Below target | The top strip works. The right panel is half empty below the roster, and there is no inventory or throughput readout. |
 | Style consistency | Acceptable | One palette, one corner radius, one glyph language throughout. |
 
+## Concept target versus the current build
+
+[`comparison/target-vs-current.png`](comparison/target-vs-current.png) puts a concept
+frame directly above a real capture of the same game.
+
+A caveat on how to read it. The concept frame is a generated illustration, not a
+promise and not a spec. It is a mood reference for density, weight and interface
+structure. Some of what it shows is cheap and worth copying, some is expensive, and a
+few details are decoration an illustration can afford but a real game cannot: it
+implies a clock and a time of day the simulation does not model, worker traits that do
+not exist, and a shelf whose contents are individually drawn. Each row below says which
+is which.
+
+Ordered by how much each would close the gap, and annotated with what it actually costs.
+
+| Gap | Concept | Current | Cost |
+| --- | --- | --- | --- |
+| Floor density | Nearly every tile carries something; belts wrap the whole plot | Roughly a third to a half of the floor is bare | Cheap. Shrink the plot again or raise the starting building count. This is the single largest difference and the easiest to fix. |
+| Belt weight | Belts are thick, continuous, visibly mechanical, and densely loaded with cargo | Belts are thin, sparse, and often empty | Cheap for the art (wider bed, plated texture, stronger chevrons). The emptiness is a balance problem, not an art problem: throughput is too low to keep belts full. |
+| Machine solidity | Machines read as objects with thickness, bevelled highlights and shadowed undersides | Flat rounded squares with a single top highlight | Cheap. A second bevel row and a darker base in `ProceduralSprites`. |
+| Shelf contents | Racks visibly hold crates and finished chairs | Racks are uniform grey blocks | Moderate. Requires drawing stored items on the shelf sprite from live inventory. Worth it: it is free information about where the factory's stock actually is. |
+| Build bar | Large pictogram buttons, priced, with a visibly locked future item | Small colour swatch plus text | Cheap. Reuse the existing building sprites as button icons. The locked entry also implies a progression system that does not exist yet. |
+| Inspector structure | Sectioned into role, bars, traits, status, cargo, then a stack of actions ending in a red destructive one | One text block, two thin bars, one button | Cheap for the layout. The extra actions (set priority, take break, relocate) are new mechanics, not new UI. |
+| Worker presence | Figures are larger, outlined, and carry a legible name plate | Small pale figures, name labels disabled | Cheap. Names were switched off because they cluttered at the current zoom; they need a backing plate to work. |
+| Palette warmth | Anchored in warm orange and timber brown | Sits cool blue-grey overall | Cheap but risky. Warming the floor is a one-line change; it must not break the value banding the palette tests enforce. |
+| Top bar | Iconography, dividers, a grouped set of screen buttons | Plain text pairs | Cheap, but most of those buttons would open screens that do not exist. |
+| Content breadth | Thirteen placeable things including splitter, merger, power pole | Seven | Expensive, and gameplay work rather than art. Splitters and mergers in particular would change how belts are routed. |
+| Worker traits | Named traits such as Fast Learner and Tidy | No trait system | Expensive. Real design work, and the thing most likely to make workers feel like individuals. |
+| Clock and calendar | A time of day alongside the day counter | Day counter only | Cheap to display, but the simulation has no concept of hours; showing one would be a lie. |
+
 ## Gap list
 
-Ordered by how much each would move the picture, not by effort.
+Ordered by how much each would move the picture, not by effort. The comparison table
+above covers the concept-versus-build differences; these are the remaining issues found
+by reviewing captures directly.
 
 1. **Density.** Either shrink the plot further or increase the building count per
    scenario. Empty floor is the single largest difference from every reference work.
 2. **Assembly benches look disconnected.** They are fed by hand, so no belt touches
    their input side, and they read as isolated boxes rather than as part of the line.
    Either route input belts to them or make hand-feeding visually explicit.
-3. **Right panel is half dead.** Needs a materials-on-hand readout and a throughput
-   graph, both of which also serve the player.
+3. **Belts run mostly empty.** Throughput is low enough that a belt usually carries one
+   item or none. This is a balance problem showing up as an art problem, and it makes
+   the factory look idle even while it is working.
 4. **No environmental detail.** No floor markings, no pipework, no wear. The reference
    works all use incidental detail to make the floor feel built rather than blank.
 5. **Palette runs cold.** Everything sits in blue-grey. Factorio and 2D Factory both
-   anchor on warm browns and oranges. Worth testing a warmer floor.
+   anchor on warm browns and oranges. Worth testing a warmer floor, without breaking the
+   value separation the palette tests enforce.
 6. **No backpressure signal.** A blocked belt looks identical to a moving one in a
    still frame. Needs a stalled-item indicator.
-7. **Feedback layer entirely absent.** Blocked on the Unity renderer.
+7. **Feedback layer entirely absent.** No particles, no tweening, no impact on craft
+   completion. Static frames cannot evaluate this at all.
 
 ## What this board does not cover
 
