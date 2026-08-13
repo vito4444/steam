@@ -309,9 +309,9 @@ withheld, 0 errors logged.
 
 | | |
 |---|---|
-| frame time | 57 ms (18 fps) on Mesa llvmpipe, no GPU |
-| renderers | 229 |
-| triangles | 3,978 |
+| frame time | 60 ms (16.7 fps) on Mesa llvmpipe, no GPU |
+| renderers | 259 |
+| triangles | 4,178 |
 | edit-mode tests | 84 passing |
 | self-check errors | 0 |
 | self-check run | 6 nights, 96 vehicles, 54 credits withheld, save resumed |
