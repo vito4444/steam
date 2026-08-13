@@ -104,8 +104,16 @@ namespace Undertown.Game.Presentation
             Shadow(px, w, h, cw, ch, ox, oy);
             Walls(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
             Openings(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX);
+            Brackets(px, w, h, cw, ch, ox, oy, scheme);
             Roof(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
             if (scheme.Chimney) Chimney(px, w, h, cw, ch, ox, oy, scheme, peak);
+
+            // Landmarks last, over the roof they stand on.
+            switch (kind)
+            {
+                case BuildingKind.TownHall: BellTower(px, w, h, cw, ch, ox, oy, scheme, peak); break;
+                case BuildingKind.Warehouse: LoadingDoor(px, w, h, cw, ch, ox, oy, scheme, peak); break;
+            }
         }
 
         /// <summary>
@@ -264,6 +272,113 @@ namespace Undertown.Game.Presentation
 
             // A mullion, which is what stops a window reading as a glowing sticker.
             for (int lift = bottom; lift <= top; lift++) Plot(px, w, h, x, y + lift, frame);
+        }
+
+        /// <summary>
+        /// Timber brackets under the eaves, spaced along both visible walls. Small, but the
+        /// eaves line is the longest single edge on a building and an unbroken one reads as a
+        /// cut-out rather than as carpentry.
+        /// </summary>
+        private static void Brackets(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme)
+        {
+            var timber = scheme.Timber;
+            var lit = Lighten(scheme.Timber, 22);
+            int top = scheme.WallHeight;
+
+            for (int i = 0; i < cw * 2; i++)
+            {
+                var p = Iso.Project((i + 0.5f) / 2f, ch, ox, oy);
+                for (int d = 0; d < 5; d++)
+                    for (int dx = 0; dx <= d / 2; dx++)
+                        Plot(px, w, h, p.x + dx, p.y + top - 1 - d, dx == 0 ? lit : timber);
+            }
+
+            for (int i = 0; i < ch * 2; i++)
+            {
+                var p = Iso.Project(cw, (i + 0.5f) / 2f, ox, oy);
+                for (int d = 0; d < 5; d++)
+                    for (int dx = 0; dx <= d / 2; dx++)
+                        Plot(px, w, h, p.x - dx, p.y + top - 1 - d, timber);
+            }
+        }
+
+        /// <summary>
+        /// A bell turret on the hall's ridge. The town needs one thing taller than its roofs,
+        /// or the eye has nowhere to land and the settlement reads as an even field of sheds.
+        /// </summary>
+        private static void BellTower(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme, int peak)
+        {
+            var post = C(0x5B, 0x40, 0x2A);
+            var postLit = C(0x7E, 0x5E, 0x3E);
+            var lead = C(0x54, 0x58, 0x5E);
+            var leadLit = C(0x76, 0x7C, 0x84);
+            var bell = C(0xB0, 0x8A, 0x3A);
+            var flag = C(0x9C, 0x42, 0x30);
+
+            var c = Iso.Project(cw * 0.5f, ch * 0.5f, ox, oy);
+            int baseLift = scheme.WallHeight + peak - 2;
+
+            for (int lift = 0; lift < 20; lift++)
+            for (int dx = -9; dx <= 9; dx++)
+            {
+                bool upright = Mathf.Abs(dx) > 7;
+                bool floor = lift < 2;
+                if (!upright && !floor) continue;
+                Plot(px, w, h, c.x + dx, c.y + baseLift + lift, dx < 0 ? postLit : post);
+            }
+
+            for (int lift = 6; lift < 15; lift++)
+            {
+                int half = lift < 12 ? 4 : 4 - (lift - 12);
+                for (int dx = -half; dx <= half; dx++)
+                    Plot(px, w, h, c.x + dx, c.y + baseLift + lift, dx < 0 ? Lighten(bell, 26) : bell);
+            }
+
+            // Lead spire.
+            for (int lift = 0; lift < 18; lift++)
+            {
+                int half = Mathf.Max(0, 9 - lift * 9 / 17);
+                for (int dx = -half; dx <= half; dx++)
+                    Plot(px, w, h, c.x + dx, c.y + baseLift + 20 + lift, dx < 0 ? leadLit : lead);
+            }
+
+            for (int lift = 0; lift < 9; lift++) Plot(px, w, h, c.x, c.y + baseLift + 38 + lift, lead);
+            for (int lift = 3; lift < 8; lift++)
+            for (int dx = 1; dx <= 8 - lift; dx++)
+                Plot(px, w, h, c.x + dx, c.y + baseLift + 38 + lift, flag);
+        }
+
+        /// <summary>A double cargo door with a hoist beam over it, on the warehouse gable.</summary>
+        private static void LoadingDoor(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme, int peak)
+        {
+            var plank = C(0x4E, 0x3A, 0x26);
+            var plankLit = C(0x6C, 0x52, 0x36);
+            var iron = C(0x33, 0x31, 0x2E);
+
+            var d = Iso.Project(cw, ch * 0.5f, ox, oy);
+
+            for (int lift = 2; lift < scheme.WallHeight - 6; lift++)
+            for (int dx = -12; dx <= 12; dx++)
+            {
+                bool seam = dx == 0 || Mathf.Abs(dx) == 12;
+                bool strap = lift == 8 || lift == scheme.WallHeight - 12;
+                Plot(px, w, h, d.x + dx, d.y + lift,
+                    seam || strap ? iron : (dx < 0 ? plankLit : plank));
+            }
+
+            // Hoist beam out through the gable, with a block and tackle hanging off it.
+            int beam = scheme.WallHeight + peak / 2;
+            for (int dx = 0; dx <= 16; dx++)
+            for (int dy = 0; dy < 3; dy++)
+                Plot(px, w, h, d.x + dx, d.y + beam + dy, dy == 0 ? plank : plankLit);
+
+            for (int lift = 0; lift < 9; lift++) Plot(px, w, h, d.x + 15, d.y + beam - lift, iron);
+            for (int lift = 9; lift < 14; lift++)
+            for (int dx = -2; dx <= 2; dx++)
+                Plot(px, w, h, d.x + 15 + dx, d.y + beam - lift, plank);
         }
 
         private static void Chimney(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
