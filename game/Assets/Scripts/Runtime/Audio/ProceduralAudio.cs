@@ -87,13 +87,24 @@ namespace Monster.Audio
 
         /// <summary>Paper being moved: a burst of high noise with a fast irregular
         /// envelope.</summary>
-        public static AudioClip PaperRustle(int seed = 606) =>
-            Build("PaperRustle", 0.42f, seed, (t, phase, random, noise) =>
+        public static AudioClip PaperRustle(int seed = 606)
+        {
+            // A one-pole across the noise before it is shaped. Unfiltered, this clip put
+            // 75 percent of its energy above 5 kHz with an 85-percent rolloff at 18.7 kHz,
+            // which is white noise rather than paper -- the measurement that found it is
+            // the same one the spectral tests now make every run. Paper has body: the
+            // sheet moves as well as hisses, but it still hisses.
+            var body = 0f;
+
+            return Build("PaperRustle", 0.42f, seed, (t, phase, random, noise) =>
             {
+                body += (noise - body) * 0.34f;
+
                 var envelope = Mathf.Exp(-t * 7f) * (0.45f + 0.55f * Mathf.Abs(Mathf.Sin(phase * 21f)));
-                var crackle = noise * (0.6f + 0.4f * Mathf.Sin(phase * 380f + noise * 6f));
-                return crackle * envelope * 0.32f;
+                var crackle = body * (0.6f + 0.4f * Mathf.Sin(phase * 380f + body * 6f));
+                return crackle * envelope * 1.15f;
             });
+        }
 
         /// <summary>An electromechanical bell, struck twice.</summary>
         public static AudioClip TelephoneRing(int seed = 707) =>

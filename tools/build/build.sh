@@ -37,7 +37,18 @@ grep -E '^\[(MonsterBuild|MonsterSetup|NightShift)\]' "${LOG}" | sed 's/^/  /'
 if [[ ${STATUS} -ne 0 ]]; then
   log "build failed; compiler errors:"
   grep -E 'error CS[0-9]+' "${LOG}" | sort -u | head -20 | sed 's/^/  /'
-  exit "${STATUS}"
+  # The synthesised audio has never been heard on this machine and cannot be. Writing it
+# out as WAV at least makes it reviewable somewhere that has a sound card.
+log "exporting synthesised audio"
+xvfb-run -a "${UNITY}" \
+  -batchmode -nographics -quit \
+  -projectPath "${PROJECT}" \
+  -executeMethod Monster.EditorTools.AudioExport.ExportAll \
+  -logFile /tmp/audio_export.log >/dev/null 2>&1 \
+  && grep -cE '^\[AudioExport\] .*\.wav$' /tmp/audio_export.log | sed 's/^/  clips written: /' \
+  || log "audio export failed; see /tmp/audio_export.log"
+
+exit "${STATUS}"
 fi
 
 for player in "${PROJECT}/Build/Windows/MONSTER.exe" "${PROJECT}/Build/Linux/MONSTER.x86_64"; do
@@ -48,5 +59,16 @@ for player in "${PROJECT}/Build/Windows/MONSTER.exe" "${PROJECT}/Build/Linux/MON
     STATUS=1
   fi
 done
+
+# The synthesised audio has never been heard on this machine and cannot be. Writing it
+# out as WAV at least makes it reviewable somewhere that has a sound card.
+log "exporting synthesised audio"
+xvfb-run -a "${UNITY}" \
+  -batchmode -nographics -quit \
+  -projectPath "${PROJECT}" \
+  -executeMethod Monster.EditorTools.AudioExport.ExportAll \
+  -logFile /tmp/audio_export.log >/dev/null 2>&1 \
+  && grep -cE '^\[AudioExport\] .*\.wav$' /tmp/audio_export.log | sed 's/^/  clips written: /' \
+  || log "audio export failed; see /tmp/audio_export.log"
 
 exit "${STATUS}"

@@ -15,9 +15,28 @@ namespace Monster.Audio
     public sealed class BoothAudio : MonoBehaviour
     {
         [SerializeField] private BoothPresenter presenter;
-        [SerializeField, Range(0f, 1f)] private float roomToneLevel = 0.45f;
-        [SerializeField, Range(0f, 1f)] private float windLevel = 0.30f;
-        [SerializeField, Range(0f, 1f)] private float heaterLevel = 0.35f;
+        /// <summary>Bed levels, chosen from the measured loudness of the clips rather than
+        /// by feel, because nobody involved can hear them.
+        ///
+        /// Every synthesised clip is normalised to the same peak, so their loudness in
+        /// isolation says nothing about how they sit together: room tone came out at an RMS
+        /// of 0.350 and wind at 0.129, and mixing both near half meant the air in the room
+        /// was three times louder than the weather outside it. These numbers put each bed
+        /// at a chosen level in the mix instead.
+        ///
+        /// Targets, in RMS of full scale: room tone 0.020, wind 0.032, heater 0.025, the
+        /// CRT whine 0.013. A quiet night in a small room, with the weather the loudest
+        /// thing in it. A test recomputes these from the clips and fails if the ordering
+        /// stops holding.</summary>
+        public const float RoomToneLevel = 0.057f;
+        public const float WindLevel = 0.248f;
+        public const float HeaterLevel = 0.176f;
+        public const float CrtLevel = 0.026f;
+
+        [SerializeField, Range(0f, 1f)] private float roomToneLevel = RoomToneLevel;
+        [SerializeField, Range(0f, 1f)] private float windLevel = WindLevel;
+        [SerializeField, Range(0f, 1f)] private float heaterLevel = HeaterLevel;
+        [SerializeField, Range(0f, 1f)] private float crtLevel = CrtLevel;
         [SerializeField, Range(0f, 1f)] private float oneShotLevel = 0.75f;
 
         private AudioSource _oneShots;
@@ -44,6 +63,9 @@ namespace Monster.Audio
             Bed("RoomTone", ProceduralAudio.RoomTone(), roomToneLevel);
             Bed("Wind", ProceduralAudio.Wind(), windLevel);
             Bed("Heater", ProceduralAudio.Heater(), heaterLevel);
+
+            // Three cathode ray tubes a metre from the player's head were silent until now.
+            Bed("CrtWhine", ProceduralAudio.CrtWhine(), crtLevel);
         }
 
         private void OnEnable()
@@ -69,7 +91,7 @@ namespace Monster.Audio
             // The order is the order the objects would actually be touched: throw the
             // switch, stamp the form, pull the next one off the stack, and the next
             // vehicle pulls up outside.
-            Play(_switchThrow, 1.0f);
+            Play(_switchThrow, 0.70f);
             Play(_stamp, 0.85f, 0.18f);
             Play(_paper, 0.55f, 0.42f);
             Play(_vehicle, 0.5f, 0.9f);
