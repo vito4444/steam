@@ -7,7 +7,13 @@ namespace Monster.Interaction
     public sealed class DeskInteractor : MonoBehaviour
     {
         [SerializeField] private float reach = 2.4f;
+
+        /// <summary>How far off a thing the player may aim and still be pointing at it. Three
+        /// centimetres at arm's length, which is about a switch cap wide.</summary>
+        [SerializeField] private float forgiveness = 0.075f;
+
         [SerializeField] private LayerMask mask = ~0;
+        [SerializeField] private AimDot aim;
 
         private BoothCamera _camera;
         private Camera _view;
@@ -45,7 +51,7 @@ namespace Monster.Interaction
             // Without this the operating system's pointer sits on top of the booth and
             // every player assumes it is what they are aiming with. The ray comes from the
             // centre of the view; hiding the pointer is what makes that discoverable
-            // instead of baffling, and it is the only reason the booth needs no crosshair.
+            // instead of baffling. It is not enough on its own -- see AimDot.
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -62,6 +68,8 @@ namespace Monster.Interaction
             _camera.ApplyLook(Input.LookDelta);
 
             UpdateHover();
+
+            UpdateAim();
 
             if (Input.BackPressed && _focused != null)
             {
@@ -99,6 +107,20 @@ namespace Monster.Interaction
             }
         }
 
+        /// <summary>Puts something under the player's nose without them having asked. Used
+        /// once, to open the binder on the first night; a game that does this often has taken
+        /// the camera away from the player.</summary>
+        public void FocusOn(DeskInteractable target)
+        {
+            if (target == null || _camera == null)
+            {
+                return;
+            }
+
+            _focused = target;
+            _camera.Focus(target.transform, target.FocusDistance, target.FocusOffset);
+        }
+
         public void Release()
         {
             _focused = null;
@@ -110,10 +132,23 @@ namespace Monster.Interaction
             var origin = _view != null ? _view.transform.position : transform.position;
             var direction = _view != null ? _view.transform.forward : transform.forward;
 
+            // A thin ray demands the player put an invisible point exactly on a switch cap
+            // two centimetres across, with no crosshair to aim by. Missing then produces
+            // nothing at all -- no highlight, no sound, no refusal -- which reads as a broken
+            // game rather than as a miss. A swept sphere forgives the near miss, and the
+            // exact ray is still tried first so that overlapping objects resolve to whatever
+            // is actually being pointed at.
             DeskInteractable found = null;
+
             if (Physics.Raycast(origin, direction, out var hit, reach, mask, QueryTriggerInteraction.Collide))
             {
                 found = hit.collider.GetComponentInParent<DeskInteractable>();
+            }
+
+            if (found == null && Physics.SphereCast(origin, forgiveness, direction, out var near, reach, mask,
+                    QueryTriggerInteraction.Collide))
+            {
+                found = near.collider.GetComponentInParent<DeskInteractable>();
             }
 
             if (found == _hovered)
@@ -131,6 +166,16 @@ namespace Monster.Interaction
             if (_hovered != null)
             {
                 _hovered.SetHovered(true);
+            }
+        }
+
+        /// <summary>The dot follows what a click would actually hit, including the forgiven
+        /// near miss, so it can never promise something the interact key will not deliver.</summary>
+        private void UpdateAim()
+        {
+            if (aim != null)
+            {
+                aim.SetTargeting(_hovered != null);
             }
         }
     }

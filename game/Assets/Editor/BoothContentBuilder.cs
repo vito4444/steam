@@ -5,7 +5,9 @@ using Monster.Presentation;
 using Monster.Rules;
 using System.Linq;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Monster.EditorTools
 {
@@ -179,7 +181,17 @@ namespace Monster.EditorTools
             // No input source assigned here. IInputSource is a plain property and does not
             // serialise, so anything set at edit time is gone by the time the player runs.
             // DeskInteractor builds its own in Awake.
-            handles.Camera.AddComponent<DeskInteractor>();
+            var interactor = handles.Camera.AddComponent<DeskInteractor>();
+
+            var aim = BuildAimDot();
+
+            var interactorSerialized = new SerializedObject(interactor);
+            interactorSerialized.FindProperty("aim").objectReferenceValue = aim;
+            interactorSerialized.ApplyModifiedPropertiesWithoutUndo();
+
+            var presenterSerialized = new SerializedObject(presenter);
+            presenterSerialized.FindProperty("interactor").objectReferenceValue = interactor;
+            presenterSerialized.ApplyModifiedPropertiesWithoutUndo();
 
             var printed = permit != null && manual != null && logbook != null
                           && intercom != null && biometrics != null && cabin != null;
@@ -319,6 +331,86 @@ namespace Monster.EditorTools
                     new Vector3(0f, 1f, -0.4f), control.GetComponentsInChildren<Renderer>());
                 presenter.RegisterSwitch(interactable);
             }
+        }
+
+        /// <summary>The aiming dot and the only screen-space element in the game.
+        ///
+        /// Overlay rather than in-world, because a dot painted on the glass would be at a
+        /// fixed depth and the desk is not.</summary>
+        private static AimDot BuildAimDot()
+        {
+            var canvasObject = new GameObject("AimCanvas",
+                typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+
+            var canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            // Above nothing in particular. There is no other UI to sort against, but a
+            // default of zero puts it at the mercy of whatever URP draws last.
+            canvas.sortingOrder = 100;
+
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+
+            var dotObject = new GameObject("AimDot", typeof(RectTransform), typeof(Image), typeof(AimDot));
+            dotObject.transform.SetParent(canvasObject.transform, false);
+
+            var rect = (RectTransform)dotObject.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(3f, 3f);
+
+            var image = dotObject.GetComponent<Image>();
+            image.sprite = RingSprite();
+            image.color = new Color(0.92f, 0.88f, 0.76f, 0.22f);
+            image.raycastTarget = false;
+
+            return dotObject.GetComponent<AimDot>();
+        }
+
+        /// <summary>A ring rather than a disc: a filled dot at eleven pixels would sit on top
+        /// of the small thing it is pointing at.</summary>
+        private static Sprite RingSprite()
+        {
+            const string path = "Assets/Textures/AimRing.png";
+            const int size = 64;
+
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var centre = (size - 1) * 0.5f;
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var distance = Mathf.Sqrt((x - centre) * (x - centre) + (y - centre) * (y - centre));
+
+                    // Soft-edged annulus. Antialiased by the falloff rather than by mip
+                    // filtering, which at three pixels would erase it.
+                    var outer = Mathf.InverseLerp(centre, centre - 5f, distance);
+                    var inner = Mathf.InverseLerp(centre - 15f, centre - 11f, distance);
+                    var alpha = Mathf.Clamp01(Mathf.Min(outer, inner));
+
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            texture.Apply();
+            System.IO.File.WriteAllBytes(path, texture.EncodeToPNG());
+            Object.DestroyImmediate(texture);
+            AssetDatabase.ImportAsset(path);
+
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            importer.textureType = TextureImporterType.Sprite;
+
+            // Without this the mode defaults to None, LoadAssetAtPath returns null, and the
+            // Image falls back to its built-in white square -- which is exactly what appeared
+            // in the middle of the screen.
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            importer.SaveAndReimport();
+
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
         // -------------------------------------------------------------------- helpers --

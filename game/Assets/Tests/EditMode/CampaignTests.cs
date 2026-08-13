@@ -365,18 +365,20 @@ namespace Monster.Tests
             }
         }
 
+        /// <summary>The orders live in the binder now. They must not also come through the
+        /// post, or the player reads the same three sheets twice and learns to skim mail.</summary>
         [Test]
-        public void TheStandingOrdersArriveOnlyOnTheFirstNight()
+        public void TheStandingOrdersNeverComeThroughThePost()
         {
             var campaign = new Campaign(CampaignSeed);
             var headings = ConsequenceWriter.StandingOrders().Select(n => n.Heading).ToList();
 
-            for (var night = 1; night < Campaign.TotalShifts; night++)
+            for (var night = 0; night < Campaign.TotalShifts; night++)
             {
                 foreach (var notice in campaign.MailFor(night))
                 {
                     CollectionAssert.DoesNotContain(headings, notice.Heading,
-                        $"standing orders turned up again on night {night + 1}");
+                        $"the post orders arrived by post on night {night + 1} as well as in the binder");
                 }
             }
         }

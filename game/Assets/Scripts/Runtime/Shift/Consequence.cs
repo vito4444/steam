@@ -162,7 +162,7 @@ namespace Monster.Shift
         public static IEnumerable<Notice> StandingOrders()
         {
             yield return new Notice(NoticeKind.Routine, 0, -1,
-                "STANDING ORDERS - POST 14",
+                "POST ORDERS - POST 14",
                 new[]
                 {
                     "YOU HOLD THE NIGHT WATCH AT THIS",
@@ -175,7 +175,7 @@ namespace Monster.Shift
                 });
 
             yield return new Notice(NoticeKind.Routine, 0, -1,
-                "STANDING ORDERS - DISPOSITION",
+                "POST ORDERS - DISPOSITION",
                 new[]
                 {
                     "FOUR SWITCHES. THROW ONE.",
@@ -189,7 +189,7 @@ namespace Monster.Shift
                 });
 
             yield return new Notice(NoticeKind.Routine, 0, -1,
-                "STANDING ORDERS - CONDUCT",
+                "POST ORDERS - CONDUCT",
                 new[]
                 {
                     "THE INTERCOM KEYS PUT A QUESTION",

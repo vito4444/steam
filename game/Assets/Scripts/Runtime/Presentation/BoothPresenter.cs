@@ -38,6 +38,7 @@ namespace Monster.Presentation
         [SerializeField] private List<DeskInteractable> mailControls = new();
         [SerializeField] private List<DeskInteractable> manualControls = new();
         [SerializeField] private List<DeskInteractable> logControls = new();
+        [SerializeField] private DeskInteractor interactor;
 
         [SerializeField] private CheckpointStage stage;
 
@@ -397,16 +398,16 @@ namespace Monster.Presentation
             RefreshDesk();
             RefreshManual();
             RefreshLogbook(null);
+            ShowMail(_campaign.MailFor(shiftIndex));
 
-            // On the first night the standing orders are on top of the pile, because nothing
-            // else in the booth says what the job is.
-            var mail = _campaign.MailFor(shiftIndex).ToList();
-            if (shiftIndex == 0)
+            // The binder is open at the post orders when a first night begins, rather than
+            // waiting to be found. Nothing else in the booth says what the job is, and a
+            // player who has to guess which of eleven props to click first has been given a
+            // puzzle the game never meant to set.
+            if (shiftIndex == 0 && interactor != null && manualControls.Count > 0)
             {
-                mail.InsertRange(0, ConsequenceWriter.StandingOrders());
+                interactor.FocusOn(manualControls[0]);
             }
-
-            ShowMail(mail);
         }
 
         /// <summary>Puts a specific vehicle at the window without deciding anything on the
@@ -507,13 +508,36 @@ namespace Monster.Presentation
                 return;
             }
 
-            var pages = _director.Manual.AllPages.ToList();
-            var total = Math.Max(1, (pages.Count + ManualCriteriaPerPage - 1) / ManualCriteriaPerPage);
-            _manualPage = Math.Clamp(_manualPage, 0, total - 1);
+            // On the first night the binder carries its front matter: what the post does,
+            // what the four switches mean, and how a shift ends. It is dropped afterwards,
+            // because a player on night nine leafing past three pages of orders they have
+            // read eight times is being taxed for having started.
+            var front = _director.ShiftIndex == 0
+                ? ConsequenceWriter.StandingOrders().ToList()
+                : new List<Notice>();
 
+            var pages = _director.Manual.AllPages.ToList();
+            var criteriaPages = Math.Max(1, (pages.Count + ManualCriteriaPerPage - 1) / ManualCriteriaPerPage);
+            var total = front.Count + criteriaPages;
+            _manualPage = ((_manualPage % total) + total) % total;
+
+            if (_manualPage < front.Count)
+            {
+                var orders = front[_manualPage];
+
+                Show(manual, new DocumentContent(
+                    $"{orders.Heading} - PAGE {_manualPage + 1}/{total}",
+                    orders.Lines.Select(line => new DocumentField(string.Empty, line)).ToList(),
+                    "TURN FOR THE CRITERIA.",
+                    null,
+                    ManualLabelWidth));
+                return;
+            }
+
+            var criteriaPage = _manualPage - front.Count;
             var fields = new List<DocumentField>();
 
-            foreach (var page in pages.Skip(_manualPage * ManualCriteriaPerPage).Take(ManualCriteriaPerPage))
+            foreach (var page in pages.Skip(criteriaPage * ManualCriteriaPerPage).Take(ManualCriteriaPerPage))
             {
                 var lines = Wrap(page.PrintedText, ManualLineWidth);
 
