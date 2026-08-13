@@ -33,6 +33,7 @@ namespace Hunter.Gameplay.UI
         Text _haulText;
         Text _weightText;
         Text _portalText;
+        Text _promptText;
         Bar _weightBar;
         Bar _threatBar;
         Bar _healthBar;
@@ -100,6 +101,26 @@ namespace Hunter.Gameplay.UI
             portalRect.anchoredPosition = Vector2.zero;
             portalRect.sizeDelta = new Vector2(900f, 90f);
             _portalText.gameObject.SetActive(false);
+
+            // Interaction prompt, just under the reticle line. Without it a player has no
+            // way to learn that containers and the bell are interactive at all.
+            _promptText = MakeLabel(root, "Prompt", Vector2.zero, 26, Gold, TextAnchor.MiddleCenter);
+            var promptRect = _promptText.rectTransform;
+            promptRect.anchorMin = promptRect.anchorMax = new Vector2(0.5f, 0.40f);
+            promptRect.pivot = new Vector2(0.5f, 0.5f);
+            promptRect.anchoredPosition = Vector2.zero;
+            promptRect.sizeDelta = new Vector2(900f, 44f);
+            _promptText.gameObject.SetActive(false);
+        }
+
+        /// Null or empty hides the prompt.
+        public void SetPrompt(string text)
+        {
+            if (_promptText == null) return;
+
+            bool show = !string.IsNullOrEmpty(text);
+            if (_promptText.gameObject.activeSelf != show) _promptText.gameObject.SetActive(show);
+            if (show) _promptText.text = text;
         }
 
         RectTransform MakePanel(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax,

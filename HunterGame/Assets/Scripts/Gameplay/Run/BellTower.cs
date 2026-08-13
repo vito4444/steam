@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Hunter.Gameplay.Actors;
 using Hunter.Gameplay.Items;
+using Hunter.Audio;
 using UnityEngine;
 
 namespace Hunter.Gameplay.Run
@@ -12,13 +13,23 @@ namespace Hunter.Gameplay.Run
     {
         [SerializeField] float audibleRadius = 90f;
         [SerializeField] AudioSource audioSource;
-        [SerializeField] AudioClip bellClip;
 
         public float AudibleRadius => audibleRadius;
         public bool Rung { get; private set; }
         public float TimeSinceRung { get; private set; } = float.MaxValue;
 
         public event Action<BellTower> Rang;
+
+        void Awake()
+        {
+            if (audioSource != null) return;
+
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0.65f;
+            audioSource.rolloffMode = AudioRolloffMode.Linear;
+            audioSource.maxDistance = audibleRadius;
+        }
 
         public bool Ring(RunDirector director)
         {
@@ -27,7 +38,7 @@ namespace Hunter.Gameplay.Run
 
             Rung = true;
             TimeSinceRung = 0f;
-            if (audioSource != null && bellClip != null) audioSource.PlayOneShot(bellClip);
+            if (audioSource != null) audioSource.PlayOneShot(ProceduralAudio.Bell(), 0.95f);
             Rang?.Invoke(this);
             return true;
         }

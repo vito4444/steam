@@ -1,5 +1,6 @@
 using System.IO;
 using System.Reflection;
+using Hunter.Audio;
 using Hunter.Gameplay.AI;
 using Hunter.Gameplay.Actors;
 using Hunter.Gameplay.Combat;
@@ -621,6 +622,15 @@ namespace Hunter.EditorTools
             hudSo.FindProperty("playerHealth").objectReferenceValue = player.GetComponent<Damageable>();
             hudSo.ApplyModifiedPropertiesWithoutUndo();
 
+            var audioGo = new GameObject("RaidAudio");
+            audioGo.transform.SetParent(gameplayRoot.transform, false);
+            var raidAudio = audioGo.AddComponent<RaidAudio>();
+            var audioSo = new SerializedObject(raidAudio);
+            audioSo.FindProperty("run").objectReferenceValue = run;
+            audioSo.FindProperty("listenerTarget").objectReferenceValue = camera.transform;
+            audioSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
+            audioSo.ApplyModifiedPropertiesWithoutUndo();
+
             var bootstrapGo = new GameObject("RunBootstrap");
             bootstrapGo.transform.SetParent(gameplayRoot.transform, false);
             var bootstrap = bootstrapGo.AddComponent<RunBootstrap>();
@@ -629,6 +639,7 @@ namespace Hunter.EditorTools
             bootSo.FindProperty("playerCamera").objectReferenceValue = camera;
             bootSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
             bootSo.FindProperty("combat").objectReferenceValue = player.GetComponent<MeleeCombatant>();
+            bootSo.FindProperty("hud").objectReferenceValue = hud;
             bootSo.ApplyModifiedPropertiesWithoutUndo();
         }
 

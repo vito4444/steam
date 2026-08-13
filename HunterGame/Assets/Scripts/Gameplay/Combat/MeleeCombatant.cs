@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Hunter.Audio;
 using Hunter.Gameplay.Actors;
 using UnityEngine;
 
@@ -22,8 +23,6 @@ namespace Hunter.Gameplay.Combat
 
         [Header("Feedback")]
         [SerializeField] AudioSource audioSource;
-        [SerializeField] AudioClip swingClip;
-        [SerializeField] AudioClip hitClip;
 
         MeleeStateMachine _machine;
         Damageable _self;
@@ -43,6 +42,16 @@ namespace Hunter.Gameplay.Combat
             _self = GetComponent<Damageable>();
             _locomotion = GetComponent<HunterController>();
             if (swingOrigin == null) swingOrigin = transform;
+
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                // 3D so a rival's swings can be located by ear before they are seen.
+                audioSource.spatialBlend = 0.85f;
+                audioSource.rolloffMode = AudioRolloffMode.Linear;
+                audioSource.maxDistance = 38f;
+            }
         }
 
         public void BindCamera(OverShoulderCamera cam) => _camera = cam;
@@ -57,7 +66,7 @@ namespace Hunter.Gameplay.Combat
 
             _hitThisSwing.Clear();
             AimAtNearestTarget();
-            if (audioSource != null && swingClip != null) audioSource.PlayOneShot(swingClip, 0.7f);
+            if (audioSource != null) audioSource.PlayOneShot(ProceduralAudio.Swing(), 0.55f);
             return true;
         }
 
@@ -140,8 +149,8 @@ namespace Hunter.Gameplay.Combat
             _machine.NotifyConnected();
 
             // Layer 1: audio.
-            if (audioSource != null && hitClip != null)
-                audioSource.PlayOneShot(hitClip, finisher ? 1f : 0.8f);
+            if (audioSource != null)
+                audioSource.PlayOneShot(ProceduralAudio.Impact(), finisher ? 0.95f : 0.75f);
 
             // Layer 2: camera impulse.
             if (_camera != null) _camera.AddShake(profile.CameraShake * (finisher ? 1.6f : 1f));

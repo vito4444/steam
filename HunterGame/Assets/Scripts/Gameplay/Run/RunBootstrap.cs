@@ -1,6 +1,7 @@
 using Hunter.Gameplay.Actors;
 using Hunter.Gameplay.Combat;
 using Hunter.Gameplay.Items;
+using Hunter.Gameplay.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -15,6 +16,7 @@ namespace Hunter.Gameplay.Run
         [SerializeField] OverShoulderCamera playerCamera;
         [SerializeField] HunterController player;
         [SerializeField] MeleeCombatant combat;
+        [SerializeField] RaidHud hud;
 
         [Header("Interaction")]
         [SerializeField] float interactRange = 2.6f;
@@ -82,6 +84,38 @@ namespace Hunter.Gameplay.Run
                 combat.TryAttack();
 
             HandleInteraction(interact, dt);
+            UpdatePrompt();
+        }
+
+        /// Tells the player what the interact key would do from where they stand.
+        void UpdatePrompt()
+        {
+            if (hud == null) return;
+
+            var position = player.transform.position;
+
+            foreach (var collider in Physics.OverlapSphere(position, bellRange, ~0,
+                         QueryTriggerInteraction.Collide))
+            {
+                var bell = collider.GetComponentInParent<BellTower>();
+                if (bell == null || bell.Rung) continue;
+                hud.SetPrompt("[E]  RING THE BELL  -  opens the way out, and tells the mist where you are");
+                return;
+            }
+
+            var container = FindContainer(position);
+            if (container != null)
+            {
+                float progress = _searching == container
+                    ? Mathf.Clamp01(_searchProgress / container.SearchSeconds)
+                    : 0f;
+                hud.SetPrompt(progress > 0.01f
+                    ? $"SEARCHING  {progress * 100f:0}%"
+                    : "[E]  SEARCH");
+                return;
+            }
+
+            hud.SetPrompt(null);
         }
 
         void HandleInteraction(bool held, float dt)

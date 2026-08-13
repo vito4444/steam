@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-8141067356482382897
+--- !u!114 &-6123928517034151081
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -54,9 +54,9 @@ MonoBehaviour:
     probeSamplingDebugTexture: {fileID: 0}
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
-  - {fileID: 8946120802278414915}
-  - {fileID: -8141067356482382897}
-  m_RendererFeatureMap: 439a89997801277ccfd3565c5f1e058f
+  - {fileID: 4686471792096797309}
+  - {fileID: -6123928517034151081}
+  m_RendererFeatureMap: 7d62d1d143b1094157734bb0756f03ab
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 0}
@@ -82,7 +82,7 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 1
   m_IntermediateTextureMode: 0
---- !u!114 &8946120802278414915
+--- !u!114 &4686471792096797309
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
