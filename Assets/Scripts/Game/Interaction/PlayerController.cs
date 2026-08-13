@@ -51,6 +51,7 @@ namespace Worker.Game
 
         private SimRunner _runner;
         private Camera _camera;
+        private IsometricCameraRig _isometricRig;
 
         private void Awake()
         {
@@ -62,7 +63,11 @@ namespace Worker.Game
             var world = _runner.World;
             if (world == null) return;
 
-            if (_camera == null) _camera = Camera.main;
+            if (_camera == null)
+            {
+                _camera = Camera.main;
+                if (_camera != null) _isometricRig = _camera.GetComponent<IsometricCameraRig>();
+            }
             if (_camera == null) return;
 
             UpdateHover(world);
@@ -79,9 +84,13 @@ namespace Worker.Game
         private void UpdateHover(SimWorld world)
         {
             var mouse = Input.mousePosition;
-            var point = _camera.ScreenToWorldPoint(new Vector3(mouse.x, mouse.y, -_camera.transform.position.z));
 
-            var tile = new GridPos(Mathf.FloorToInt(point.x), Mathf.FloorToInt(point.y));
+            // The isometric camera looks at an angle, so a tile has to be found by
+            // intersecting the ground plane rather than by unprojecting a flat point.
+            var tile = _isometricRig != null
+                ? _isometricRig.ScreenToTile(mouse)
+                : FlatScreenToTile(mouse);
+
             HoveredTile = tile;
             HoveringMap = world.Map.InBounds(tile);
 
@@ -89,6 +98,12 @@ namespace Worker.Game
                              && HoveringMap
                              && world.Map.CanPlace(SelectedKind, PlacementOrigin(), PlacementFacing)
                              && world.Ledger.CanAfford(BuildingData.Get(SelectedKind).Cost);
+        }
+
+        private GridPos FlatScreenToTile(Vector3 mouse)
+        {
+            var point = _camera.ScreenToWorldPoint(new Vector3(mouse.x, mouse.y, -_camera.transform.position.z));
+            return new GridPos(Mathf.FloorToInt(point.x), Mathf.FloorToInt(point.y));
         }
 
         /// <summary>

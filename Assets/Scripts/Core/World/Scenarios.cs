@@ -99,7 +99,9 @@ namespace Worker.Core
             assemblyTwo.ActiveRecipe = RecipeId.AssembleWoodChair;
 
             world.PlaceBuildingFree(BuildingKind.Shipping, new GridPos(20, 7));
-            StorageBank(world, 21, 11, 2, 2);
+            StorageBank(world, 21, 11, 3, 2);
+            StorageBank(world, 21, 3, 3, 2);
+            StorageBank(world, 2, 5, 2, 2);
 
             world.PlaceBuildingFree(BuildingKind.BreakRoom, new GridPos(2, 12));
 
@@ -136,6 +138,8 @@ namespace Worker.Core
             Belt(world, 19, 6, Direction.North);
             Belt(world, 19, 7, Direction.East);
 
+            PerimeterWalls(world);
+
             // A fully built line eats logs far faster than the opening contract supplies.
             world.AddSupplyContract(ItemId.Log, 24, SimConfig.TicksPerDay / 8, 100, 5);
 
@@ -163,6 +167,42 @@ namespace Worker.Core
 
         private static void Belt(SimWorld world, int x, int y, Direction direction)
             => world.PlaceBuildingFree(BuildingKind.Conveyor, new GridPos(x, y), direction);
+
+        /// <summary>
+        /// Walls around the shop floor, with gaps left at the loading and dispatch ends.
+        ///
+        /// This is not decoration. An unbounded floor reads as a diagram on a desk; a
+        /// walled one reads as a room, and it is the cheapest way to make an isometric
+        /// view feel like a built place rather than objects floating on a plane.
+        /// </summary>
+        private static void PerimeterWalls(SimWorld world)
+        {
+            int x0 = FloorOrigin.X;
+            int y0 = FloorOrigin.Y;
+            int x1 = FloorOrigin.X + FloorWidth - 1;
+            int y1 = FloorOrigin.Y + FloorHeight - 1;
+
+            for (int x = x0; x <= x1; x++)
+            {
+                TryWall(world, x, y0);
+                TryWall(world, x, y1);
+            }
+
+            for (int y = y0 + 1; y < y1; y++)
+            {
+                // Leave the loading bay and the dispatch door open.
+                bool loadingDoor = y >= 6 && y <= 9;
+                if (!loadingDoor) TryWall(world, x0, y);
+                if (!loadingDoor) TryWall(world, x1, y);
+            }
+        }
+
+        private static void TryWall(SimWorld world, int x, int y)
+        {
+            var pos = new GridPos(x, y);
+            if (!world.Map.CanPlace(BuildingKind.Wall, pos, Direction.North)) return;
+            world.PlaceBuildingFree(BuildingKind.Wall, pos);
+        }
 
         private static void SpawnWorkers(SimWorld world, int count, GridPos spawn)
         {

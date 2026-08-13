@@ -48,9 +48,27 @@ namespace Worker.Game
             runner.StartAutomated = HasFlag("--automated");
             runner.SpeedMultiplier = ReadInt("--speed", 1);
 
-            root.AddComponent<FactoryView>();
+            // Two renderers exist side by side while the art direction is being decided.
+            // The flat one is cheap and was the original; the isometric one adds volume,
+            // a key light and shadows, which is what every comparable game on the store
+            // relies on to read as a place rather than a diagram.
+            bool isometric = HasFlag("--iso");
+
+            if (isometric)
+            {
+                root.AddComponent<IsometricFactoryView>();
+            }
+            else
+            {
+                root.AddComponent<FactoryView>();
+            }
+
             root.AddComponent<PlayerController>();
-            root.AddComponent<SelectionOverlay>();
+
+            // The overlay draws flat sprite quads on the ground plane and has no
+            // isometric equivalent yet.
+            if (!isometric) root.AddComponent<SelectionOverlay>();
+
             root.AddComponent<DebugControls>();
             root.AddComponent<HeadlessCapture>();
 
@@ -62,9 +80,18 @@ namespace Worker.Game
             Object.DontDestroyOnLoad(root);
 
             var camera = EnsureCamera();
-            var rig = camera.GetComponent<CameraRig>();
-            if (rig == null) rig = camera.gameObject.AddComponent<CameraRig>();
-            rig.Bind(runner);
+            if (isometric)
+            {
+                var isoRig = camera.GetComponent<IsometricCameraRig>();
+                if (isoRig == null) isoRig = camera.gameObject.AddComponent<IsometricCameraRig>();
+                isoRig.Bind(runner);
+            }
+            else
+            {
+                var rig = camera.GetComponent<CameraRig>();
+                if (rig == null) rig = camera.gameObject.AddComponent<CameraRig>();
+                rig.Bind(runner);
+            }
         }
 
         private static bool HasFlag(string name)

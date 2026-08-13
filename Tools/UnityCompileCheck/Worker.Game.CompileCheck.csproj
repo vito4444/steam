@@ -44,6 +44,12 @@
   <ItemGroup>
     <Compile Include="../../Assets/Scripts/Core/**/*.cs" />
     <Compile Include="../../Assets/Scripts/Game/**/*.cs" />
+    <!--
+      Editor scripts are included too. Leaving them out let a missing asmdef
+      reference in Worker.Editor reach a real batchmode build undetected, which costs
+      a full Editor round trip to discover.
+    -->
+    <Compile Include="../../Assets/Scripts/Editor/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(UnityManagedDir)' != ''">
@@ -56,6 +62,9 @@
     <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.*Module.dll" Private="false" />
     <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.dll" Private="false" />
     <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEditor.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEditor.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEditor.CoreModule.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEditor.CoreModule.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEditor.*Module.dll" Private="false" />
   </ItemGroup>
 
   <!--
@@ -67,6 +76,8 @@
     <Reference Include="$(UnityPackageAssemblies)/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/UnityEngine.UI.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Editor.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Editor.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Editor.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Editor.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.InputSystem.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.InputSystem.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.Mathematics.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Mathematics.dll')" />
     <Reference Include="$(UnityPackageAssemblies)/Unity.Burst.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Burst.dll')" />

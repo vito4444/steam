@@ -3,7 +3,9 @@
     "rootNamespace": "Worker.Editor",
     "references": [
         "Worker.Core",
-        "Worker.Game"
+        "Worker.Game",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
     ],
     "includePlatforms": [
         "Editor"

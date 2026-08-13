@@ -83,6 +83,53 @@ that the shipping UI has not replaced yet.
 | UI layout | Below target | The top strip works. The right panel is half empty below the roster, and there is no inventory or throughput readout. |
 | Style consistency | Acceptable | One palette, one corner radius, one glyph language throughout. |
 
+## Camera and art direction: why this moved to isometric 3D
+
+The first renderer was flat orthographic 2D drawn as coloured rectangles. Reviewed
+against actual store screenshots rather than descriptions of them, that turned out to
+be the wrong end of the problem. Every comparable game that reads well on a store page
+has at least three things the flat renderer had none of:
+
+- **Volume.** Factorio is not flat; it is finely drawn sprites with visible thickness,
+  wear and a hint of perspective. Timberborn, Two Point Hospital and Against the Storm
+  are outright isometric 3D. Even Mini Motorways, the most reductive of them, gives
+  every shape a soft drop shadow.
+- **A key light and cast shadows.** Shadows are what tell the eye an object stands on
+  the floor rather than being painted onto it.
+- **Density.** All of them fill the frame with things that mean something.
+
+Flat, unlit, unshadowed and sparse is the hardest combination in which to look good,
+and that is precisely where the first renderer sat. The view was therefore rebuilt as
+orthographic isometric 3D: low-poly geometry generated from primitives at runtime, one
+warm directional key light with soft shadows, cool ambient fill, buildings at visibly
+different heights, and a walled shop floor so the plot reads as a room.
+
+Both renderers are still in the build. `--iso` selects the 3D one; without it the flat
+one runs. Keeping them side by side is deliberate while the direction is settled.
+
+Three-way comparison, reference against both renderers:
+[`comparison/reference-vs-flat-vs-iso.png`](comparison/reference-vs-flat-vs-iso.png).
+
+What the isometric pass fixed: volume, key lighting, cast shadows, a sense of enclosure.
+
+What it did not fix, and what the reference still does far better: density of meaningful
+detail, building silhouettes beyond "box with a lump on top", colour saturation, and any
+environmental dressing at all. Two Point Hospital fills its frame with furniture,
+patients, signage and props; this fills its frame with tinted boxes. That gap is content
+and modelling work, not a camera decision.
+
+Bugs the isometric pass surfaced, all of which present as a black screen or a black
+surface and none of which are obvious from code:
+
+- Runtime-created materials use `Shader.Find`, so nothing references the URP shaders as
+  assets and the build strips them. Every material constructor then throws and the world
+  renders black while the interface keeps working.
+- Roof details were painted in the near-black edge colour and covered the whole top
+  face, so canopied buildings rendered with black roofs under a light that was working
+  correctly.
+- Shadow distance is measured from the camera. An orthographic rig pulled back 80 units
+  with a 60 unit shadow distance culls the shadows of everything it is looking at.
+
 ## Concept target versus the current build
 
 [`comparison/target-vs-current.png`](comparison/target-vs-current.png) puts a concept
