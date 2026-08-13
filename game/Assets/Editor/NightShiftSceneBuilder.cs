@@ -70,6 +70,7 @@ namespace Monster.EditorTools
         private static Transform _permitAnchor;
         private static Transform _manualPages;
         private static Transform _manualAnchor;
+        private static Transform _logMesh;
         private static Transform _logAnchor;
         private static Transform _mailMesh;
         private static Transform _mailAnchor;
@@ -98,6 +99,7 @@ namespace Monster.EditorTools
             _permitAnchor = null;
             _manualPages = null;
             _manualAnchor = null;
+            _logMesh = null;
             _logAnchor = null;
             _mailMesh = null;
             _mailAnchor = null;
@@ -129,7 +131,7 @@ namespace Monster.EditorTools
                 _barrierArm, _vehicleRoot, _subjectRoot, Headlights.ToArray(), Taillights.ToArray(),
                 _permitPaper, _permitAnchor,
                 _manualPages, _manualAnchor,
-                _logAnchor, _mailMesh, _mailAnchor, _clockAnchor,
+                _logMesh, _logAnchor, _mailMesh, _mailAnchor, _clockAnchor,
                 ScreenAnchors, Switches, SwitchLabelAnchors,
                 IntercomKeys, IntercomKeyLabels,
                 camera.gameObject));
@@ -360,8 +362,8 @@ namespace Monster.EditorTools
                 new Vector3(0f, -9f, 0f)).transform;
             _mailAnchor = Anchor("MailText", forms, new Vector3(-0.54f, DeskTopY + 0.006f, 0.40f),
                 Quaternion.Euler(0f, -9f, 0f) * Quaternion.Euler(90f, 0f, 0f));
-            Box("Form_Stack_B", forms, new Vector3(-0.30f, DeskTopY + 0.012f, 0.73f),
-                new Vector3(0.225f, 0.005f, 0.315f), paper, new Vector3(0f, 6f, 0f));
+            _logMesh = Box("Form_Stack_B", forms, new Vector3(-0.30f, DeskTopY + 0.012f, 0.73f),
+                new Vector3(0.225f, 0.005f, 0.315f), paper, new Vector3(0f, 6f, 0f)).transform;
             _logAnchor = Anchor("LogText", forms, new Vector3(-0.30f, DeskTopY + 0.016f, 0.73f),
                 Quaternion.Euler(0f, 6f, 0f) * Quaternion.Euler(90f, 0f, 0f));
 

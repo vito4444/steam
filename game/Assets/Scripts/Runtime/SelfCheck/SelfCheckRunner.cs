@@ -574,15 +574,46 @@ namespace Monster.SelfCheck
             yield return new WaitForSecondsRealtime(0.4f);
             yield return CaptureTo(Camera.main, Path.Combine(_outputDirectory, "consequence.png"));
 
+            // The last night, so the letter that closes a run gets photographed like
+            // everything else. Skipped to rather than played, because thirty nights is five
+            // hundred vehicles and the ending does not depend on the ones in between.
+            var ended = false;
+            presenter.CampaignEnded += () => ended = true;
+            presenter.BeginShift(Campaign.TotalShifts - 1);
+
+            var lastGuard = 0;
+            while (presenter.Director != null && !presenter.Director.IsFinished && lastGuard++ < 200)
+            {
+                if (!presenter.Submit(Verdict.Refer))
+                {
+                    break;
+                }
+            }
+
+            if (!ended)
+            {
+                _logLines.Add("Error: playing out the last night did not end the campaign");
+            }
+
+            if (boothCamera != null && mailAnchor != null)
+            {
+                boothCamera.ResetToHome();
+                boothCamera.SnapFocus(mailAnchor, 0.40f, new Vector3(0f, 1f, -0.34f));
+            }
+
+            yield return new WaitForSecondsRealtime(0.4f);
+            yield return CaptureTo(Camera.main, Path.Combine(_outputDirectory, "final_notice.png"));
+
             records.Add(string.Format(CultureInfo.InvariantCulture,
                 "    {{\n" +
                 "      \"name\": \"campaign\",\n" +
                 "      \"nights_played\": {0},\n" +
                 "      \"vehicles_processed\": {1},\n" +
                 "      \"credits_withheld\": {2},\n" +
-                "      \"save_resumed\": {3}\n" +
+                "      \"save_resumed\": {3},\n" +
+                "      \"campaign_ended\": {4}\n" +
                 "    }}",
-                nights, processed, withheld, resumable ? "true" : "false"));
+                nights, processed, withheld, resumable ? "true" : "false", ended ? "true" : "false"));
         }
 
         private static IEnumerator CaptureTo(Camera camera, string path)

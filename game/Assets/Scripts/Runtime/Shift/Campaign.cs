@@ -120,6 +120,55 @@ namespace Monster.Shift
                 wage, deductions, shortfall, net, Credits, mail);
         }
 
+        /// <summary>The letter that closes a run.
+        ///
+        /// It does not say how the player did, because nothing else in this game does
+        /// either. It reports an administrative decision and leaves them to work out what
+        /// it means -- which for a run in the middle is nothing at all, and that is the most
+        /// honest ending the concept has.</summary>
+        public Notice FinalNotice()
+        {
+            var withheld = _delivered.Sum(n => n.Deduction);
+            var nights = Math.Max(1, _completed.Count);
+            var perNight = withheld / (double)nights;
+
+            if (perNight <= 2.0)
+            {
+                return new Notice(NoticeKind.Routine, ShiftIndex, -1,
+                    "ORDER OF TRANSFER",
+                    new[]
+                    {
+                        "THIS POST IS TO BE VACATED.",
+                        "YOU WILL REPORT TO CENTRAL ON THE",
+                        "FIRST OF THE MONTH. THE BINDER IS",
+                        "TO REMAIN WITH THE BOOTH.",
+                    });
+            }
+
+            if (perNight >= 12.0)
+            {
+                return new Notice(NoticeKind.Routine, ShiftIndex, -1,
+                    "NOTICE OF RELEASE",
+                    new[]
+                    {
+                        "YOUR ENGAGEMENT AT THIS POST ENDS",
+                        "WITH THIS SHIFT. OUTSTANDING SUMS",
+                        $"OF {withheld} CREDITS ARE NOT RECOVERABLE.",
+                        "LEAVE THE KEYS IN THE DRAWER.",
+                    });
+            }
+
+            return new Notice(NoticeKind.Routine, ShiftIndex, -1,
+                "END OF ENGAGEMENT",
+                new[]
+                {
+                    "THE SEASON IS CONCLUDED.",
+                    "NO CHANGE IS RECORDED IN YOUR FILE.",
+                    "THE POST WILL BE STAFFED AGAIN",
+                    "WHEN THE ROAD REOPENS.",
+                });
+        }
+
         // --------------------------------------------------------------- saving --
 
         public CampaignSave ToSave()

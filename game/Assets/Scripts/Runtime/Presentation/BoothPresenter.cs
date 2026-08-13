@@ -37,6 +37,7 @@ namespace Monster.Presentation
         [SerializeField] private List<DeskInteractable> switches = new();
         [SerializeField] private List<DeskInteractable> mailControls = new();
         [SerializeField] private List<DeskInteractable> manualControls = new();
+        [SerializeField] private List<DeskInteractable> logControls = new();
 
         [SerializeField] private CheckpointStage stage;
 
@@ -63,6 +64,7 @@ namespace Monster.Presentation
         public event Action<Question> QuestionAsked;
         public event Action<Reply> ReplyReceived;
         public event Action<NightlyStatement> ShiftEnded;
+        public event Action CampaignEnded;
 
         public void Configure(int seed, int shift)
         {
@@ -129,6 +131,8 @@ namespace Monster.Presentation
 
         public void RegisterManualControl(DeskInteractable control) => manualControls.Add(control);
 
+        public void RegisterLogControl(DeskInteractable control) => logControls.Add(control);
+
         public void BindStage(CheckpointStage checkpointStage) => stage = checkpointStage;
 
         public CheckpointStage Stage => stage;
@@ -149,9 +153,27 @@ namespace Monster.Presentation
             {
                 control.Operated += OnManualTurned;
             }
+
+            foreach (var control in logControls.Where(c => c != null))
+            {
+                control.Operated += OnLogSigned;
+            }
         }
 
         private void OnMailTurned(DeskInteractable _) => LeafThroughMail();
+
+        /// <summary>Signing the night off. The morning report sits on the desk until the
+        /// player puts their hand on the log, which is the only thing separating one night
+        /// from the next -- without it the shift ended and nothing whatever happened.</summary>
+        private void OnLogSigned(DeskInteractable _)
+        {
+            if (_director == null || !_director.IsFinished || _campaign == null || _campaign.IsOver)
+            {
+                return;
+            }
+
+            NextShift();
+        }
 
         private void OnManualTurned(DeskInteractable _) => LeafThroughManual();
 
@@ -170,6 +192,11 @@ namespace Monster.Presentation
             foreach (var control in manualControls.Where(c => c != null))
             {
                 control.Operated -= OnManualTurned;
+            }
+
+            foreach (var control in logControls.Where(c => c != null))
+            {
+                control.Operated -= OnLogSigned;
             }
         }
 
@@ -206,8 +233,20 @@ namespace Monster.Presentation
                 var statement = _campaign.EndShift(_director);
                 Save();
                 ShowStatement(statement);
-                ShowMail(statement.Mail);
                 ShiftEnded?.Invoke(statement);
+
+                if (_campaign.IsOver)
+                {
+                    // Thirty nights done. Until now the thirty-first simply did not start
+                    // and the booth sat there with a stale report on the desk.
+                    ShowMail(new[] { _campaign.FinalNotice() });
+                    CampaignEnded?.Invoke();
+                }
+                else
+                {
+                    ShowMail(statement.Mail);
+                }
+
                 return true;
             }
 
@@ -571,8 +610,12 @@ namespace Monster.Presentation
                 new("BALANCE", $"{statement.Credits} CR"),
             };
 
+            var footer = _campaign != null && _campaign.IsOver
+                ? "END OF ENGAGEMENT"
+                : (statement.QuotaMet ? "QUOTA MET - SIGN TO CONTINUE" : "QUOTA NOT MET - SIGN TO CONTINUE");
+
             Show(logbook, new DocumentContent($"MORNING REPORT - NIGHT {statement.ShiftIndex + 1}", fields,
-                statement.QuotaMet ? "QUOTA MET" : "QUOTA NOT MET"));
+                footer));
 
             permit?.Clear();
             biometrics?.Clear();

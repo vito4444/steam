@@ -49,7 +49,7 @@ namespace Monster.EditorTools
                 Light[] headlights, Light[] taillights,
                 Transform permitMesh, Transform permitAnchor,
                 Transform manualMesh, Transform manualAnchor,
-                Transform logAnchor, Transform mailMesh, Transform mailAnchor, Transform clockAnchor,
+                Transform logMesh, Transform logAnchor, Transform mailMesh, Transform mailAnchor, Transform clockAnchor,
                 IReadOnlyList<Transform> screenAnchors,
                 IReadOnlyList<Transform> switchMeshes,
                 IReadOnlyList<Transform> switchLabelAnchors,
@@ -66,6 +66,7 @@ namespace Monster.EditorTools
                 PermitAnchor = permitAnchor;
                 ManualMesh = manualMesh;
                 ManualAnchor = manualAnchor;
+                LogMesh = logMesh;
                 LogAnchor = logAnchor;
                 MailMesh = mailMesh;
                 MailAnchor = mailAnchor;
@@ -87,6 +88,7 @@ namespace Monster.EditorTools
             public Transform PermitAnchor { get; }
             public Transform ManualMesh { get; }
             public Transform ManualAnchor { get; }
+            public Transform LogMesh { get; }
             public Transform LogAnchor { get; }
             public Transform MailMesh { get; }
             public Transform MailAnchor { get; }
@@ -111,6 +113,7 @@ namespace Monster.EditorTools
             var permit = BuildPermitSurface(handles.PermitAnchor, font);
             var manual = BuildManualSurface(handles.ManualAnchor, font);
             var logbook = BuildLogSurface(handles.LogAnchor, font);
+
             var mail = BuildMailSurface(handles.MailAnchor, font);
 
                         // The intercom prints whole sentences rather than short readings, so its type
@@ -143,6 +146,16 @@ namespace Monster.EditorTools
 
             BuildSwitches(handles.SwitchMeshes, handles.SwitchLabelAnchors, font, presenter);
             BuildIntercomKeys(handles.IntercomKeys, handles.IntercomKeyLabels, font, presenter);
+
+            // The log is signed to close a night, so it needs a body to click. The mesh,
+            // not its text anchor: an anchor has no scale, and a collider sized in
+            // proportion to an unscaled object comes out metres across.
+            var logKey = MakeInspectable(handles.LogMesh, "log", 0.38f, new Vector3(0f, 1f, -0.32f),
+                DeskInteractable.Behaviour.Operate);
+            if (logKey != null)
+            {
+                presenter.RegisterLogControl(logKey);
+            }
             MakeInspectable(handles.PermitMesh, "permit", 0.46f, new Vector3(0f, 1f, -0.34f));
             var manualKey = MakeInspectable(handles.ManualMesh, "manual", 0.42f,
                 new Vector3(0f, 1f, -0.34f), DeskInteractable.Behaviour.Leaf);
