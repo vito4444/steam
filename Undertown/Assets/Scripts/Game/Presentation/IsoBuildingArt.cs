@@ -215,9 +215,26 @@ namespace Undertown.Game.Presentation
 
                 if (scheme.Thatch)
                 {
-                    int clump = (Mathf.RoundToInt(u * 40f) * 7 + Mathf.RoundToInt(v * 40f) * 13) % 11;
-                    if (clump < 3) tone = Darken(tone, 12);
-                    else if (clump > 8) tone = Lighten(tone, 10);
+                    // Thatch is laid in courses from the eaves up, each overlapping the one
+                    // below, so a roof carries bands parallel to the ridge with a line of
+                    // shadow where each course ends. It was a field of random light and dark
+                    // pixels before, which at this size reads as moss growing on the roof
+                    // rather than as a roof.
+                    const float courses = 5f;
+                    float within = fromRidge * courses;
+                    within -= Mathf.Floor(within);
+
+                    if (within > 0.84f) tone = Darken(tone, 20);
+                    else if (within < 0.14f) tone = Lighten(tone, 12);
+
+                    // Enough roughness that the courses are not ruled lines. Straw is combed,
+                    // not machined.
+                    int fray = (Mathf.RoundToInt(u * 40f) * 7 + Mathf.RoundToInt(v * 40f) * 13) % 13;
+                    if (fray < 2) tone = Darken(tone, 9);
+                    else if (fray > 10) tone = Lighten(tone, 7);
+
+                    // The eaves course stands proud of the wall and is cut square.
+                    if (fromRidge > 0.93f) tone = Darken(tone, 14);
                 }
                 else
                 {
@@ -338,7 +355,12 @@ namespace Undertown.Game.Presentation
 
                 var p = Iso.Project(u, v, ox, oy);
                 var tone = across < 0.12f ? Darken(roof, 20) : across > 0.94f ? Darken(roof, 30) : roof;
-                if (scheme.Thatch && (i + j) % 9 == 0) tone = roofLit;
+                if (scheme.Thatch)
+                {
+                    float band = across * 3f;
+                    if (band - Mathf.Floor(band) > 0.82f) tone = Darken(tone, 16);
+                    else if ((i + j) % 11 == 0) tone = roofLit;
+                }
                 if (!scheme.Thatch && Mathf.RoundToInt(across * 40f) % 5 == 0) tone = Darken(tone, 14);
                 Plot(px, w, h, p.x, p.y + lift, tone);
             }
@@ -406,7 +428,12 @@ namespace Undertown.Game.Presentation
 
                 var p = Iso.Project(u, v, ox, oy);
                 var tone = out01 > 0.93f ? Darken(roof, 26) : out01 < 0.1f ? Darken(roof, 12) : roof;
-                if (scheme.Thatch && (i + j) % 11 == 0) tone = roofLit;
+                if (scheme.Thatch)
+                {
+                    float band = out01 * 2f;
+                    if (band - Mathf.Floor(band) > 0.8f) tone = Darken(tone, 14);
+                    else if ((i + j) % 13 == 0) tone = roofLit;
+                }
                 Plot(px, w, h, p.x, p.y + lift, tone);
             }
         }
