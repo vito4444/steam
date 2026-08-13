@@ -30,8 +30,8 @@ namespace Decoder.Rendering
         [Range(-0.2f, 0.2f)] public float barrel = 0.018f;
 
         [Header("介质")]
-        [Tooltip("胶片颗粒强度。只作用在暗部，高光区几乎看不见")]
-        [Range(0f, 0.3f)] public float grain = 0.020f;
+        [Tooltip("胶片颗粒强度。幅度按曝光量开方缩放，所以这个系数比固定幅度时期要大")]
+        [Range(0f, 0.3f)] public float grain = 0.032f;
 
         [Tooltip("扫描线强度")]
         [Range(0f, 0.5f)] public float scanline = 0.055f;

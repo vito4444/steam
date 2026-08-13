@@ -112,12 +112,15 @@ Shader "Decoder/StationPost"
                 float luma = dot(col.rgb, float3(0.2126, 0.7152, 0.0722));
                 col.rgb = lerp(luma.xxx, col.rgb, _Saturation);
 
-                // 颗粒。放在最后，并且在暗部更明显——
-                // 真实胶片的颗粒噪声在欠曝区域最突出，高光区几乎看不见。
-                // 颗粒在暗部更明显，但不能让暗部满屏噪点——这个房间本来就大半是暗的。
-                // 保留一个常数底，让高光区也有一点颗粒，整体才像同一张底片。
+                // 颗粒。幅度按曝光量的平方根走，这是胶片颗粒的实际来源——
+                // 感光颗粒的显影是泊松过程，噪声的绝对幅度随曝光量开方增长，
+                // 相对幅度则随之下降，所以观感上暗部颗粒更粗、高光更干净。
+                //
+                // 不能用固定幅度。这个房间大半是暗的，暗部的信号值本身只有千分之几，
+                // 一个 ±0.01 的固定幅度噪声比信号还大，负的那一半会被钳成纯黑：
+                // 画面上三成像素变成死黑的椒盐点，而不是颗粒。
                 float n = Hash21(uv * _ScreenParams.xy + _GrainTime);
-                float grainWeight = _Grain * (0.35 + 0.65 * (1.0 - smoothstep(0.02, 0.45, luma)));
+                float grainWeight = _Grain * sqrt(max(luma, 1e-4));
                 col.rgb += (n - 0.5) * grainWeight;
 
                 return saturate(col);
