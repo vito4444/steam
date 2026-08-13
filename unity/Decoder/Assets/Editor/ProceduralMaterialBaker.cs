@@ -49,6 +49,7 @@ namespace Decoder.EditorTools
                     ["Bakelite"] = BakeBakelite,
                     ["Paper"] = BakeAgedPaper,
                     ["Brass"] = BakeBrass,
+                    ["DeskSurface"] = BakeDeskSurface,
                 };
 
                 foreach (var recipe in recipes)
@@ -379,6 +380,62 @@ namespace Decoder.EditorTools
                 MetallicSmoothness = mask,
                 Height = height,
                 NormalStrength = 1.2f,
+            };
+        }
+
+        // ---------- 桌面：亚麻油毡 ----------
+
+        private static Maps BakeDeskSurface()
+        {
+            var albedo = new Color[Size * Size];
+            var mask = new Color[Size * Size];
+            var height = new float[Size * Size];
+            const int seed = 7707;
+
+            for (var y = 0; y < Size; y++)
+            {
+                for (var x = 0; x < Size; x++)
+                {
+                    var u = x / (float)Size;
+                    var v = y / (float)Size;
+                    var i = y * Size + x;
+
+                    // 亚麻油毡的表面是压出来的细密颗粒，尺度比金属拉丝小得多，
+                    // 铺在两米多宽的桌面上应该几乎看不出单个颗粒，只形成一层哑光质感。
+                    var grain = ProceduralTexture.Fbm(u, v, 46, 46, 3, 0.5f, seed);
+
+                    // 常年在同一处写字留下的磨白，以及杯底的环状渍痕。
+                    var polishWear = ProceduralTexture.Fbm(u, v, 4, 4, 4, 0.6f, seed + 11);
+                    var stain = ProceduralTexture.Blotches(u, v, 7, 0.70f, 0.14f, seed + 29);
+
+                    // 浅划痕：桌面上是各个方向的，不像磨削金属有统一走向。
+                    var scratch = ProceduralTexture.Ridged(u, v, 26, 22, 3, seed + 47);
+                    scratch = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.94f, 1f, scratch));
+
+                    height[i] = grain * 0.55f + scratch * 0.45f;
+
+                    var baseTone = new Color(0.085f, 0.098f, 0.088f);
+                    var worn = new Color(0.135f, 0.142f, 0.126f);
+                    var dark = new Color(0.048f, 0.052f, 0.046f);
+
+                    var color = Color.Lerp(baseTone, worn, polishWear * 0.7f);
+                    color = Color.Lerp(color, dark, stain * 0.55f);
+                    color *= Mathf.Lerp(0.94f, 1.06f, grain);
+                    albedo[i] = color;
+
+                    // 磨白处更光滑，渍痕处更哑。
+                    var smoothness = Mathf.Lerp(0.16f, 0.44f, polishWear) - stain * 0.12f;
+                    mask[i] = ProceduralTexture.MetallicSmoothness(
+                        0.02f, ProceduralTexture.Saturate(smoothness));
+                }
+            }
+
+            return new Maps
+            {
+                Albedo = albedo,
+                MetallicSmoothness = mask,
+                Height = height,
+                NormalStrength = 0.8f,
             };
         }
 

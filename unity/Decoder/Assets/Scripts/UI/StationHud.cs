@@ -43,6 +43,14 @@ namespace Decoder.UI
         private Text _hoverText;
         private Text _logText;
         private Text _bannerText;
+        private Text _liveCopyText;
+        private Text _assistText;
+        private Text _replyText;
+        private Text _noteText;
+
+        private MorseReceiver _morse;
+        private CopyAssist _assist = CopyAssist.Characters;
+        private string _lastStationCallsign;
 
         private ShiftDefinition _shift;
         private ChineseTelegraphCode _telegraph;
@@ -95,6 +103,7 @@ namespace Decoder.UI
 
             _telegraph = ChineseTelegraphCode.Shared;
             _shift = ShiftLibrary.FirstShift();
+            _morse = new MorseReceiver(12f);
             BuildUi();
             LoadShift(_shift);
         }
@@ -121,7 +130,75 @@ namespace Decoder.UI
         private void Update()
         {
             RefreshReadouts();
+            AdvanceMorseReceiver();
             HandleTypedInput();
+            HandleHotkeys();
+        }
+
+        /// <summary>
+        /// 推进接收解码器。它跟着当前调谐到的电台走：换台就换速度并清空，
+        /// 因为不同电台的发报速度不同，沿用上一台的单位时长会把点划全判错。
+        /// </summary>
+        private void AdvanceMorseReceiver()
+        {
+            var synth = receiver != null ? receiver.Synthesizer : null;
+            if (synth == null)
+            {
+                return;
+            }
+
+            var station = synth.CurrentStation;
+            var callsign = station?.Callsign;
+            if (callsign != _lastStationCallsign)
+            {
+                _lastStationCallsign = callsign;
+                _morse.Reset();
+                if (station != null)
+                {
+                    _morse.SetSpeed(station.WordsPerMinute);
+                }
+            }
+
+            // 信号太弱时不喂数据。这一点很重要：辅助工具不该比玩家的耳朵更灵，
+            // 否则玩家会发现盯着转写带比调准频率更省事，搜频这一层玩法就废了。
+            var readable = station != null && receiver.SignalLevel > 0.45f;
+            _morse.Advance(synth.ElapsedSeconds, readable && station.IsKeyDown(synth.ElapsedSeconds));
+
+            if (_liveCopyText != null)
+            {
+                _liveCopyText.text = _assist == CopyAssist.None
+                    ? "（辅助已关闭）"
+                    : _morse.Format(_assist);
+            }
+        }
+
+        private void HandleHotkeys()
+        {
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                _assist = (CopyAssist)(((int)_assist + 1) % 3);
+                _assistText.text = AssistLabel(_assist);
+                AppendLog($"接收辅助切换为「{AssistLabel(_assist)}」");
+            }
+
+            if (Input.GetKeyDown(KeyCode.LeftArrow))
+            {
+                CycleLevel(-1);
+            }
+            else if (Input.GetKeyDown(KeyCode.RightArrow))
+            {
+                CycleLevel(1);
+            }
+        }
+
+        private static string AssistLabel(CopyAssist assist)
+        {
+            switch (assist)
+            {
+                case CopyAssist.Symbols: return "点划";
+                case CopyAssist.Characters: return "字符";
+                default: return "关闭";
+            }
         }
 
         // ---------- 数据刷新 ----------
@@ -264,11 +341,11 @@ namespace Decoder.UI
             _verdictText.color = grade.Outcome == ReportOutcome.Clean ? Phosphor
                 : grade.Outcome == ReportOutcome.Useless ? Alert : Amber;
 
+            _replyText.text = ReportAftermath.Reply(target, grade);
+            _noteText.text = "黑板：" + ReportAftermath.DeskNote(target, grade);
+
             AppendLog($"已送出 {target.callsign} · 准确度 {grade.Accuracy:P0} · {LevelLabel(_selectedLevel)}");
-            if (!string.IsNullOrEmpty(target.debriefNote))
-            {
-                AppendLog(target.debriefNote);
-            }
+            AppendLog("次日报纸：" + ReportAftermath.Headline(target, grade));
         }
 
         private TransmissionEntry FindEntry(string callsign)
@@ -397,6 +474,20 @@ namespace Decoder.UI
                 new Vector2(20f, -196f), new Vector2(580f, 96f));
             _decodedText = _lookupText;
 
+            // 右中：实时接收。这是给新手和听障玩家的台阶，
+            // 三档可切，关掉之后这一块只显示一行提示，不占额外空间。
+            var livePanel = Panel(root, "LivePanel",
+                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-40f, -428f), new Vector2(620f, 152f),
+                pivot: new Vector2(1f, 1f));
+            Label(livePanel, "实时接收", 22, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(20f, -14f), new Vector2(240f, 30f));
+            _assistText = Label(livePanel, AssistLabel(_assist), 20, Amber, TextAnchor.UpperRight,
+                new Vector2(-20f, -14f), new Vector2(300f, 30f), anchorRight: true);
+            Label(livePanel, "F1 切换辅助档", 18, PhosphorDim, TextAnchor.UpperRight,
+                new Vector2(-20f, -40f), new Vector2(300f, 26f), anchorRight: true);
+            _liveCopyText = Label(livePanel, "", 26, Phosphor, TextAnchor.UpperLeft,
+                new Vector2(20f, -50f), new Vector2(580f, 92f));
+
             // 底部：上报单
             var reportPanel = Panel(root, "ReportPanel",
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 36f), new Vector2(1180f, 160f),
@@ -411,6 +502,17 @@ namespace Decoder.UI
                 new Vector2(300f, -84f), new Vector2(460f, 30f));
             _verdictText = Label(reportPanel, "", 26, Phosphor, TextAnchor.UpperRight,
                 new Vector2(-24f, -46f), new Vector2(620f, 96f), anchorRight: true);
+
+            // 右下：后果。这套设计里没有分数，玩家只从回电和字条知道自己干得怎么样。
+            var replyPanel = Panel(root, "ReplyPanel",
+                new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-40f, 40f), new Vector2(620f, 176f),
+                pivot: new Vector2(1f, 0f));
+            Label(replyPanel, "回 电", 22, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(20f, -14f), new Vector2(240f, 30f));
+            _replyText = Label(replyPanel, "", 24, Phosphor, TextAnchor.UpperLeft,
+                new Vector2(20f, -46f), new Vector2(580f, 66f));
+            _noteText = Label(replyPanel, "", 20, Amber, TextAnchor.UpperLeft,
+                new Vector2(20f, -116f), new Vector2(580f, 52f));
 
             // 左下：值班日志
             var logPanel = Panel(root, "LogPanel",

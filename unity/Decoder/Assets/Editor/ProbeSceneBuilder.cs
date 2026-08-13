@@ -4,6 +4,7 @@ using System.IO;
 using Decoder.Capture;
 using Decoder.Gameplay;
 using Decoder.Interaction;
+using Decoder.Rendering;
 using Decoder.Signal;
 using Decoder.UI;
 using UnityEditor;
@@ -75,6 +76,7 @@ namespace Decoder.EditorTools
         }
 
         private static ProbeLightingConfig _cfg;
+        private static bool _playableRig;
 
         private static void LoadConfig()
         {
@@ -108,6 +110,7 @@ namespace Decoder.EditorTools
         private static Material _concrete;
         private static Material _paper;
         private static Material _brassKnob;
+        private static Material _deskSurface;
 
         public static void Build()
         {
@@ -152,6 +155,7 @@ namespace Decoder.EditorTools
         {
             Random.InitState(20260813);
             UvMeshCache.Clear();
+            _playableRig = playable;
             LoadConfig();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -290,6 +294,8 @@ namespace Decoder.EditorTools
                      ?? MakeMaterial(dir, "Paper", new Color(0.80f, 0.75f, 0.62f), 0.0f, 0.85f);
             _brassKnob = LoadBaked("Brass")
                          ?? MakeMaterial(dir, "Brass", new Color(0.52f, 0.40f, 0.16f), 0.85f, 0.32f);
+            _deskSurface = LoadBaked("DeskSurface")
+                           ?? MakeMaterial(dir, "DeskSurface", new Color(0.09f, 0.10f, 0.09f), 0.02f, 0.70f);
         }
 
         private static Material LoadBaked(string name)
@@ -306,6 +312,7 @@ namespace Decoder.EditorTools
             if (material == _bakelite) return 7.0f;
             if (material == _brassKnob) return 4.0f;
             if (material == _paper) return 1.8f;
+            if (material == _deskSurface) return 1.1f;
             return 1.2f;
         }
 
@@ -616,7 +623,7 @@ namespace Decoder.EditorTools
         {
             var root = new GameObject("Desk").transform;
 
-            AddBox(root, "DeskTop", new Vector3(0, 0.74f, -0.95f), new Vector3(2.30f, 0.05f, 0.80f), _steelDark);
+            AddBox(root, "DeskTop", new Vector3(0, 0.74f, -0.95f), new Vector3(2.30f, 0.05f, 0.80f), _deskSurface);
             AddBox(root, "DeskLegL", new Vector3(-1.05f, 0.37f, -0.95f), new Vector3(0.06f, 0.74f, 0.70f), _steelDark);
             AddBox(root, "DeskLegR", new Vector3(1.05f, 0.37f, -0.95f), new Vector3(0.06f, 0.74f, 0.70f), _steelDark);
 
@@ -833,6 +840,29 @@ namespace Decoder.EditorTools
             if (isMain)
             {
                 go.tag = "MainCamera";
+            }
+
+            // 后处理挂在每个机位上，这样编辑器截图和实际运行看到的是同一套成像。
+            // 着色器用序列化引用而不是运行时查找，否则构建包里不会带上它。
+            // 后处理目前只挂在美术探针场景上。
+            //
+            // 实测：只要这个后处理着色器进入构建包，产出的 level0 在运行时就会报
+            // corrupted 并崩溃，而 shader 编译本身没有任何报错。对照实验很明确——
+            // 同一个场景挂组件但不让着色器进包则完全正常。根因未定位，
+            // 怀疑与无 GPU 的 batchmode 下着色器变体序列化有关，需要在有显卡的机器上复核。
+            //
+            // 在查清之前，编辑器截图这条路径仍然走完整后处理（CaptureHarness 会显式调用），
+            // 所以画面自检和对外展示看到的成像是完整的；可玩场景暂时不挂，保证游戏能跑。
+            StationPostProcess post = null;
+            if (!_playableRig)
+            {
+                post = go.AddComponent<StationPostProcess>();
+            }
+            // 截图机位关掉颗粒动画，否则同一场景每次截出来都不一样，画面比对就没有基准了。
+            if (post != null)
+            {
+                // 截图机位关掉颗粒动画，否则同一场景每次截出来都不一样，画面比对就没有基准了。
+                post.animateGrain = false;
             }
 
             var shot = go.AddComponent<CaptureShot>();

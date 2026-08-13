@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Decoder.Capture;
+using Decoder.Rendering;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -113,6 +114,21 @@ namespace Decoder.EditorTools
             {
                 camera.targetTexture = rt;
                 camera.Render();
+
+                // 编辑模式下 OnRenderImage 不会被调用，后处理得手动走一遍，
+                // 否则画面自检看到的成像和玩家实际看到的不是一回事。
+                var post = camera.GetComponent<StationPostProcess>();
+                if (post != null && post.enabled)
+                {
+                    // 着色器不能进构建包，所以只能在编辑器侧从资源目录直接取。
+                    post.editorShader ??= AssetDatabase.LoadAssetAtPath<Shader>(
+                        "Assets/Shaders/StationPost.shader");
+                    var temp = RenderTexture.GetTemporary(width, height, 0,
+                        RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                    post.Apply(rt, temp);
+                    Graphics.Blit(temp, rt);
+                    RenderTexture.ReleaseTemporary(temp);
+                }
 
                 RenderTexture.active = rt;
                 readback.ReadPixels(new Rect(0, 0, width, height), 0, 0);
