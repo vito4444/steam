@@ -25,6 +25,8 @@
   <ItemGroup>
     <Compile Include="../../Unity/Abyssal/Assets/Abyssal/Core/**/*.cs" />
     <Compile Include="../../Unity/Abyssal/Assets/Abyssal/Tests/**/*.cs" />
+    <Compile Include="../../Unity/Abyssal/Assets/Overclock/Core/**/*.cs" />
+    <Compile Include="../../Unity/Abyssal/Assets/Overclock/Tests/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
