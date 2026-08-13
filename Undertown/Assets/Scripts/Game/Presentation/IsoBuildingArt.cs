@@ -729,18 +729,141 @@ namespace Undertown.Game.Presentation
                     // Ploughed furrows running the length of the field.
                     tone = (Mathf.RoundToInt(v * 6f) % 2 == 0) ? Lighten(ground, 16) : Darken(ground, 10);
                 }
-                else if (kind == BuildingKind.ClayPit)
-                {
-                    float toEdge = Mathf.Min(Mathf.Min(u, cw - u), Mathf.Min(v, ch - v));
-                    tone = Darken(ground, Mathf.RoundToInt(Mathf.Clamp01(toEdge) * 34f));
-                }
 
                 Plot(px, w, h, p.x, p.y + 4, tone);
             }
 
+            if (kind == BuildingKind.ClayPit) Diggings(px, w, h, cw, ch, ox, oy, ground);
+
             Palings(px, w, h, cw, ch, ox, oy);
             if (kind == BuildingKind.Sawpit) LogPile(px, w, h, cw, ch, ox, oy);
+            if (kind == BuildingKind.Sawpit) SawFrame(px, w, h, cw, ch, ox, oy);
             if (kind == BuildingKind.Field) Sheaves(px, w, h, cw, ch, ox, oy);
+        }
+
+        /// <summary>
+        /// Cuts the clay pit down into the ground as stepped benches rather than shading its
+        /// edges darker.
+        ///
+        /// The reference's pit is one of the few places in the scene with real depth, and it is
+        /// the shape that makes it read: concentric benches dropping to a floor. Darkening a
+        /// flat square towards the middle produces a stain, not a hole - there is no step for
+        /// the light to catch and nothing casts.
+        ///
+        /// Only the north and west faces of each bench are drawn. Seen from above at this
+        /// angle, the near walls of a pit face away and are hidden by the ground in front of
+        /// them; drawing all four is what makes a hole turn inside out and read as a mound.
+        /// </summary>
+        private static void Diggings(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Color32 ground)
+        {
+            const int benches = 3;
+            const int riser = 5;
+
+            float stepU = cw / (float)(benches * 2 + 2);
+            float stepV = ch / (float)(benches * 2 + 2);
+
+            for (int level = 1; level <= benches; level++)
+            {
+                float insetU = stepU * level;
+                float insetV = stepV * level;
+                int drop = riser * level;
+
+                var floor = Darken(ground, 8 + level * 11);
+                var wall = Darken(ground, 20 + level * 13);
+                var lip = Lighten(Darken(ground, level * 9), 12);
+
+                int steps = Mathf.Max(cw, ch) * 150;
+                for (int j = 0; j <= steps; j++)
+                for (int i = 0; i <= steps; i++)
+                {
+                    float u = Mathf.Lerp(insetU, cw - insetU, i / (float)steps);
+                    float v = Mathf.Lerp(insetV, ch - insetV, j / (float)steps);
+                    var p = Iso.Project(u, v, ox, oy);
+
+                    bool atNorth = v - insetV < 0.06f;
+                    bool atWest = u - insetU < 0.06f;
+                    if (atNorth || atWest)
+                    {
+                        for (int lift = 1; lift <= riser; lift++)
+                            Plot(px, w, h, p.x, p.y + 4 - drop + lift, wall);
+                        Plot(px, w, h, p.x, p.y + 5 - drop + riser, lip);
+                    }
+
+                    Plot(px, w, h, p.x, p.y + 4 - drop, floor);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The saw frame over the pit: two uprights, a head beam and braces, with the log being
+        /// worked lying across it.
+        ///
+        /// A sawpit was a patch of scuffed earth with some timber lying on it, which is the one
+        /// thing it cannot be - the reference's mill is read from across the map by the frame
+        /// standing over it, and nothing else in this town has that outline.
+        /// </summary>
+        private static void SawFrame(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
+        {
+            var post = new Color32(0x54, 0x3C, 0x24, 0xFF);
+            var postLit = new Color32(0x7A, 0x5C, 0x38, 0xFF);
+            var beam = new Color32(0x66, 0x4A, 0x2C, 0xFF);
+            var beamLit = new Color32(0x8C, 0x6C, 0x42, 0xFF);
+            var blade = new Color32(0x9A, 0x9C, 0x98, 0xFF);
+
+            float midV = ch * 0.30f;
+            float fromU = cw * 0.20f;
+            float toU = cw * 0.80f;
+            const int height = 26;
+
+            for (int end = 0; end < 2; end++)
+            {
+                float u = end == 0 ? fromU : toU;
+
+                // Each upright is a pair of legs straddling the pit. Three pixels across, not
+                // one: a single-pixel post at this scale reads as a scratch, and the frame
+                // ended up looking like railings with a beam floating over them.
+                for (int leg = 0; leg < 2; leg++)
+                {
+                    var p = Iso.Project(u, midV + (leg == 0 ? -0.30f : 0.30f), ox, oy);
+                    for (int lift = 0; lift < height; lift++)
+                    {
+                        Plot(px, w, h, p.x - 1, p.y + 4 + lift, postLit);
+                        Plot(px, w, h, p.x, p.y + 4 + lift, post);
+                        Plot(px, w, h, p.x + 1, p.y + 4 + lift, Darken(post, 14));
+                    }
+
+                    for (int lift = 0; lift < 3; lift++)
+                    for (int foot = -3; foot <= 3; foot++)
+                        Plot(px, w, h, p.x + foot, p.y + 4 + lift, Darken(post, 18));
+
+                    for (int brace = 0; brace < 8; brace++)
+                    {
+                        int bx = p.x + (leg == 0 ? brace : -brace);
+                        Plot(px, w, h, bx, p.y + 4 + height - 9 - brace, post);
+                        Plot(px, w, h, bx, p.y + 5 + height - 9 - brace, postLit);
+                    }
+                }
+            }
+
+            int steps = Mathf.Max(2, cw) * 140;
+            for (int i = 0; i <= steps; i++)
+            {
+                float u = Mathf.Lerp(fromU - 0.12f, toU + 0.12f, i / (float)steps);
+
+                for (int leg = 0; leg < 2; leg++)
+                {
+                    var p = Iso.Project(u, midV + (leg == 0 ? -0.32f : 0.32f), ox, oy);
+                    Plot(px, w, h, p.x, p.y + 4 + height, beamLit);
+                    Plot(px, w, h, p.x, p.y + 3 + height, beam);
+                }
+
+                // The log across the frame, and the blade sunk into it.
+                var q = Iso.Project(u, midV, ox, oy);
+                for (int t = 0; t < 5; t++)
+                    Plot(px, w, h, q.x, q.y + 8 + t, t > 2 ? beamLit : beam);
+                if (i % 3 == 0) Plot(px, w, h, q.x, q.y + 14, blade);
+            }
         }
 
         private static void Palings(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
@@ -771,20 +894,64 @@ namespace Undertown.Game.Presentation
             }
         }
 
+        /// <summary>
+        /// Timber stacked as it would be at a mill: courses of logs one on top of another,
+        /// ends squared off towards the viewer so the cut faces show.
+        ///
+        /// Three logs lying flat on the dirt did not read as a stock of timber, and the cut
+        /// end is the whole tell - it is the one part of a log that says it has been felled and
+        /// crosscut rather than grown where it lies.
+        /// </summary>
         private static void LogPile(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
         {
-            var bark = new Color32(0x5E, 0x44, 0x28, 0xFF);
-            var barkLit = new Color32(0x7C, 0x5E, 0x3A, 0xFF);
-            var cut = new Color32(0xC4, 0xA0, 0x68, 0xFF);
+            var bark = new Color32(0x54, 0x3C, 0x24, 0xFF);
+            var barkLit = new Color32(0x74, 0x56, 0x34, 0xFF);
+            var cut = new Color32(0xB4, 0x90, 0x5C, 0xFF);
+            var cutRing = new Color32(0x92, 0x72, 0x46, 0xFF);
 
-            for (int row = 0; row < 3; row++)
-            for (int i = 0; i <= 200; i++)
+            const int diameter = 7;
+            float startV = ch * 0.66f;
+
+            // Courses narrow as they go up, so the stack has a shoulder rather than a wall.
+            int[] perCourse = { 3, 2, 1 };
+            for (int course = 0; course < perCourse.Length; course++)
+            for (int n = 0; n < perCourse[course]; n++)
             {
-                float t = i / 200f;
-                var p = Iso.Project(0.35f + t * (cw - 0.7f), 0.5f + row * 0.4f, ox, oy);
-                for (int lift = 5; lift < 12; lift++)
-                    Plot(px, w, h, p.x, p.y + lift, lift > 9 ? barkLit : bark);
-                if (i > 195) for (int lift = 5; lift < 12; lift++) Plot(px, w, h, p.x, p.y + lift, cut);
+                float v = startV + n * 0.30f + course * 0.15f;
+                int lift = 5 + course * (diameter - 1);
+                if (v > ch - 0.15f) continue;
+
+                int steps = Mathf.Max(2, cw) * 130;
+                for (int i = 0; i <= steps; i++)
+                {
+                    float t = i / (float)steps;
+                    float u = Mathf.Lerp(0.22f, cw - 0.22f, t);
+                    var p = Iso.Project(u, v, ox, oy);
+
+                    for (int d = 0; d < diameter; d++)
+                    {
+                        // Lit along the top of the round, dark underneath.
+                        var tone = d >= diameter - 2 ? barkLit : d <= 1 ? Darken(bark, 12) : bark;
+                        Plot(px, w, h, p.x, p.y + lift + d, tone);
+                    }
+                }
+
+                // The sawn end facing the viewer: an ellipse, not a bar. A log points along the
+                // east axis, so its end presents as a circle squashed by the projection, and
+                // squaring it off is what made the stack read as planks on edge.
+                var end = Iso.Project(cw - 0.22f, v, ox, oy);
+                float radius = diameter / 2f;
+                for (int d = -1; d <= diameter; d++)
+                for (int across = -1; across <= 5; across++)
+                {
+                    float fy = (d - radius + 0.5f) / (radius + 0.5f);
+                    float fx = (across - 2f) / 3.2f;
+                    float r2 = fx * fx + fy * fy;
+                    if (r2 > 1f) continue;
+
+                    var tone = r2 > 0.66f ? Darken(cut, 26) : r2 > 0.3f ? cutRing : cut;
+                    Plot(px, w, h, end.x + across, end.y + lift + d, tone);
+                }
             }
         }
 

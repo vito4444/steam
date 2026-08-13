@@ -57,15 +57,20 @@ namespace Undertown.Core.Sim
             PlaceNear(town, BuildingKind.House, cx + 2, roadY + 4);
             PlaceNear(town, BuildingKind.House, cx - 6, roadY + 7);
             PlaceNear(town, BuildingKind.House, cx - 3, roadY + 7);
-            PlaceNear(town, BuildingKind.House, cx + 1, roadY + 7);
             PlaceNear(town, BuildingKind.House, cx + 7, roadY + 7);
-            PlaceNear(town, BuildingKind.Sawpit, cx + 7, roadY + 10);
+
+            // The two workings with real relief - the stepped clay pit and the saw frame - sit
+            // in the middle blocks rather than on the outskirts. Both were on the north and
+            // south edges, where the framing crop and the HUD each took a bite out of one; they
+            // are also the only things here with a silhouette worth putting in the player's eye
+            // line, which is an argument for the middle regardless of what the camera does.
+            PlaceNear(town, BuildingKind.Sawpit, cx + 1, roadY + 7);
 
             // Working ground south of the street, where the fields have room.
             PlaceNear(town, BuildingKind.House, cx - 6, roadY - 3);
             PlaceNear(town, BuildingKind.House, cx - 3, roadY - 3);
-            PlaceNear(town, BuildingKind.ClayPit, cx - 9, roadY - 3);
-            PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 3);
+            PlaceNear(town, BuildingKind.ClayPit, cx + 1, roadY - 3);
+            PlaceNear(town, BuildingKind.Field, cx - 9, roadY - 3);
             PlaceNear(town, BuildingKind.Field, cx + 6, roadY - 3);
             PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 8);
 
