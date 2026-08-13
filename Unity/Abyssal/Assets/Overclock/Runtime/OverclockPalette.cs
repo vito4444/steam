@@ -34,10 +34,10 @@ namespace Overclock
         public static readonly Color Priority = new Color(0.659f, 0.333f, 0.969f);
 
         /// <summary>热量。</summary>
-        public static readonly Color Heat = new Color(0.984f, 0.573f, 0.235f);
+        public static readonly Color Heat = new Color(0.870f, 0.430f, 0.130f);
 
         /// <summary>过热警告。</summary>
-        public static readonly Color Critical = new Color(0.937f, 0.267f, 0.267f);
+        public static readonly Color Critical = new Color(0.780f, 0.140f, 0.090f);
 
         /// <summary>数据源。</summary>
         public static readonly Color Source = new Color(0.545f, 0.361f, 0.965f);
@@ -59,9 +59,15 @@ namespace Overclock
         public static Color ByThermalStress(float stress)
         {
             stress = Mathf.Clamp01(stress);
-            return stress < 0.55f
+            var hue = stress < 0.55f
                 ? Color.Lerp(Data, Heat, stress / 0.55f)
                 : Color.Lerp(Heat, Critical, (stress - 0.55f) / 0.45f);
+
+            // 温度只负责色相，亮度留给流量。
+            // 两者都往上推的话，一过热整片就烧成白光，把数据包和拓扑全糊掉——
+            // 而那恰恰是玩家在最紧张的时刻最需要看清的东西。
+            // 危险感应该来自「颜色不对了」，不是来自「更刺眼了」。
+            return hue * Mathf.Lerp(1.0f, 0.62f, stress);
         }
 
         /// <summary>基底格子的颜色。热量会把衬底本身也烤出颜色来。</summary>

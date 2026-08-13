@@ -34,6 +34,15 @@ namespace Overclock
         Material _substrateMaterial;
         Material _emissiveMaterial;
 
+        // 沿线奔跑的数据包。这是整个画面「活着」的来源——
+        // 一张不流动的电路图和一张流动的电路图，在观感上是电路板和活物的区别。
+        readonly List<Transform> _packets = new List<Transform>();
+        readonly List<MeshRenderer> _packetRenderers = new List<MeshRenderer>();
+        readonly List<int> _packetLink = new List<int>();
+        readonly List<float> _packetPhase = new List<float>();
+
+        const int PacketsPerLink = 2;
+
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
         public void Build(SiliconLayer layer, Transform parent)
@@ -52,6 +61,7 @@ namespace Overclock
             BuildSubstrate();
             BuildBodies();
             BuildLinks();
+            BuildPackets();
             Refresh();
         }
 
@@ -126,6 +136,86 @@ namespace Overclock
                     _links.Add(link.GetComponent<MeshRenderer>());
                     _linkCells.Add((_layer.Index(x, y), _layer.Index(nx, ny)));
                 }
+            }
+        }
+
+        /// <summary>
+        /// 每条连接段上预生成固定数量的数据包。用对象池而不是动态增删，
+        /// 是因为格子数固定、连接数也固定，池的规模完全可预测。
+        /// </summary>
+        void BuildPackets()
+        {
+            var group = new GameObject("Packets").transform;
+            group.SetParent(Root, false);
+
+            for (int link = 0; link < _links.Count; link++)
+            {
+                for (int p = 0; p < PacketsPerLink; p++)
+                {
+                    var packet = Make(group, $"Packet_{link}_{p}", PrimitiveType.Cube,
+                        Vector3.zero, new Vector3(0.145f, 0.10f, 0.145f), _emissiveMaterial);
+
+                    _packets.Add(packet.transform);
+                    _packetRenderers.Add(packet.GetComponent<MeshRenderer>());
+                    _packetLink.Add(link);
+                    // 相位错开，否则同一条线上的包会叠在一起像一个大方块。
+                    _packetPhase.Add(p / (float)PacketsPerLink);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 推进数据包。<paramref name="time"/> 是累计时间，
+        /// 包沿连接段循环移动，速度正比于这条线的负载率。
+        ///
+        /// 这一步和仿真完全解耦：包只是按流量密度画出来的视觉表现，
+        /// 不参与任何计算。这是自动化游戏能做到大规模而不掉帧的关键技巧。
+        /// </summary>
+        public void TickPackets(float time)
+        {
+            int w = _layer.Width;
+
+            for (int i = 0; i < _packets.Count; i++)
+            {
+                int link = _packetLink[i];
+                var (a, b) = _linkCells[link];
+
+                int ax = a % w, ay = a / w;
+                int bx = b % w, by = b / w;
+
+                bool live = _links[link].gameObject.activeSelf;
+                float load = live
+                    ? Mathf.Min((float)_layer.UtilizationAt(ax, ay), (float)_layer.UtilizationAt(bx, by))
+                    : 0f;
+
+                // 负载太低就不画包。稀疏的线上偶尔飘过一个点，
+                // 比每条线都塞满包更能读出「哪里忙哪里闲」。
+                if (!live || load < 0.06f)
+                {
+                    _packets[i].gameObject.SetActive(false);
+                    continue;
+                }
+
+                _packets[i].gameObject.SetActive(true);
+
+                float speed = 0.45f + load * 1.9f;
+                float t = Mathf.Repeat(time * speed + _packetPhase[i], 1f);
+
+                var from = CellCenter(ax, ay);
+                var to = CellCenter(bx, by);
+                _packets[i].localPosition = Vector3.Lerp(from, to, t) + new Vector3(0f, 0.10f, 0f);
+
+                float stress = Mathf.Max((float)_layer.ThermalStressAt(ax, ay),
+                                         (float)_layer.ThermalStressAt(bx, by));
+
+                // 包在两端附近淡出，避免它突兀地出现和消失。
+                float fade = Mathf.Sin(t * Mathf.PI);
+
+                // 线路一热就变橙红，数据包如果跟着变色就会融进背景里。
+                // 越热越把包推向白色，让它始终能从线上读出来。
+                var packetColor = Color.Lerp(OverclockPalette.Data, Color.white,
+                                             Mathf.Clamp01(stress * 0.85f));
+                SetColor(_packetRenderers[i], packetColor * (1.05f + load * 1.35f) * fade);
             }
         }
 

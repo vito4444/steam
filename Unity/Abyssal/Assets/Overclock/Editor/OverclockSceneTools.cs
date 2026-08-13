@@ -186,8 +186,8 @@ namespace Overclock.EditorTools
             // Bloom 是这套视觉的核心。所有的「体积感」都来自发光线条的溢出，
             // 因为场景里根本没有光照。阈值压到 0.6 让中等亮度的线也参与发光。
             var bloom = profile.Add<Bloom>(true);
-            bloom.threshold.Override(0.60f);
-            bloom.intensity.Override(2.30f);
+            bloom.threshold.Override(0.92f);
+            bloom.intensity.Override(1.35f);
             bloom.scatter.Override(0.78f);
             bloom.tint.Override(new Color(0.86f, 0.96f, 1.00f));
             bloom.highQualityFiltering.Override(true);
