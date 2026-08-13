@@ -8,6 +8,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 RUNTIME="unity/Decoder/Assets/Scripts/Signal"
+GAMEPLAY="unity/Decoder/Assets/Scripts/Gameplay"
+SOURCES="${RUNTIME} ${GAMEPLAY}"
 
 # 每条变异的格式: 描述|文件|原文|替换文
 MUTATIONS=(
@@ -22,15 +24,21 @@ MUTATIONS=(
   "去掉键控软化，恢复硬开关|${RUNTIME}/SignalSynthesizer.cs|var rampStep = KeyRampSeconds > 0f ? 1f / (KeyRampSeconds * _sampleRate) : 1f;|var rampStep = 1f;"
   "噪声源忽略种子，破坏确定性|${RUNTIME}/NoiseSource.cs|_state = seed == 0 ? 0x9E3779B9u : unchecked((uint)seed);|_state = 0x9E3779B9u;"
   "带外信号不再截断|${RUNTIME}/SignalSynthesizer.cs|if (d >= BandwidthKHz)\n            {\n                return 0f;\n            }|if (d >= BandwidthKHz * 100f)\n            {\n                return 0f;\n            }"
+  "选台改回只看带通响应，不看实际功率|${RUNTIME}/SignalSynthesizer.cs|var level = BandpassResponse(station.FrequencyKHz - TunedKHz) * station.Strength;|var level = BandpassResponse(station.FrequencyKHz - TunedKHz);"
+  "相似度换成逐位比对|${GAMEPLAY}/ReportGrader.cs|var distance = LevenshteinDistance(a, b);|var distance = System.Math.Abs(a.Length - b.Length); for (var i = 0; i < System.Math.Min(a.Length, b.Length); i++) { if (a[i] != b[i]) distance++; }"
+  "上报等级偏差的方向反转|${GAMEPLAY}/ReportGrader.cs|LevelDelta = (int)submission.Level - (int)expected.correctLevel,|LevelDelta = (int)expected.correctLevel - (int)submission.Level,"
+  "频率容差放大二十倍|${GAMEPLAY}/ReportGrader.cs|public const float FrequencyToleranceKHz = 0.5f;|public const float FrequencyToleranceKHz = 10f;"
+  "中文电码信号改发汉字而不是数字|${GAMEPLAY}/ShiftDefinition.cs|return ChineseTelegraphCode.ToDigitStream(telegraph.EncodeText(plainText));|return plainText;"
+  "第一班主线等级降为例行|${GAMEPLAY}/ShiftLibrary.cs|correctLevel = ThreatLevel.Attention,\n                isPrimary = true,|correctLevel = ThreatLevel.Routine,\n                isPrimary = true,"
 )
 
 restore() {
-    git checkout -- "${RUNTIME}" 2>/dev/null || true
+    git checkout -- ${SOURCES} 2>/dev/null || true
 }
 trap restore EXIT
 
-if ! git diff --quiet -- "${RUNTIME}"; then
-    echo "工作区在 ${RUNTIME} 下有未提交改动，先提交或暂存后再跑变异验证。" >&2
+if ! git diff --quiet -- ${SOURCES}; then
+    echo "工作区在 ${SOURCES} 下有未提交改动，先提交或暂存后再跑变异验证。" >&2
     exit 1
 fi
 
