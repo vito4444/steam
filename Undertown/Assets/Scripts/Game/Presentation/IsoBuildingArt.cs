@@ -21,7 +21,7 @@ namespace Undertown.Game.Presentation
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
 
         /// <summary>How many distinct looks a repeated building has.</summary>
-        public const int VariantCount = 4;
+        public const int VariantCount = 8;
 
         /// <summary>How far the eaves stand out past the walls, in cells.</summary>
         private const float Overhang = 0.22f;
@@ -709,10 +709,10 @@ namespace Undertown.Game.Presentation
             Color32 ground;
             switch (kind)
             {
-                case BuildingKind.Field: ground = new Color32(0x9E, 0x86, 0x3E, 0xFF); break;
-                case BuildingKind.ClayPit: ground = new Color32(0x8E, 0x55, 0x3C, 0xFF); break;
+                case BuildingKind.Field: ground = new Color32(0x86, 0x6E, 0x32, 0xFF); break;
+                case BuildingKind.ClayPit: ground = new Color32(0x7C, 0x49, 0x32, 0xFF); break;
                 case BuildingKind.Tunnel: ground = new Color32(0x35, 0x2C, 0x22, 0xFF); break;
-                default: ground = new Color32(0x7B, 0x66, 0x46, 0xFF); break;
+                default: ground = new Color32(0x69, 0x56, 0x39, 0xFF); break;
             }
 
             int steps = Mathf.Max(cw, ch) * 150;
@@ -957,8 +957,8 @@ namespace Undertown.Game.Presentation
 
         private static void Sheaves(Color32[] px, int w, int h, int cw, int ch, int ox, int oy)
         {
-            var straw = new Color32(0xCE, 0xB0, 0x56, 0xFF);
-            var strawDark = new Color32(0x9C, 0x82, 0x3A, 0xFF);
+            var straw = new Color32(0xAE, 0x94, 0x46, 0xFF);
+            var strawDark = new Color32(0x84, 0x6E, 0x30, 0xFF);
 
             for (int i = 0; i < 6; i++)
             {
@@ -1004,16 +1004,40 @@ namespace Undertown.Game.Presentation
                     // #534b15 and its daub around #6b5f45; ours was near-white plaster under
                     // straw the colour of fresh butter, and with ten of them on screen that
                     // alone was holding the whole frame far brighter than the target.
-                    var walls = new[] { C(0x9E, 0x8C, 0x6C), C(0x8C, 0x78, 0x58), C(0xA6, 0x96, 0x78), C(0x84, 0x6E, 0x50) };
-                    var thatch = new[] { C(0x8E, 0x70, 0x38), C(0x78, 0x5E, 0x2E), C(0x9A, 0x7E, 0x42), C(0x6A, 0x54, 0x28) };
+                    //
+                    // Two of the six are roofed in something other than straw. In the reference
+                    // no two roofs on screen are the same colour - slate, tile, board and thatch
+                    // all appear within a few plots of each other - and a street of identical
+                    // roofs is what the eye reads as one building repeated, however much the
+                    // walls beneath them differ. Roofs are the largest flat areas in the frame
+                    // and the ones seen from directly above, so they carry more of the town's
+                    // colour than anything except the ground.
+                    // Six of the eight are thatch. Slate and fired tile cost money a cottager
+                    // does not have, and giving them an even share turned the street the other
+                    // way: hardly a straw roof left, and a row of blue and red that read as a
+                    // town from somewhere else entirely.
+                    var walls = new[]
+                    {
+                        C(0x9E, 0x8C, 0x6C), C(0x8C, 0x78, 0x58), C(0xA6, 0x96, 0x78),
+                        C(0x84, 0x6E, 0x50), C(0x96, 0x84, 0x62), C(0x90, 0x80, 0x60),
+                        C(0x8E, 0x88, 0x7A), C(0x9A, 0x88, 0x66),
+                    };
+                    var roofs = new[]
+                    {
+                        C(0x7A, 0x60, 0x30), C(0x68, 0x50, 0x26), C(0x84, 0x6C, 0x38),
+                        C(0x5C, 0x48, 0x22), C(0x72, 0x58, 0x2C), C(0x7E, 0x66, 0x34),
+                        C(0x46, 0x4E, 0x56), // slate
+                        C(0x7C, 0x40, 0x2C), // fired tile
+                    };
+                    bool straw = variant < 6;
                     return new Scheme
                     {
-                        Wall = walls[variant], Roof = thatch[variant],
+                        Wall = walls[variant], Roof = roofs[variant],
                         Timber = C(0x59, 0x3E, 0x28), Plinth = C(0x64, 0x5E, 0x54),
-                        WallHeight = 24 + variant * 2, Pitch = 13 + (variant & 1) * 3,
-                        Thatch = true, HalfTimbered = true, Chimney = true,
-                        LeanTo = variant == 1 || variant == 2,
-                        Porch = variant == 0 || variant == 3,
+                        WallHeight = 24 + (variant % 4) * 2, Pitch = 13 + (variant & 1) * 3,
+                        Thatch = straw, HalfTimbered = true, Chimney = true,
+                        LeanTo = variant == 1 || variant == 2 || variant == 5 || variant == 7,
+                        Porch = variant == 0 || variant == 3 || variant == 4 || variant == 6,
                     };
                 }
                 case BuildingKind.TownHall:
