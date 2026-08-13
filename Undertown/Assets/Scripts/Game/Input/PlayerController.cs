@@ -15,9 +15,6 @@ namespace Undertown.Game.InputHandling
     public sealed class PlayerController : MonoBehaviour
     {
         private const float PanSpeed = 22f;
-        private const float ZoomSpeed = 12f;
-        private const float MinZoom = 6f;
-        private const float MaxZoom = 26f;
 
         private TownState _town;
         private WorldRenderer _world;
@@ -35,6 +32,7 @@ namespace Undertown.Game.InputHandling
 
         private bool _dragging;
         private Coord _dragStart;
+        private int _zoomStep = 2;
 
         public void Bind(TownState town, WorldRenderer world, BuildingRenderer buildings, Camera camera, PlacementGhost ghost)
         {
@@ -69,9 +67,16 @@ namespace Undertown.Game.InputHandling
                 _camera.transform.position += new Vector3(x, y, 0f) * (PanSpeed * scale * Time.deltaTime);
             }
 
+            // Whole steps only. A continuous wheel zoom lands the camera between whole-pixel
+            // scales, where point sampling stretches some rows of a texture and not others and
+            // every straight edge in the scene picks up a wobble.
             float wheel = Input.mouseScrollDelta.y;
             if (Mathf.Abs(wheel) > 0.01f)
-                _camera.orthographicSize = Mathf.Clamp(_camera.orthographicSize - wheel * ZoomSpeed * Time.deltaTime * 8f, MinZoom, MaxZoom);
+            {
+                _zoomStep = Mathf.Clamp(_zoomStep + (wheel > 0f ? 1 : -1),
+                    Iso.MinZoomStep, Iso.MaxZoomStep);
+                _camera.orthographicSize = Iso.CameraSize(Screen.height, _zoomStep);
+            }
         }
 
         private void HandleHotkeys()

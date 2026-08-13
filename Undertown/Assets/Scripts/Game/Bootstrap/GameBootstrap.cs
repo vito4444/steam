@@ -283,12 +283,6 @@ namespace Undertown.Game.Bootstrap
         {
             const float hudFraction = 232f / 1080f;
 
-            // In world units, and world units are cheaper under this projection than they
-            // look: a cell is one unit wide but only half a unit tall, so a margin generous
-            // enough on the vertical axis is enormous on the horizontal one. Two and a half
-            // units of padding left the settlement occupying a third of the frame.
-            const float margin = 1.2f;
-
             var min = new Vector2(float.MaxValue, float.MaxValue);
             var max = new Vector2(float.MinValue, float.MinValue);
             bool any = false;
@@ -315,41 +309,22 @@ namespace Undertown.Game.Bootstrap
                 min = max = centre;
             }
 
-            float spanX = max.x - min.x + margin * 2f;
-            float spanY = max.y - min.y + margin * 2f;
-
-            float aspect = cam.aspect > 0.1f ? cam.aspect : 16f / 9f;
-            float sizeForHeight = spanY / (2f * (1f - hudFraction));
-            float sizeForWidth = spanX / (2f * aspect);
-
-            // Fitting the whole settlement with room to spare leaves it as an island in the
-            // middle of empty country, which is not how the reference is framed - its town runs
-            // off all four edges. Under this projection that gap cannot be closed by zooming
-            // alone: any rectangle of cells projects to a fixed two-to-one shape on screen, so
-            // a frame wider than that always has slack at the sides whatever the town's
-            // proportions. Filling it properly would mean laying the town out along the screen
-            // horizontal, which is the north-west to south-east diagonal in cell coordinates.
+            // One pixel of art across two pixels of screen.
             //
-            // Short of that, the frame is allowed to crop: north and south edges may run a
-            // little past the viewport, which buys a closer view and costs nothing the player
-            // cannot scroll to.
-            // How far it can be pushed depends on what is at the edges. At 0.88 the crop took
-            // the clay pit and the sawmill with it, which are the two most three-dimensional
-            // things here; a frame that fills itself by cutting off its own landmarks is not a
-            // better frame. With both of those moved into the middle blocks, what the crop now
-            // reaches is house corners and open plots, and those it can have.
-            const float verticalCrop = 0.90f;
-
-            // And then closer still. Fitting the settlement exactly, even cropped, puts about
-            // thirty cells across a 1920-pixel frame; the reference shows nearer twenty, and
-            // that difference is most of why its buildings look substantial and ours looked
-            // like models on a table. The town runs off the east and west edges at this
-            // distance, which is what the reference does too - it is a view into a place, not
-            // a portrait of one.
-            const float fill = 0.78f;
-
-            cam.orthographicSize = Mathf.Max(3.5f,
-                Mathf.Max(sizeForHeight * verticalCrop, sizeForWidth) * fill);
+            // The camera used to be sized to whatever the settlement's extent asked for, which
+            // put it at about 1.65 art pixels per screen pixel. Point sampling at a fractional
+            // scale keeps edges hard but makes them uneven: some rows of a texture land on two
+            // screen pixels and their neighbours on one, so a straight eave comes out with a
+            // wobble in it and the ground dither crawls when the camera moves.
+            //
+            // Two rather than one. At 1:1 a 1080-line display shows thirty cells across and
+            // the whole settlement fits, which sounds like the better default and is not: the
+            // buildings come out small enough that the doorways, the goods in the yards and
+            // the people are all below the size at which they read, and the frame stops being
+            // a place and becomes a map of one. Two shows about fifteen cells, close to the
+            // reference, and the town runs off the edges as the reference's does. The player
+            // can pull back a step for the overview.
+            cam.orthographicSize = Iso.CameraSize(ScreenHeight(), 2);
 
             // The HUD covers the bottom band of the viewport, so the visible area's centre sits
             // above the camera's. Putting the town in the middle of what can actually be seen
@@ -362,5 +337,8 @@ namespace Undertown.Game.Bootstrap
                 (min.y + max.y) / 2f - hiddenWorldHeight / 2f,
                 -10f);
         }
+
+        /// <summary>Viewport height in pixels, with a 1080-line fallback for headless runs.</summary>
+        private static float ScreenHeight() => Screen.height > 16 ? Screen.height : 1080f;
     }
 }

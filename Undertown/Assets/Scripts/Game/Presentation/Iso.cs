@@ -27,6 +27,26 @@ namespace Undertown.Game.Presentation
 
         public static readonly Vector3 CellSize = new Vector3(1f, 0.5f, 1f);
 
+        /// <summary>Closest and furthest whole-pixel zooms the camera is allowed to sit at.</summary>
+        public const int MinZoomStep = 1;
+        public const int MaxZoomStep = 3;
+
+        /// <summary>
+        /// The orthographic half-height that draws one pixel of art across exactly
+        /// <paramref name="step"/> pixels of screen.
+        ///
+        /// Only whole steps are offered. Point sampling at a fractional zoom keeps edges hard
+        /// but makes them uneven - some rows of a texture land on two screen pixels and their
+        /// neighbours on one - so eaves acquire a wobble and ground dither crawls as the
+        /// camera moves. Free zoom on a wheel is worth less than art that holds still.
+        /// </summary>
+        public static float CameraSize(float screenHeight, int step)
+        {
+            step = Mathf.Clamp(step, MinZoomStep, MaxZoomStep);
+            float height = screenHeight > 16f ? screenHeight : 1080f;
+            return height / (2f * PixelsPerUnit * step);
+        }
+
         /// <summary>
         /// Projects a point in cell space onto texture space, with the y axis running up as
         /// textures do. Fractional inputs are allowed so a shape can be built from the
