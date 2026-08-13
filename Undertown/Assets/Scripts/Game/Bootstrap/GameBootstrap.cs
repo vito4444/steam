@@ -339,7 +339,17 @@ namespace Undertown.Game.Bootstrap
             // better frame. With both of those moved into the middle blocks, what the crop now
             // reaches is house corners and open plots, and those it can have.
             const float verticalCrop = 0.90f;
-            cam.orthographicSize = Mathf.Max(3.5f, Mathf.Max(sizeForHeight * verticalCrop, sizeForWidth));
+
+            // And then closer still. Fitting the settlement exactly, even cropped, puts about
+            // thirty cells across a 1920-pixel frame; the reference shows nearer twenty, and
+            // that difference is most of why its buildings look substantial and ours looked
+            // like models on a table. The town runs off the east and west edges at this
+            // distance, which is what the reference does too - it is a view into a place, not
+            // a portrait of one.
+            const float fill = 0.78f;
+
+            cam.orthographicSize = Mathf.Max(3.5f,
+                Mathf.Max(sizeForHeight * verticalCrop, sizeForWidth) * fill);
 
             // The HUD covers the bottom band of the viewport, so the visible area's centre sits
             // above the camera's. Putting the town in the middle of what can actually be seen
