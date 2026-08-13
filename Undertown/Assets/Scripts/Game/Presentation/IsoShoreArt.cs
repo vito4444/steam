@@ -29,13 +29,13 @@ namespace Undertown.Game.Presentation
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
 
         /// <summary>
-        /// Differently-arranged banks per edge combination. The last three carry no stone, so
-        /// roughly a third of any coastline is bare turf running down to the water. A boulder
-        /// on every single cell is as regular as no boulders at all, just noisier.
+        /// Differently-arranged banks per edge combination. Most carry no stone, so the greater
+        /// part of any coastline is bare turf running down to the water. A boulder on every
+        /// single cell is as regular as no boulders at all, just noisier.
         /// </summary>
         public const int Variants = 8;
 
-        private const int StonyVariants = 5;
+        private const int StonyVariants = 3;
 
         public static Sprite For(int landMask, int variant)
         {
@@ -67,10 +67,22 @@ namespace Undertown.Game.Presentation
         private static void Edge(Color32[] px, float u0, float v0, float u1, float v1, int seed,
             bool stony)
         {
-            var foam = new Color32(0x8E, 0xA0, 0xA4, 0xFF);
-            var foamSoft = new Color32(0x64, 0x7E, 0x86, 0xFF);
+            var open = new Color32(0x2C, 0x4C, 0x58, 0xFF);
+            var shallow = new Color32(0x46, 0x69, 0x70, 0xFF);
+            var foam = new Color32(0x74, 0x8A, 0x8E, 0xFF);
 
-            const int steps = 64;
+            // Which way is out into the river, in pixels: from the middle of this edge towards
+            // the middle of the cell. Taken by projecting both points rather than by working
+            // the direction out from u and v, which gets the sign of the vertical axis wrong
+            // and lays the whole band on the dry side of the bank.
+            Project((u0 + u1) * 0.5f, (v0 + v1) * 0.5f, out int mx, out int my);
+            float sx = CentreX - mx;
+            float sy = CentreY - my;
+            float mag = Mathf.Max(0.001f, Mathf.Sqrt(sx * sx + sy * sy));
+            sx /= mag;
+            sy /= mag;
+
+            const int steps = 96;
             for (int i = 0; i <= steps; i++)
             {
                 float t = i / (float)steps;
@@ -78,12 +90,29 @@ namespace Undertown.Game.Presentation
                 float v = Mathf.Lerp(v0, v1, t);
                 Project(u, v, out int x, out int y);
 
-                // Broken rather than continuous: a solid line of white would draw the cell
-                // boundary, which is the one thing the water must not show.
                 int n = Noise(i, seed);
-                if (n % 5 == 0) continue;
-                Plot(px, x, y, n % 3 == 0 ? foam : foamSoft);
-                if (n % 7 == 0) Plot(px, x, y - 1, foamSoft);
+
+                // Shallows: a band of lighter water lying inside the bank and fading out into
+                // the channel. Without it, deep water met dry earth along a hard diamond edge
+                // and the river read as a blue shape laid on the map rather than water in it.
+                // The band's reach wanders, so its outer edge does not trace the cell.
+                int reach = 4 + n % 5;
+                for (int d = 0; d < reach; d++)
+                {
+                    float f = d / (float)reach;
+                    Plot(px, x + Mathf.RoundToInt(sx * d), y + Mathf.RoundToInt(sy * d),
+                        Mix(shallow, open, f * f));
+                }
+
+                // Foam sits a pixel or two out from the bank, broken up. A continuous white
+                // line along the boundary is exactly the cell outline the shallows are there
+                // to hide.
+                if (n % 4 == 0)
+                {
+                    int d = 1 + (n / 4) % 2;
+                    Plot(px, x + Mathf.RoundToInt(sx * d), y + Mathf.RoundToInt(sy * d),
+                        n % 8 == 0 ? foam : Mix(foam, shallow, 0.5f));
+                }
             }
 
             // One or two boulders, unevenly spaced and unevenly sized. Three regular ones per
@@ -98,16 +127,19 @@ namespace Undertown.Game.Presentation
                 float u = Mathf.Lerp(u0, u1, t);
                 float v = Mathf.Lerp(v0, v1, t);
                 Project(u, v, out int x, out int y);
-                Boulder(px, x, y, 3 + Noise(b, seed + 5) % 6, Noise(b, seed + 9));
+                Boulder(px, x, y, 2 + Noise(b, seed + 5) % 4, Noise(b, seed + 9));
             }
         }
 
         private static void Boulder(Color32[] px, int cx, int cy, int radius, int seed)
         {
-            var lit = new Color32(0x7E, 0x80, 0x7A, 0xFF);
-            var face = new Color32(0x5E, 0x60, 0x5C, 0xFF);
-            var dark = new Color32(0x3A, 0x3C, 0x3C, 0xFF);
-            var moss = new Color32(0x4E, 0x60, 0x3C, 0xFF);
+            // Wet river stone, browner and darker than the grey it used to be. Cool light grey
+            // reads as concrete against this palette and pulls the eye to the bank, which is
+            // scenery, not somewhere anything happens.
+            var lit = new Color32(0x6C, 0x68, 0x5C, 0xFF);
+            var face = new Color32(0x4E, 0x4A, 0x42, 0xFF);
+            var dark = new Color32(0x2E, 0x2C, 0x28, 0xFF);
+            var moss = new Color32(0x42, 0x50, 0x32, 0xFF);
 
             int height = radius + 3;
             for (int dy = -radius; dy <= height; dy++)
@@ -125,6 +157,15 @@ namespace Undertown.Game.Presentation
                 if (dy > height - 3 && Noise(dx, seed) % 3 == 0) tone = moss;
                 Plot(px, cx + dx, cy + dy, tone);
             }
+        }
+
+        private static Color32 Mix(Color32 a, Color32 b, float t)
+        {
+            t = Mathf.Clamp01(t);
+            return new Color32(
+                (byte)Mathf.RoundToInt(a.r + (b.r - a.r) * t),
+                (byte)Mathf.RoundToInt(a.g + (b.g - a.g) * t),
+                (byte)Mathf.RoundToInt(a.b + (b.b - a.b) * t), 255);
         }
 
         private static Color32 Shade(Color32 c, int delta) => new Color32(
