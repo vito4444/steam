@@ -108,6 +108,26 @@ And signing the log left the player still staring at it, now showing a fresh and
 empty duty log for a night that had already started behind their head. Opening a
 shift releases whatever was being read, because it belonged to the night before.
 
+## Both faces on one screen
+
+![The cabin feed](shots/08_two_faces.png)
+
+Deciding whether the photograph matches the face is one of the game's tells, and
+making that comparison meant memorising sixteen cells and turning your head. The
+photograph is on the permit, which lies flat on the desk and is a smear of
+twenty-five pixels from the seat; reading it means leaning in, and leaning in puts
+the cabin monitor out of frame.
+
+That is a memory test, and the game never meant to set one. The difficulty is
+supposed to be noticing that two cells have swapped, which is hard enough with both
+grids side by side. The cabin feed prints both now, captioned ON FILE and OBSERVED.
+The permit keeps its photograph — it is a document, a transit permit without a
+picture is not one — and the screen is a convenience rather than the authority.
+
+MASS went with it. It read NOMINAL exactly when CARGO read MATCHED: the same boolean
+twice under two names, which teaches the player to skim the screen and cost the line
+the paired portraits needed.
+
 ## The picture
 
 ![The booth](shots/05_booth_idle.png)
@@ -187,7 +207,7 @@ ended up, and a test walks four hundred bearers checking it still touches.
 ## Verification
 
 ```
-114/114 edit-mode tests passed, 0 failed, 0 skipped
+121/121 edit-mode tests passed, 0 failed, 0 skipped
 self-check: 10 checkpoints, 61 ms/frame (16.5 fps), 259 renderers, 4178 triangles,
             12 lights, 0 errors, 4.6 MB managed heap
 input:      camera turned 18.7 degrees, 4 interactables hovered,
