@@ -19,7 +19,9 @@ any other project.
 | Unity project | ✅ created, builds a Windows `.exe` from Linux |
 | Build pipeline | ✅ running — [`docs/tech/build-pipeline.md`](docs/tech/build-pipeline.md) |
 | Screenshot self-check | ✅ running, bit-exact, mutation-tested |
-| Playable game logic | ❌ none yet — the scene is static and has no interaction |
+| Playable game logic | ✅ a full night runs end to end — [`docs/progress/m2/`](docs/progress/m2/) |
+| Test suite | ✅ 48 edit-mode tests, mutation-tested |
+| Audio | ⚠️ synthesised and tested, but never heard — this machine has no audio device |
 
 ## Start here
 
@@ -33,15 +35,21 @@ any other project.
 The Concept E checkpoint booth, rendered by the game itself and captured automatically.
 Left is the concept art target, right is the current build.
 
-![Concept versus build](docs/progress/m1/compare_vs_concept.png)
+![Concept versus build](docs/progress/m2/compare_vs_concept.png)
 
-There is no game yet — this is a static scene with a fixed camera and no interaction. What
-it proves is that the whole loop works: a scene generated from code, cross-compiled to a
-Windows executable from Linux, rendered headless without a GPU, captured, and measured
-against its target. One command, about 25 seconds:
+A night at the checkpoint runs end to end. Fifteen vehicles arrive, each one's permit and
+monitor readouts describe it, the manual's rules decide what the correct verdict is, four
+brass switches record the player's answer, and the morning report prints the wage.
+
+![Permit](docs/progress/m2/permit.png)
+
+The whole cycle — regenerate the scene from code, cross-compile to a Windows executable
+from Linux, render headless without a GPU, capture, and measure against the concept art —
+is one command and about 25 seconds:
 
 ```bash
-tools/build/iterate.sh
+tools/build/iterate.sh   # rebuild and photograph
+tools/build/test.sh      # 48 edit-mode tests
 ```
 
 ## The recommendation, in one paragraph

@@ -11,3 +11,4 @@ The screenshots are captured by the game itself through the automated harness de
 | --- | --- | --- |
 | [`m0`](m0/) | 2026-08-13 | First render out of the pipeline. Proof that the toolchain works end to end; visually a long way from the target. |
 | [`m1`](m1/) | 2026-08-13 | The Night Shift booth after four rounds of screenshot-driven iteration. Composition and lighting design now match the concept; tonal grade and surface detail do not. |
+| [`m2`](m2/) | 2026-08-13 | The booth is playable. Printed documents, readable monitors, a working manual, four switches and a full night that runs to a morning report. Post-processing fixed, grade recalibrated, 48 tests. |
