@@ -61,6 +61,7 @@ namespace Worker.Core
                 Mix(ref hash, (ulong)(worker.Task?.TargetBuildingId ?? 0));
                 Mix(ref hash, (ulong)(long)worker.PathCursor);
                 Mix(ref hash, (ulong)(long)worker.MoveCooldown);
+                Mix(ref hash, (ulong)(long)worker.MoveDuration);
             }
 
             var orders = world.Orders;

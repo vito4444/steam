@@ -42,6 +42,29 @@ namespace Worker.Core
         /// <summary>Counts down between tile steps; a step happens when it reaches zero.</summary>
         public int MoveCooldown;
 
+        /// <summary>
+        /// Ticks the current tile step started with. The simulation itself is discrete,
+        /// so the presentation layer divides this into <see cref="MoveCooldown"/> to
+        /// interpolate the figure smoothly between tiles.
+        /// </summary>
+        public int MoveDuration;
+
+        /// <summary>Where the worker is walking to right now, or their current tile when standing still.</summary>
+        public GridPos NextStep => PathCursor < Path.Count ? Path[PathCursor] : Pos;
+
+        /// <summary>Progress towards <see cref="NextStep"/> in permille, for interpolation.</summary>
+        public int StepProgressPermille
+        {
+            get
+            {
+                if (MoveDuration <= 0 || PathCursor >= Path.Count) return 0;
+                int elapsed = MoveDuration - MoveCooldown;
+                if (elapsed < 0) elapsed = 0;
+                if (elapsed > MoveDuration) elapsed = MoveDuration;
+                return elapsed * 1000 / MoveDuration;
+            }
+        }
+
         public WorkerUnit(int id, string name, GridPos pos, int speedRating, int dailyWage)
         {
             Id = id;
@@ -73,6 +96,7 @@ namespace Worker.Core
             Path.Clear();
             PathCursor = 0;
             MoveCooldown = 0;
+            MoveDuration = 0;
         }
 
         public void AbandonTask()

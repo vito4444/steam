@@ -74,6 +74,40 @@ namespace Worker.Game
             return Store(key, texture, PixelsPerUnit);
         }
 
+        /// <summary>
+        /// One conveyor tile, authored pointing east; the view rotates it into place.
+        /// Belts read as recessed infrastructure: a dark bed, two rails, and two solid
+        /// chevrons whose tips lead in the direction of travel.
+        /// </summary>
+        public static Sprite Conveyor()
+        {
+            const string key = "conveyor";
+            if (Cache.TryGetValue(key, out var cached)) return cached;
+
+            const int size = PixelsPerUnit;
+            var texture = NewTexture(size, size);
+            Fill(texture, Palette.ConveyorBed.ToUnity());
+
+            var rail = Palette.ConveyorRail.ToUnity();
+            FillRect(texture, 0, 4, size, 2, rail);
+            FillRect(texture, 0, size - 6, size, 2, rail);
+
+            var arrow = Palette.ConveyorArrow.ToUnity();
+            for (int index = 0; index < 2; index++)
+            {
+                int along = size / 4 + index * size / 2;
+                const int span = 9;
+                for (int i = 0; i < span; i++)
+                {
+                    int offset = i - span / 2;
+                    int depth = span / 2 - Mathf.Abs(offset);
+                    FillRect(texture, along + depth - 2, size / 2 + offset, 3, 1, arrow);
+                }
+            }
+
+            return Store(key, texture, PixelsPerUnit);
+        }
+
         /// <summary>Worker figure: a rounded body with a head, drawn bright against the floor.</summary>
         public static Sprite Worker(bool tired)
         {

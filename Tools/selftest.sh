@@ -37,6 +37,18 @@ echo "--- unit tests ---"
 dotnet test Tools/CoreTests/Worker.Core.Tests.csproj --nologo -v minimal
 
 echo
+echo "--- unity layer compile check ---"
+# Type-checks Worker.Game against Unity's shipped assemblies without starting the
+# Editor. Skipped with a warning when no Unity installation is configured, since the
+# rest of the self-test does not depend on it.
+if [[ -n "${UNITY_MANAGED_DIR:-}" && -d "${UNITY_MANAGED_DIR}" ]]; then
+  dotnet build Tools/UnityCompileCheck/Worker.Game.CompileCheck.csproj --nologo -v minimal
+else
+  echo "  skipped: UNITY_MANAGED_DIR not set"
+  echo "  set it to <editor>/Editor/Data/Managed to type-check the presentation layer"
+fi
+
+echo
 echo "--- scenario: starter ---"
 dotnet run --project Tools/Preview -c Release -- \
   --scenario starter --seed 3 --workers 4 \

@@ -17,13 +17,22 @@
 /[Aa]ssets/AssetStoreTools*
 /[Aa]ssets/Plugins/Editor/JetBrains*
 
+# .NET build output at any depth. The tool projects under Tools/ live in the repo,
+# but their bin/obj must not.
+[Bb]in/
+[Oo]bj/
+
 # Visual Studio / Rider / VS Code
 .vs/
 .idea/
 .vscode/
-*.csproj
-*.unityproj
-*.sln
+
+# Unity regenerates these at the repo root on every import. Scoped to the root on
+# purpose: the hand-written project files under Tools/ are tracked, because without
+# them a fresh clone cannot build or test anything.
+/*.csproj
+/*.sln
+/*.unityproj
 *.suo
 *.tmp
 *.user

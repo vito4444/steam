@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Headless renderer and self-test harness.
+
+    This compiles Worker.Core outside Unity and draws the simulation with a CPU
+    rasteriser, so the project can be run, screenshotted and visually reviewed on a
+    machine with no GPU. It uses the same Palette as the Unity renderer, which keeps
+    preview frames a faithful proxy when judging composition and readability.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace>Worker.Preview</RootNamespace>
+    <AssemblyName>Worker.Preview</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Core/**/*.cs" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+</Project>

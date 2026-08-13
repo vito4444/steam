@@ -250,7 +250,8 @@ namespace Worker.Core
                 worker.Path.Clear();
                 worker.Path.AddRange(_pathScratch);
                 worker.PathCursor = 0;
-                worker.MoveCooldown = TicksPerTile(worker);
+                worker.MoveDuration = TicksPerTile(worker);
+                worker.MoveCooldown = worker.MoveDuration;
 
                 if (worker.Path.Count == 0)
                 {
@@ -263,7 +264,8 @@ namespace Worker.Core
 
             worker.Pos = worker.Path[worker.PathCursor];
             worker.PathCursor++;
-            worker.MoveCooldown = TicksPerTile(worker);
+            worker.MoveDuration = TicksPerTile(worker);
+            worker.MoveCooldown = worker.MoveDuration;
             worker.AdjustStamina(-SimConfig.StaminaDrainPerMoveTick);
 
             if (worker.PathCursor >= worker.Path.Count)

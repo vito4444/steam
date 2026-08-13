@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compiles the Unity presentation layer against Unity's managed assemblies without
+    starting the Editor.
+
+    The Editor cannot run here (Unity Personal cannot be activated headlessly), which
+    would otherwise leave Worker.Game completely unverified. Referencing the shipped
+    DLLs directly catches syntax errors, wrong API signatures and bad using directives,
+    which is most of what an Editor compile would have told us.
+
+    It does not replace an Editor compile: it says nothing about asmdef wiring, package
+    resolution, serialization or anything that only exists at import time.
+
+    Point UNITY_MANAGED_DIR and UNITY_PACKAGE_ASSEMBLIES at a Unity installation:
+
+      UNITY_MANAGED_DIR=$HOME/Unity/Hub/Editor/6000.3.21f1/Editor/Data/Managed \
+      dotnet build Tools/UnityCompileCheck/Worker.Game.CompileCheck.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>Worker.Game.CompileCheck</AssemblyName>
+    <RootNamespace>Worker.Game</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- Unity's facade assemblies deliberately forward types; that is not an error. -->
+    <NoWarn>$(NoWarn);CS0436;CS1701;CS1702</NoWarn>
+    <UnityManagedDir Condition="'$(UnityManagedDir)' == ''">$(UNITY_MANAGED_DIR)</UnityManagedDir>
+    <UnityPackageAssemblies Condition="'$(UnityPackageAssemblies)' == ''">$(UNITY_PACKAGE_ASSEMBLIES)</UnityPackageAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Core/**/*.cs" />
+    <Compile Include="../../Assets/Scripts/Game/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UnityManagedDir)' != ''">
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.IMGUIModule.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.TextRenderingModule.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.PhysicsModule.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.Physics2DModule.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.UIElementsModule.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteMaskModule.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteMaskModule.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteShapeModule.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.SpriteShapeModule.dll')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UnityPackageAssemblies)' != ''">
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.InputSystem.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.InputSystem.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.Mathematics.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Mathematics.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.Burst.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Burst.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.Collections.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Collections.dll')" />
+  </ItemGroup>
+
+  <Target Name="WarnWhenUnityMissing" BeforeTargets="Build" Condition="'$(UnityManagedDir)' == ''">
+    <Warning Text="UNITY_MANAGED_DIR is not set, so the Unity presentation layer was not type-checked." />
+  </Target>
+
+</Project>
