@@ -45,6 +45,15 @@ namespace Worker.Game
         private SimWorld _world;
         private Transform _root;
 
+        /// <summary>
+        /// Diagnostic switch for --no-point-lights. Two independent video reviews
+        /// reported the scene as having no shadows while stills appeared to show them,
+        /// and the suspicion is that the machine lamps are filling in every shadowed
+        /// face. Being able to remove them without a code change makes that testable in
+        /// one build instead of several.
+        /// </summary>
+        private bool _pointLightsDisabled;
+
         private readonly Dictionary<BuildingKind, Material> _buildingMaterials = new Dictionary<BuildingKind, Material>();
         private readonly Dictionary<ItemId, Material> _itemMaterials = new Dictionary<ItemId, Material>();
         private readonly Dictionary<int, Material> _shadeMaterials = new Dictionary<int, Material>();
@@ -64,6 +73,7 @@ namespace Worker.Game
         private Material _glassMaterial;
         private Material _hazardMaterial;
         private Material _helmetMaterial;
+        private Material _shadowMaterial;
         private IsometricBuildingBuilder _builder;
 
         private sealed class BuildingRig
@@ -73,6 +83,7 @@ namespace Worker.Game
             public Light Lamp;
             public Renderer Indicator;
             public Material IndicatorMaterial;
+            public ParticleSystem Emitter;
         }
 
         private sealed class WorkerRig
@@ -86,6 +97,12 @@ namespace Worker.Game
 
         private void Awake()
         {
+            var args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--no-point-lights") _pointLightsDisabled = true;
+            }
+
             _runner = GetComponent<SimRunner>();
             _runner.WorldCreated += OnWorldCreated;
             if (_runner.World != null) OnWorldCreated(_runner.World);
@@ -255,7 +272,10 @@ namespace Worker.Game
                 _glassMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             }
             _hazardMaterial = CreateLit(new Color(0.92f, 0.72f, 0.18f), smoothness: 0.3f);
-            _helmetMaterial = CreateLit(new Color(0.95f, 0.62f, 0.16f), smoothness: 0.4f);
+            _helmetMaterial = CreateLit(new Color(1f, 0.68f, 0.12f), smoothness: 0.5f);
+            SetEmission(_helmetMaterial, new Color(1f, 0.55f, 0.08f), 0.55f);
+
+            _shadowMaterial = BlobShadows.CreateMaterial();
 
             _builder = new IsometricBuildingBuilder(ShadeFor, _metalMaterial, _darkMetalMaterial,
                 _glassMaterial, _hazardMaterial);
@@ -383,11 +403,15 @@ namespace Worker.Game
         {
             light.type = LightType.Directional;
             light.color = new Color(1f, 0.70f, 0.44f);
-            light.intensity = 1.55f;
+            // Raised, and the point lights cut hard, after a video review found the
+            // scene reading as unlit. Eight point lights at intensity 13-18 were filling
+            // in every shadowed face the key light produced: the shadows were being
+            // rendered and then immediately lit back up.
+            light.intensity = 2.1f;
             light.transform.rotation = Quaternion.Euler(24f, -42f, 0f);
 
             light.shadows = LightShadows.Soft;
-            light.shadowStrength = 0.85f;
+            light.shadowStrength = 1f;
 
             // Generous bias. Under an orthographic camera with a single cascade the
             // shadow map is coarse relative to these small objects, and the default bias
@@ -397,6 +421,9 @@ namespace Worker.Game
             light.shadowNormalBias = 0.9f;
             light.shadowNearPlane = 0.2f;
 
+            Debug.Log("[worker] shadows=" + light.shadows + " strength=" + light.shadowStrength
+                      + " qualityShadowDistance=" + QualitySettings.shadowDistance
+                      + " qualityShadows=" + QualitySettings.shadows);
             Debug.Log("[worker] key light: intensity=" + light.intensity
                       + " colour=" + light.color
                       + " rotation=" + light.transform.rotation.eulerAngles);
@@ -449,9 +476,13 @@ namespace Worker.Game
                 building.Origin.X + building.Width * 0.5f, 0.2f,
                 building.Origin.Y + building.Height * 0.5f);
 
+            float height = HeightOf(building.Kind);
+            BlobShadows.Attach(holder.transform, _shadowMaterial,
+                building.Width * 0.92f, building.Height * 0.92f, height);
+
             if (building.IsConveyor)
             {
-                BuildConveyor(holder.transform, building, HeightOf(building.Kind));
+                BuildConveyor(holder.transform, building, height);
                 return holder.transform;
             }
 
@@ -478,7 +509,8 @@ namespace Worker.Game
             }
 
             var bed = CreateBox("Bed", parent, CreateLit(Palette.ConveyorBed.Darken(12).ToUnity(),
-                smoothness: 0.18f, metallic: 0.1f, surface: ProceduralTextures.BrushedMetal()));
+                smoothness: 0.18f, metallic: 0.1f, surface: ProceduralTextures.BeltSurface(),
+                tiling: new Vector2(1f, 1f)));
 
             // Scrolling the belt surface is what stops cargo looking like it floats.
             var scroller = bed.gameObject.AddComponent<BeltScroller>();
@@ -528,6 +560,12 @@ namespace Worker.Game
         {
             var rig = new BuildingRig { Root = holder };
 
+            if (_pointLightsDisabled)
+            {
+                _rigs[building.Id] = rig;
+                return;
+            }
+
             if (building.Def.IsStation)
             {
                 // Status lamp on a short post, its own material so it can change colour.
@@ -550,11 +588,12 @@ namespace Worker.Game
                 rig.Lamp = light.AddComponent<Light>();
                 rig.Lamp.type = LightType.Point;
                 rig.Lamp.color = new Color(1f, 0.80f, 0.50f);
-                rig.Lamp.range = 7f;
-                rig.Lamp.intensity = 13f;
+                rig.Lamp.range = 4.5f;
+                rig.Lamp.intensity = 4.5f;
                 rig.Lamp.shadows = LightShadows.None;
 
                 rig.Spinner = FindSpinner(holder, building);
+                rig.Emitter = AttachEmitter(holder, building);
             }
             else if (building.Kind == BuildingKind.BreakRoom)
             {
@@ -565,8 +604,8 @@ namespace Worker.Game
                 rig.Lamp = light.AddComponent<Light>();
                 rig.Lamp.type = LightType.Point;
                 rig.Lamp.color = new Color(1f, 0.72f, 0.40f);
-                rig.Lamp.range = 8f;
-                rig.Lamp.intensity = 18f;
+                rig.Lamp.range = 5f;
+                rig.Lamp.intensity = 6f;
                 rig.Lamp.shadows = LightShadows.None;
             }
             else if (building.Kind == BuildingKind.Intake || building.Kind == BuildingKind.Shipping)
@@ -585,12 +624,37 @@ namespace Worker.Game
                 rig.Lamp = light.AddComponent<Light>();
                 rig.Lamp.type = LightType.Point;
                 rig.Lamp.color = new Color(1f, 0.92f, 0.78f);
-                rig.Lamp.range = 7f;
-                rig.Lamp.intensity = 15f;
+                rig.Lamp.range = 4.5f;
+                rig.Lamp.intensity = 5f;
                 rig.Lamp.shadows = LightShadows.None;
             }
 
             _rigs[building.Id] = rig;
+        }
+
+        /// <summary>
+        /// Sawdust for cutting machines, steam for the rest. Emission is driven by the
+        /// simulation, so a machine that has run out of material goes quiet.
+        /// </summary>
+        private ParticleSystem AttachEmitter(Transform holder, BuildingInstance building)
+        {
+            switch (building.Kind)
+            {
+                case BuildingKind.Sawbench:
+                    return MachineParticles.AttachSawdust(holder, new Vector3(0f, 1.05f, 0.1f),
+                        CreateLit(new Color(0.80f, 0.63f, 0.38f), smoothness: 0.05f));
+
+                case BuildingKind.Lathe:
+                    return MachineParticles.AttachSawdust(holder, new Vector3(0.05f, 0.95f, 0.2f),
+                        CreateLit(new Color(0.74f, 0.58f, 0.34f), smoothness: 0.05f));
+
+                case BuildingKind.AssemblyBench:
+                    return MachineParticles.AttachSteam(holder, new Vector3(0f, 1.2f, -0.5f),
+                        CreateLit(new Color(0.82f, 0.84f, 0.88f), smoothness: 0.1f));
+
+                default:
+                    return null;
+            }
         }
 
         /// <summary>The part that should turn: the sawbench blade or the lathe spindle.</summary>
@@ -634,12 +698,13 @@ namespace Worker.Game
                 bool working = building.Def.IsStation && building.WorkProgress > 0;
 
                 if (rig.Spinner != null) rig.Spinner.Active = working;
+                MachineParticles.SetEmitting(rig.Emitter, working);
 
                 if (rig.Lamp != null && building.Def.IsStation)
                 {
                     // Idle benches dim rather than switch off, so a dark machine reads as
                     // stalled instead of as missing.
-                    rig.Lamp.intensity = working ? 16f : 5f;
+                    rig.Lamp.intensity = working ? 5.5f : 1.8f;
                 }
 
                 if (rig.IndicatorMaterial == null) continue;
@@ -712,33 +777,35 @@ namespace Worker.Game
             // clearly separated head and a hard hat give a silhouette that stays human
             // at roughly twenty pixels tall, which is all a worker ever occupies here.
             var body = CreateCapsule("Body", holder.transform, _workerMaterial);
-            body.localScale = new Vector3(0.3f, 0.22f, 0.3f);
-            body.localPosition = new Vector3(0f, 0.26f, 0f);
+            body.localScale = new Vector3(0.36f, 0.26f, 0.36f);
+            body.localPosition = new Vector3(0f, 0.3f, 0f);
 
             for (int side = -1; side <= 1; side += 2)
             {
                 var arm = CreateCapsule("Arm", holder.transform, _workerMaterial);
                 arm.localScale = new Vector3(0.11f, 0.13f, 0.11f);
-                arm.localPosition = new Vector3(side * 0.17f, 0.3f, 0.02f);
+                arm.localPosition = new Vector3(side * 0.2f, 0.34f, 0.02f);
             }
 
             var head = CreateSphere("Head", holder.transform, _workerMaterial);
-            head.localScale = new Vector3(0.25f, 0.25f, 0.25f);
-            head.localPosition = new Vector3(0f, 0.58f, 0f);
+            head.localScale = new Vector3(0.28f, 0.28f, 0.28f);
+            head.localPosition = new Vector3(0f, 0.66f, 0f);
 
             // The hat is the brightest thing on the figure and reads before anything
             // else, which is what makes people findable in a busy factory.
             var helmet = CreateSphere("Helmet", holder.transform, _helmetMaterial);
-            helmet.localScale = new Vector3(0.28f, 0.17f, 0.28f);
-            helmet.localPosition = new Vector3(0f, 0.65f, 0f);
+            helmet.localScale = new Vector3(0.33f, 0.2f, 0.33f);
+            helmet.localPosition = new Vector3(0f, 0.74f, 0f);
 
             var brim = CreateCylinder("Brim", holder.transform, _helmetMaterial);
-            brim.localScale = new Vector3(0.3f, 0.015f, 0.3f);
+            brim.localScale = new Vector3(0.36f, 0.02f, 0.36f);
             brim.localPosition = new Vector3(0f, 0.63f, 0.02f);
+
+            BlobShadows.Attach(holder.transform, _shadowMaterial, 0.5f, 0.5f, 0.7f);
 
             var carried = CreateBox("Carried", holder.transform, MaterialFor(ItemId.Log));
             carried.localScale = new Vector3(0.24f, 0.24f, 0.24f);
-            carried.localPosition = new Vector3(0f, 0.52f, 0.26f);
+            carried.localPosition = new Vector3(0f, 0.58f, 0.28f);
             carried.gameObject.SetActive(false);
 
             return new WorkerRig

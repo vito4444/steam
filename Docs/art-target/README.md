@@ -231,6 +231,38 @@ That second point is the limit of the approach. The numbers are good at catching
 against a 6-14% reference, and closing it further needs meaningful content -- more
 figures, machine sub-assemblies, visible interiors -- not more scattered objects.
 
+## Real-time shadows do not render on this machine
+
+Worth recording, because it invalidated an assumption that had been carried for
+several passes.
+
+Two independent video reviews reported the scene as having no shadows and no ambient
+occlusion. Stills appeared to contradict that, so a diagnostic build was made with
+every point light removed, on the theory that the machine lamps were filling shadowed
+faces back in. It produced no shadows either, while the player logged
+`shadows=Soft strength=1 distance=150` and `qualityShadows=All`.
+
+The conclusion is that URP shadow mapping does not render under llvmpipe on this build
+machine. It is very likely fine on real hardware, but that cannot be verified here, so
+nothing should depend on it. What looked like shadows in earlier screenshots was the
+unlit side of buildings, not anything cast onto the floor.
+
+The scene therefore uses painted ground shadows instead: one opaque dark quad per
+object, thrown along the key light's ground direction at cot(pitch) times the object's
+height. Two mistakes on the way to that working, both of which presented as "the quads
+are not being created":
+
+- The first version offset the blob by 0.4 times height, which left it almost entirely
+  underneath the object casting it. Geometrically the throw is cot(24 degrees) = 2.25
+  times height.
+- The first version was also transparent, which rendered nothing at all here. Debugging
+  two invisible things at once is not worth it; the blob is now opaque, in a colour
+  darker than the floor.
+
+The final length is 1.5 rather than the geometric 2.25. The correct value is right for
+a single hard sun, but an opaque quad at full length reads as a smear under every
+object, and adjacent props end up overlapping each other's shadows across the floor.
+
 ## Gap list
 
 Ordered by how much each would move the picture, not by effort. The comparison table

@@ -101,6 +101,35 @@ namespace Worker.Game
             });
         }
 
+        /// <summary>
+        /// Belt surface: slats running across the direction of travel.
+        ///
+        /// The belts were previously textured with brushed metal, whose striations run
+        /// along the belt axis. Scrolling a lengthwise-striped texture lengthwise
+        /// produces no perceivable motion, which is why a video review reported the
+        /// belts as static despite the scroll being implemented and running. Cross
+        /// slats are the fix; the animation was never the problem.
+        /// </summary>
+        public static Texture2D BeltSurface()
+        {
+            return Build("belt", (x, y) =>
+            {
+                // Slats every sixteen pixels, running across the U axis that scrolls.
+                int period = 16;
+                int phase = x % period;
+
+                float value = 0.86f;
+                if (phase < 2) value = 0.52f;
+                else if (phase < 4) value = 0.72f;
+                else if (phase > period - 3) value = 0.98f;
+
+                float wear = Fbm(x * 0.08f, y * 0.08f, 3, 4711u);
+                value += wear * 0.14f - 0.07f;
+
+                return new Color(value, value * 0.99f, value * 0.97f);
+            });
+        }
+
         /// <summary>Ground cover: mottled organic variation.</summary>
         public static Texture2D Ground()
         {

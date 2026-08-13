@@ -35,9 +35,12 @@ namespace Worker.Core
 
         // Belts sit between floor and structures in value: they are infrastructure the
         // eye should follow, but they must never out-shout the stations they connect.
-        public static readonly RgbColor ConveyorBed = new RgbColor(66, 72, 86);
-        public static readonly RgbColor ConveyorRail = new RgbColor(112, 122, 142);
-        public static readonly RgbColor ConveyorArrow = new RgbColor(152, 164, 188);
+        // Warm grey rather than blue-grey. Under the dusk key the original blue read as
+        // a foreign colour running through an otherwise warm room, and belts cover more
+        // floor area than any other single object.
+        public static readonly RgbColor ConveyorBed = new RgbColor(78, 76, 74);
+        public static readonly RgbColor ConveyorRail = new RgbColor(126, 122, 116);
+        public static readonly RgbColor ConveyorArrow = new RgbColor(158, 152, 142);
 
         // Layer 3: workers, brightest.
         public static readonly RgbColor WorkerBody = new RgbColor(238, 232, 220);
