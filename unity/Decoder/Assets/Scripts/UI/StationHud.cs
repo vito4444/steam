@@ -18,7 +18,9 @@ namespace Decoder.UI
     public sealed class StationHud : MonoBehaviour
     {
         private static readonly Color Phosphor = new Color(0.42f, 1f, 0.52f, 1f);
-        private static readonly Color PhosphorDim = new Color(0.24f, 0.62f, 0.32f, 1f);
+        // 暗档从 0.24 提到 0.34：它要负责显示上报单上还没填的占位符，
+        // 太暗玩家根本注意不到那里能填。
+        private static readonly Color PhosphorDim = new Color(0.34f, 0.72f, 0.42f, 1f);
         private static readonly Color Amber = new Color(1f, 0.72f, 0.26f, 1f);
         private static readonly Color Alert = new Color(1f, 0.36f, 0.28f, 1f);
         // 面板压得比较黑：这些字要盖在被台灯照亮的桌面上，
@@ -73,6 +75,9 @@ namespace Decoder.UI
 
         /// <summary>本班是否已经上报完毕，等玩家按 N 交班。</summary>
         private bool _shiftComplete;
+
+        private const float AutoSaveIntervalSeconds = 20f;
+        private float _autoSaveTimer;
         private InputFocus _focus = InputFocus.Copy;
         private int _padPage = 1;
         private readonly StringBuilder _callsignBuffer = new StringBuilder(8);
@@ -191,6 +196,7 @@ namespace Decoder.UI
             AppendLog("听到电码后用键盘抄下数字或字母");
             AppendLog("Tab 换填写栏 · [ ] 翻密码本 · D 解密 · L 查电码表");
             AppendLog(_campaign.StandingLine());
+            RestoreProgress();
             RefreshPad();
             RefreshForm();
         }
@@ -201,6 +207,16 @@ namespace Decoder.UI
             AdvanceMorseReceiver();
             HandleTypedInput();
             HandleHotkeys();
+
+            // 定时落盘。玩家抄了十分钟才崩溃或断电的话，
+            // 光靠退出回调救不了他。
+            _autoSaveTimer += Time.unscaledDeltaTime;
+            if (_autoSaveTimer >= AutoSaveIntervalSeconds)
+            {
+                _autoSaveTimer = 0f;
+                CaptureProgress();
+                SaveSystem.Save(_campaign);
+            }
         }
 
         /// <summary>
@@ -311,7 +327,81 @@ namespace Decoder.UI
             }
 
             _shiftComplete = false;
+            _autoSaveTimer = 0f;
             LoadShift(all[_campaign.shiftIndex]);
+        }
+
+        /// <summary>
+        /// 把上次退出时的现场摆回来。班次对不上就不恢复——
+        /// 否则第三班开局会顶着第二班的抄收纸。
+        /// </summary>
+        private void RestoreProgress()
+        {
+            var progress = _campaign.progress;
+            if (!progress.BelongsTo(_shift.shiftId))
+            {
+                return;
+            }
+
+            _copyBuffer.Append(progress.copied);
+            _solvedBuffer.Append(progress.solved);
+            _lookupText.text = progress.lookup;
+            _callsignBuffer.Append(progress.callsign);
+            _frequencyBuffer.Append(progress.frequency);
+            _padPage = progress.padPage;
+            _selectedLevel = progress.level;
+
+            if (progress.solved.Length > 0)
+            {
+                _solvedText.text = GroupForReading(progress.solved);
+            }
+
+            _levelText.text = LevelLabel(_selectedLevel);
+            RefreshCopyArea();
+            RefreshForm();
+            RefreshPad();
+            AppendLog("接上次的班。桌上的东西还是你走时那样。");
+        }
+
+        /// <summary>
+        /// 把当前现场记进存档。班次已经上报完就不再记——
+        /// 那时候该留下的是记录，不是抄收纸。
+        /// </summary>
+        private void CaptureProgress()
+        {
+            if (_shift == null || _shiftComplete)
+            {
+                return;
+            }
+
+            _campaign.progress = new ShiftProgress
+            {
+                active = true,
+                shiftId = _shift.shiftId,
+                copied = _copyBuffer.ToString(),
+                solved = _solvedBuffer.ToString(),
+                lookup = _lookupText != null ? _lookupText.text : string.Empty,
+                callsign = _callsignBuffer.ToString(),
+                frequency = _frequencyBuffer.ToString(),
+                padPage = _padPage,
+                level = _selectedLevel,
+            };
+        }
+
+        private void OnApplicationQuit()
+        {
+            CaptureProgress();
+            SaveSystem.Save(_campaign);
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            // 移动端和某些窗口管理器下拿不到退出回调，暂停是最后的机会。
+            if (paused)
+            {
+                CaptureProgress();
+                SaveSystem.Save(_campaign);
+            }
         }
 
         private void SetPadPage(int page)
@@ -396,8 +486,11 @@ namespace Decoder.UI
                 ? _frequencyBuffer.ToString()
                 : "＿＿＿＿";
 
-            _formCallsignText.color = _focus == InputFocus.Callsign ? Phosphor : PhosphorDim;
-            _formFrequencyText.color = _focus == InputFocus.Frequency ? Phosphor : PhosphorDim;
+            // 没填的栏也要看得清。玩家得先看见那里能填，才会去填。
+            _formCallsignText.color = _focus == InputFocus.Callsign ? Amber
+                : _callsignBuffer.Length > 0 ? Phosphor : PhosphorDim;
+            _formFrequencyText.color = _focus == InputFocus.Frequency ? Amber
+                : _frequencyBuffer.Length > 0 ? Phosphor : PhosphorDim;
             _copiedText.color = _focus == InputFocus.Copy ? Phosphor : PhosphorDim;
 
             _focusHintText.text = _focus == InputFocus.Copy ? "正在填：抄收纸"

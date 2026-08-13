@@ -222,6 +222,141 @@ namespace Decoder.Tests
             Assert.AreEqual(2, state.shiftIndex);
         }
 
+        // ---- 班次中途的现场 ----
+
+        [Test]
+        public void Progress_RoundTripsThroughSave()
+        {
+            // 玩家可能抄了十分钟才不得不下线。回来时看到的应该还是
+            // 离开时那张桌子：抄收纸、译文、密码本页码、填了一半的上报单。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress
+                {
+                    active = true,
+                    shiftId = "shift-02",
+                    copied = "0231400 2657",
+                    solved = "14002657",
+                    lookup = "北风",
+                    callsign = "M0",
+                    frequency = "7012.",
+                    padPage = 23,
+                    level = ThreatLevel.Urgent,
+                },
+            };
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.IsTrue(restored.progress.active);
+            Assert.AreEqual("shift-02", restored.progress.shiftId);
+            Assert.AreEqual("0231400 2657", restored.progress.copied);
+            Assert.AreEqual("14002657", restored.progress.solved);
+            Assert.AreEqual("北风", restored.progress.lookup);
+            Assert.AreEqual("M0", restored.progress.callsign);
+            Assert.AreEqual("7012.", restored.progress.frequency);
+            Assert.AreEqual(23, restored.progress.padPage);
+            Assert.AreEqual(ThreatLevel.Urgent, restored.progress.level);
+        }
+
+        [Test]
+        public void Progress_EmptyFieldsSurviveRoundTrip()
+        {
+            // 空串必须能和"字段缺失"区分开，否则一份刚开始还没抄任何东西的
+            // 现场会把存档解歪。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress
+                {
+                    active = true,
+                    shiftId = "shift-01",
+                    copied = string.Empty,
+                    solved = string.Empty,
+                    lookup = string.Empty,
+                    callsign = string.Empty,
+                    frequency = string.Empty,
+                    padPage = 1,
+                    level = ThreatLevel.Routine,
+                },
+            };
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.IsTrue(restored.progress.active);
+            Assert.AreEqual(string.Empty, restored.progress.copied);
+            Assert.AreEqual(string.Empty, restored.progress.callsign);
+        }
+
+        [Test]
+        public void Progress_SurvivesTabsAndNewlinesInCopiedText()
+        {
+            // 字段是制表符分隔的。玩家抄收纸上一个意外的空白字符
+            // 不该把整份存档解歪。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress
+                {
+                    active = true,
+                    shiftId = "shift-01",
+                    copied = "1400\t2657\n6308",
+                    solved = string.Empty,
+                    lookup = string.Empty,
+                    callsign = "M\\08",
+                    frequency = string.Empty,
+                    padPage = 5,
+                    level = ThreatLevel.Routine,
+                },
+            };
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.AreEqual("1400\t2657\n6308", restored.progress.copied);
+            Assert.AreEqual("M\\08", restored.progress.callsign);
+        }
+
+        [Test]
+        public void Progress_IsClearedAfterReport()
+        {
+            // 这一班交出去了，现场就不该再留着——否则下一班开局
+            // 会看到上一班的抄收内容。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress { active = true, shiftId = "shift-01", copied = "1400" },
+            };
+
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            Assert.IsFalse(state.progress.active);
+            Assert.IsTrue(string.IsNullOrEmpty(state.progress.copied));
+        }
+
+        [Test]
+        public void Progress_InactiveIsNotWrittenToSave()
+        {
+            var text = new CampaignState().Serialize();
+
+            StringAssert.DoesNotContain("progress", text);
+        }
+
+        [Test]
+        public void BelongsTo_RejectsProgressFromAnotherShift()
+        {
+            // 班次对不上就不该恢复，否则第三班开局会顶着第二班的抄收纸。
+            var progress = new ShiftProgress { active = true, shiftId = "shift-02" };
+
+            Assert.IsTrue(progress.BelongsTo("shift-02"));
+            Assert.IsFalse(progress.BelongsTo("shift-03"));
+            Assert.IsFalse(new ShiftProgress { active = false, shiftId = "shift-02" }.BelongsTo("shift-02"));
+        }
+
+        [Test]
+        public void Deserialize_ReturnsNullOnTruncatedProgressLine()
+        {
+            Assert.IsNull(CampaignState.Deserialize("decoder-save\nprogress\tshift-01\t字段不够\n"));
+        }
+
         [Test]
         public void Serialize_IsHumanReadable()
         {

@@ -29,6 +29,33 @@ namespace Decoder.Gameplay
     }
 
     /// <summary>
+    /// 班次进行到一半时的现场。
+    ///
+    /// 玩家可能抄了十分钟的电码才不得不下线。把这些丢掉的代价不小，
+    /// 所以连密码本翻到第几页、上报单填了一半的呼号都一并存下来，
+    /// 让他回来时看到的还是离开时那张桌子。
+    /// </summary>
+    [Serializable]
+    public struct ShiftProgress
+    {
+        public bool active;
+        public string shiftId;
+        public string copied;
+        public string solved;
+        public string lookup;
+        public string callsign;
+        public string frequency;
+        public int padPage;
+        public ThreatLevel level;
+
+        /// <summary>这份现场是不是属于指定班次的。班次对不上就不该恢复。</summary>
+        public bool BelongsTo(string id)
+        {
+            return active && !string.IsNullOrEmpty(shiftId) && shiftId == id;
+        }
+    }
+
+    /// <summary>
     /// 战役进度。
     ///
     /// 刻意做成纯数据加纯函数，不碰 Unity 的任何 API：
@@ -48,6 +75,9 @@ namespace Decoder.Gameplay
 
         public List<ReportRecord> history = new List<ReportRecord>();
 
+        /// <summary>当前这一班做到哪了。上报之后会被清空。</summary>
+        public ShiftProgress progress;
+
         /// <summary>已完成的班次数。</summary>
         public int CompletedShifts => shiftIndex;
 
@@ -56,6 +86,10 @@ namespace Decoder.Gameplay
         {
             history.Add(record);
             shiftIndex++;
+
+            // 这一班交出去了，现场就不该再留着——否则下一班开局
+            // 会看到上一班的抄收内容。
+            progress = default;
         }
 
         /// <summary>
@@ -179,7 +213,46 @@ namespace Decoder.Gameplay
                     .Append('\n');
             }
 
+            if (progress.active)
+            {
+                builder.Append("progress\t")
+                    .Append(progress.shiftId).Append('\t')
+                    .Append(Escape(progress.copied)).Append('\t')
+                    .Append(Escape(progress.solved)).Append('\t')
+                    .Append(Escape(progress.lookup)).Append('\t')
+                    .Append(Escape(progress.callsign)).Append('\t')
+                    .Append(Escape(progress.frequency)).Append('\t')
+                    .Append(progress.padPage).Append('\t')
+                    .Append(progress.level)
+                    .Append('\n');
+            }
+
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// 字段用制表符分隔，所以内容里的制表符和换行必须先躲开，
+        /// 否则玩家抄收纸上一个意外的空白字符就能把整份存档解歪。
+        /// 空串单独用一个记号，免得和"字段缺失"混在一起。
+        /// </summary>
+        private static string Escape(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return "~";
+            }
+
+            return value.Replace("\\", "\\\\").Replace("\t", "\\t").Replace("\n", "\\n");
+        }
+
+        private static string Unescape(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value == "~")
+            {
+                return string.Empty;
+            }
+
+            return value.Replace("\\n", "\n").Replace("\\t", "\t").Replace("\\\\", "\\");
         }
 
         /// <summary>
@@ -234,6 +307,32 @@ namespace Decoder.Gameplay
                             return null;
                         }
 
+                        break;
+
+                    case "progress":
+                        if (parts.Length < 9)
+                        {
+                            return null;
+                        }
+
+                        if (!int.TryParse(parts[7], out var padPage) ||
+                            !Enum.TryParse<ThreatLevel>(parts[8], out var level))
+                        {
+                            return null;
+                        }
+
+                        state.progress = new ShiftProgress
+                        {
+                            active = true,
+                            shiftId = parts[1],
+                            copied = Unescape(parts[2]),
+                            solved = Unescape(parts[3]),
+                            lookup = Unescape(parts[4]),
+                            callsign = Unescape(parts[5]),
+                            frequency = Unescape(parts[6]),
+                            padPage = padPage,
+                            level = level,
+                        };
                         break;
 
                     case "report":
