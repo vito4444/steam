@@ -49,7 +49,7 @@ namespace Monster.EditorTools
                 Light[] headlights, Light[] taillights,
                 Transform permitMesh, Transform permitAnchor,
                 Transform manualMesh, Transform manualAnchor,
-                Transform logAnchor,
+                Transform logAnchor, Transform mailAnchor,
                 IReadOnlyList<Transform> screenAnchors,
                 IReadOnlyList<Transform> switchMeshes,
                 IReadOnlyList<Transform> switchLabelAnchors,
@@ -67,6 +67,7 @@ namespace Monster.EditorTools
                 ManualMesh = manualMesh;
                 ManualAnchor = manualAnchor;
                 LogAnchor = logAnchor;
+                MailAnchor = mailAnchor;
                 ScreenAnchors = screenAnchors;
                 SwitchMeshes = switchMeshes;
                 SwitchLabelAnchors = switchLabelAnchors;
@@ -85,6 +86,7 @@ namespace Monster.EditorTools
             public Transform ManualMesh { get; }
             public Transform ManualAnchor { get; }
             public Transform LogAnchor { get; }
+            public Transform MailAnchor { get; }
             public IReadOnlyList<Transform> ScreenAnchors { get; }
             public IReadOnlyList<Transform> SwitchMeshes { get; }
             public IReadOnlyList<Transform> SwitchLabelAnchors { get; }
@@ -105,6 +107,7 @@ namespace Monster.EditorTools
             var permit = BuildPermitSurface(handles.PermitAnchor, font);
             var manual = BuildManualSurface(handles.ManualAnchor, font);
             var logbook = BuildLogSurface(handles.LogAnchor, font);
+            var mail = BuildMailSurface(handles.MailAnchor, font);
 
                         // The intercom prints whole sentences rather than short readings, so its type
             // is smaller than the other two screens'.
@@ -114,7 +117,7 @@ namespace Monster.EditorTools
             var cabin = BuildScreenSurface(handles.ScreenAnchors[2], font, "Cabin", withPortrait: true);
 
             var presenter = new GameObject("Booth").AddComponent<BoothPresenter>();
-            presenter.Bind(permit, biometrics, cabin, intercom, manual, logbook);
+            presenter.Bind(permit, biometrics, cabin, intercom, manual, logbook, mail);
 
             var stage = presenter.gameObject.AddComponent<CheckpointStage>();
             stage.Rig(handles.StageBarrierArm, handles.StageVehicle, handles.StageSubject,
@@ -129,6 +132,12 @@ namespace Monster.EditorTools
             BuildIntercomKeys(handles.IntercomKeys, handles.IntercomKeyLabels, font, presenter);
             MakeInspectable(handles.PermitMesh, "permit", 0.46f, new Vector3(0f, 1f, -0.34f));
             MakeInspectable(handles.ManualMesh, "manual", 0.42f, new Vector3(0f, 1f, -0.34f));
+            var mailKey = MakeInspectable(handles.MailAnchor, "mail", 0.40f, new Vector3(0f, 1f, -0.34f),
+                DeskInteractable.Behaviour.Leaf);
+            if (mailKey != null)
+            {
+                presenter.RegisterMailControl(mailKey);
+            }
 
             handles.Camera.AddComponent<BoothCamera>();
             handles.Camera.AddComponent<DeskInteractor>().Input = new LegacyInputSource();
@@ -188,6 +197,24 @@ namespace Monster.EditorTools
                 0.214f, 0.130f, 0.120f, 0f, TextAlignmentOptions.TopLeft);
             var footer = TextFromTop(anchor, "Footer", font, Mm(11f), InkColour,
                 0.214f, 0.016f, -0.126f, 0f, TextAlignmentOptions.Top);
+
+            surface.Bind(title, body, null, footer);
+            return surface;
+        }
+
+        /// <summary>The mail tray. Set in a slightly heavier face than the duty log,
+        /// because a notice from the central office is the one piece of paper on this desk
+        /// that was written by somebody rather than printed by a machine.</summary>
+        private static PrintedSurface BuildMailSurface(Transform anchor, TMP_FontAsset font)
+        {
+            var surface = anchor.gameObject.AddComponent<PrintedSurface>();
+
+            var title = TextFromTop(anchor, "Title", font, Mm(13f), InkColour,
+                0.230f, 0.018f, 0.156f, 0f, TextAlignmentOptions.Top, FontStyles.Bold);
+            var body = TextFromTop(anchor, "Body", font, Mm(11f), InkColour,
+                0.230f, 0.200f, 0.126f, 0f, TextAlignmentOptions.TopLeft);
+            var footer = TextFromTop(anchor, "Footer", font, Mm(9.5f), InkColour,
+                0.230f, 0.016f, -0.144f, 0f, TextAlignmentOptions.Top, FontStyles.Italic);
 
             surface.Bind(title, body, null, footer);
             return surface;
@@ -287,7 +314,8 @@ namespace Monster.EditorTools
             }
         }
 
-        private static void MakeInspectable(Transform mesh, string payload, float distance, Vector3 offset)
+        private static DeskInteractable MakeInspectable(Transform mesh, string payload, float distance,
+            Vector3 offset, DeskInteractable.Behaviour mode = DeskInteractable.Behaviour.Inspect)
         {
             if (mesh.GetComponent<Collider>() == null)
             {
@@ -299,8 +327,9 @@ namespace Monster.EditorTools
             }
 
             var interactable = mesh.gameObject.AddComponent<DeskInteractable>();
-            interactable.Configure(DeskInteractable.Behaviour.Inspect, payload, distance, offset,
+            interactable.Configure(mode, payload, distance, offset,
                 mesh.GetComponentsInChildren<Renderer>());
+            return interactable;
         }
 
         /// <summary>Measures what a line of text actually comes out as in metres.

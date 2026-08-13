@@ -75,7 +75,7 @@ namespace Monster.Audio
             Play(_vehicle, 0.5f, 0.9f);
         }
 
-        private void OnShiftEnded(ShiftReport report) => Play(_paper, 0.7f);
+        private void OnShiftEnded(NightlyStatement statement) => Play(_paper, 0.7f);
 
         public void RingTelephone() => Play(_telephone, 0.9f);
 

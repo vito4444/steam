@@ -71,6 +71,7 @@ namespace Monster.EditorTools
         private static Transform _manualPages;
         private static Transform _manualAnchor;
         private static Transform _logAnchor;
+        private static Transform _mailAnchor;
         private static Vector3 _lampOrigin;
         private static Vector3 _lampTarget;
         private static Transform _barrierArm;
@@ -96,6 +97,7 @@ namespace Monster.EditorTools
             _manualPages = null;
             _manualAnchor = null;
             _logAnchor = null;
+            _mailAnchor = null;
             _lampOrigin = Vector3.zero;
             _lampTarget = Vector3.zero;
             _barrierArm = null;
@@ -123,7 +125,7 @@ namespace Monster.EditorTools
                 _barrierArm, _vehicleRoot, _subjectRoot, Headlights.ToArray(), Taillights.ToArray(),
                 _permitPaper, _permitAnchor,
                 _manualPages, _manualAnchor,
-                _logAnchor,
+                _logAnchor, _mailAnchor,
                 ScreenAnchors, Switches, SwitchLabelAnchors,
                 IntercomKeys, IntercomKeyLabels,
                 camera.gameObject));
@@ -346,8 +348,14 @@ namespace Monster.EditorTools
             _permitAnchor = Anchor("PermitText", mainForm, new Vector3(0f, 0.003f, 0f),
                 Quaternion.Euler(90f, 0f, 0f));
 
-            Box("Form_Stack_A", forms, new Vector3(-0.34f, DeskTopY + 0.003f, 0.70f),
-                new Vector3(0.230f, 0.006f, 0.320f), paper, new Vector3(0f, 14f, 0f));
+            // The mail tray, front left. Whatever the office sent tonight lands here.
+            Box("MailTray", forms, new Vector3(-0.54f, DeskTopY + 0.002f, 0.40f),
+                new Vector3(0.246f, 0.004f, 0.336f),
+                Mat("PaperMail", new Color(0.560f, 0.540f, 0.470f), 0.05f, 0f, null,
+                    Grunge("Grunge_Mail", 256, 3.4f, 0.60f, 0.0f, 5150), 1f),
+                new Vector3(0f, -9f, 0f));
+            _mailAnchor = Anchor("MailText", forms, new Vector3(-0.54f, DeskTopY + 0.006f, 0.40f),
+                Quaternion.Euler(0f, -9f, 0f) * Quaternion.Euler(90f, 0f, 0f));
             Box("Form_Stack_B", forms, new Vector3(-0.30f, DeskTopY + 0.012f, 0.73f),
                 new Vector3(0.225f, 0.005f, 0.315f), paper, new Vector3(0f, 6f, 0f));
             _logAnchor = Anchor("LogText", forms, new Vector3(-0.30f, DeskTopY + 0.016f, 0.73f),
@@ -758,6 +766,7 @@ namespace Monster.EditorTools
                 ("approach", null, 3, false, 1, -1),
                 ("admitted", null, 3, false, 3, -1),
                 ("intercom", ScreenAnchors.Count > 0 ? ScreenAnchors[0] : null, 4, false, 2, 0),
+                ("mail", _mailAnchor, 1, true, 2, -1),
             };
 
             var serialized = new SerializedObject(runner);
@@ -778,6 +787,7 @@ namespace Monster.EditorTools
             }
 
             serialized.FindProperty("reportAnchor").objectReferenceValue = _logAnchor;
+            serialized.FindProperty("mailAnchor").objectReferenceValue = _mailAnchor;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 

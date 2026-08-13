@@ -49,14 +49,19 @@ namespace Monster.Interaction
                     _hovered.Activate();
                     break;
                 case DeskInteractable.Behaviour.Inspect:
-                    if (_focused == _hovered)
-                    {
-                        Release();
-                    }
-                    else
+                case DeskInteractable.Behaviour.Leaf:
+                    if (_focused != _hovered)
                     {
                         _focused = _hovered;
                         _camera.Focus(_focused.transform, _focused.FocusDistance, _focused.FocusOffset);
+                    }
+                    else if (_hovered.Mode == DeskInteractable.Behaviour.Leaf)
+                    {
+                        _hovered.Activate();
+                    }
+                    else
+                    {
+                        Release();
                     }
 
                     break;

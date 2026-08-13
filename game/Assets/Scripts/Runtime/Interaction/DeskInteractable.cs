@@ -17,6 +17,11 @@ namespace Monster.Interaction
             /// <summary>Lean in to read it, lean back out again.</summary>
             Inspect,
 
+            /// <summary>Lean in to read it, and click again to turn the page rather than
+            /// leaning back. For anything with more than one sheet: the post, the binder.
+            /// Leaning back is still the right mouse button.</summary>
+            Leaf,
+
             /// <summary>Throw it. Fires <see cref="Operated"/> immediately.</summary>
             Operate,
         }

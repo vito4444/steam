@@ -63,6 +63,9 @@ namespace Monster.SelfCheck
         [Tooltip("What to lean over when photographing the morning report.")]
         [SerializeField] private Transform reportAnchor;
 
+        [Tooltip("What to lean over when photographing the post.")]
+        [SerializeField] private Transform mailAnchor;
+
         private string _outputDirectory;
         private readonly List<string> _logLines = new();
 
@@ -234,7 +237,7 @@ namespace Monster.SelfCheck
                           $"{stats.triangles} tris, {stats.renderers} renderers -> {imagePath}");
             }
 
-            yield return PlayOutAShift(presenter, boothCamera, records);
+            yield return PlayOutShifts(presenter, boothCamera, records);
 
             WriteReport(records);
 
@@ -242,14 +245,19 @@ namespace Monster.SelfCheck
             Application.Quit(_logLines.Count == 0 ? 0 : 3);
         }
 
-        /// <summary>Plays an entire night to its end by throwing switches directly, then
-        /// photographs the morning report.
+        /// <summary>Plays several nights to their end by throwing switches directly, then
+        /// photographs the morning report and whatever the post brought.
         ///
-        /// This is the only end-to-end exercise of the decision loop that runs in a real
-        /// build on this machine. It caught the switches being dead in the build: the
-        /// scene generator had subscribed to their events at edit time, and event
-        /// subscriptions do not serialise.</summary>
-        private IEnumerator PlayOutAShift(BoothPresenter presenter, BoothCamera boothCamera,
+        /// This is the only end-to-end exercise of the loop that runs in a real build on
+        /// this machine, and it caught the switches being dead in the build: the scene
+        /// generator had subscribed to their events at edit time, and event subscriptions
+        /// do not serialise.
+        ///
+        /// The first night is played correctly and the rest carelessly, because the
+        /// consequences the game is built around only arrive several nights after the
+        /// decision that caused them. A single perfect night produces nothing to photograph.
+        /// </summary>
+        private IEnumerator PlayOutShifts(BoothPresenter presenter, BoothCamera boothCamera,
             ICollection<string> records)
         {
             if (presenter == null || presenter.Director == null)
@@ -258,39 +266,63 @@ namespace Monster.SelfCheck
                 yield break;
             }
 
-            presenter.BeginShift(0);
-            var guard = 0;
-            var submitted = 0;
+            const int nights = 6;
+            var processed = 0;
+            var withheld = 0;
+            NightlyStatement lastStatement = null;
 
-            while (!presenter.Director.IsFinished && guard++ < 200)
+            void OnEnded(NightlyStatement statement) => lastStatement = statement;
+
+            presenter.ShiftEnded += OnEnded;
+            presenter.BeginShift(0);
+
+            for (var night = 0; night < nights; night++)
             {
-                // Deliberately the correct answer every time. The point is to prove the
-                // loop runs to completion in a build, not to test the rules -- the edit
-                // mode suite already does that far more thoroughly.
-                var correct = RuleEvaluator.Evaluate(presenter.Director.Current.Attributes,
-                    presenter.Director.Manual).CorrectVerdict;
-                if (!presenter.Submit(correct))
+                // NextShift rather than BeginShift: the consequences this run exists to
+                // photograph are queued by one night and delivered several nights later, and
+                // restarting the campaign each time would throw them away.
+                if (night > 0 && !presenter.NextShift())
                 {
+                    _logLines.Add($"Error: the campaign would not advance to night {night + 1}");
                     break;
                 }
 
-                submitted++;
+                lastStatement = null;
+                var guard = 0;
+
+                while (presenter.Director != null && !presenter.Director.IsFinished && guard++ < 200)
+                {
+                    var correct = RuleEvaluator.Evaluate(presenter.Director.Current.Attributes,
+                        presenter.Director.Manual).CorrectVerdict;
+
+                    // Night one is played properly; after that, carelessly, so the post has
+                    // something to report.
+                    var chosen = night == 0 ? correct : Verdict.Pass;
+                    if (!presenter.Submit(chosen))
+                    {
+                        break;
+                    }
+                }
+
+                if (lastStatement == null)
+                {
+                    _logLines.Add($"Error: night {night + 1} never produced a morning report");
+                    break;
+                }
+
+                processed += lastStatement.Processed;
+                withheld += lastStatement.Deductions;
             }
 
-            if (!presenter.Director.IsFinished)
+            presenter.ShiftEnded -= OnEnded;
+
+            Debug.Log($"[SelfCheck] played {nights} nights: {processed} vehicles processed, " +
+                      $"{withheld} credits withheld");
+
+            if (processed <= 0)
             {
-                _logLines.Add($"Error: the shift did not finish after {submitted} decisions");
+                _logLines.Add("Error: no vehicles were processed across the whole run");
             }
-
-            var report = presenter.Director.BuildReport();
-            if (report.Correct != report.Processed)
-            {
-                _logLines.Add($"Error: playing every correct verdict scored {report.Correct} " +
-                              $"of {report.Processed}");
-            }
-
-            Debug.Log($"[SelfCheck] played a full shift: {report.Processed} processed, " +
-                      $"{report.Correct} correct, {report.NetPay} credits");
 
             if (boothCamera != null)
             {
@@ -302,19 +334,25 @@ namespace Monster.SelfCheck
             }
 
             yield return new WaitForSecondsRealtime(0.4f);
+            yield return CaptureTo(Camera.main, Path.Combine(_outputDirectory, "morning_report.png"));
 
-            var path = Path.Combine(_outputDirectory, "morning_report.png");
-            yield return CaptureTo(Camera.main, path);
+            if (boothCamera != null && mailAnchor != null)
+            {
+                boothCamera.ResetToHome();
+                boothCamera.SnapFocus(mailAnchor, 0.40f, new Vector3(0f, 1f, -0.34f));
+            }
+
+            yield return new WaitForSecondsRealtime(0.4f);
+            yield return CaptureTo(Camera.main, Path.Combine(_outputDirectory, "consequence.png"));
 
             records.Add(string.Format(CultureInfo.InvariantCulture,
                 "    {{\n" +
-                "      \"name\": \"morning_report\",\n" +
-                "      \"image\": \"morning_report.png\",\n" +
-                "      \"processed\": {0},\n" +
-                "      \"correct\": {1},\n" +
-                "      \"net_pay\": {2}\n" +
+                "      \"name\": \"campaign\",\n" +
+                "      \"nights_played\": {0},\n" +
+                "      \"vehicles_processed\": {1},\n" +
+                "      \"credits_withheld\": {2}\n" +
                 "    }}",
-                report.Processed, report.Correct, report.NetPay));
+                nights, processed, withheld));
         }
 
         private static IEnumerator CaptureTo(Camera camera, string path)

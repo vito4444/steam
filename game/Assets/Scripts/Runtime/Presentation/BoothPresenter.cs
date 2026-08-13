@@ -27,24 +27,29 @@ namespace Monster.Presentation
         [SerializeField] private PrintedSurface intercom;
         [SerializeField] private PrintedSurface manual;
         [SerializeField] private PrintedSurface logbook;
+        [SerializeField] private PrintedSurface mailTray;
 
         // Serialised, not subscribed at edit time. C# event subscriptions do not survive
         // serialisation, so wiring the switches when the scene was generated left every
         // control dead in the build with nothing to indicate why.
         [SerializeField] private List<DeskInteractable> switches = new();
+        [SerializeField] private List<DeskInteractable> mailControls = new();
 
         [SerializeField] private CheckpointStage stage;
 
+        private Campaign _campaign;
         private ShiftDirector _director;
         private Coroutine _vehicleCycle;
         private Coroutine _pendingReply;
+        private IReadOnlyList<Notice> _mail = Array.Empty<Notice>();
+        private int _mailPage;
 
         public ShiftDirector Director => _director;
 
         public event Action<Decision> DecisionMade;
         public event Action<Question> QuestionAsked;
         public event Action<Reply> ReplyReceived;
-        public event Action<ShiftReport> ShiftEnded;
+        public event Action<NightlyStatement> ShiftEnded;
 
         public void Configure(int seed, int shift)
         {
@@ -54,7 +59,8 @@ namespace Monster.Presentation
 
         public void Bind(PrintedSurface permitSurface, PrintedSurface biometricsSurface,
             PrintedSurface cabinSurface, PrintedSurface intercomSurface,
-            PrintedSurface manualSurface, PrintedSurface logbookSurface)
+            PrintedSurface manualSurface, PrintedSurface logbookSurface,
+            PrintedSurface mailSurface)
         {
             permit = permitSurface;
             biometrics = biometricsSurface;
@@ -62,6 +68,7 @@ namespace Monster.Presentation
             intercom = intercomSurface;
             manual = manualSurface;
             logbook = logbookSurface;
+            mailTray = mailSurface;
         }
 
         /// <summary>Puts a question through the glass. The reply lands after however long
@@ -96,6 +103,8 @@ namespace Monster.Presentation
 
         public void RegisterSwitch(DeskInteractable control) => switches.Add(control);
 
+        public void RegisterMailControl(DeskInteractable control) => mailControls.Add(control);
+
         public void BindStage(CheckpointStage checkpointStage) => stage = checkpointStage;
 
         public CheckpointStage Stage => stage;
@@ -106,13 +115,25 @@ namespace Monster.Presentation
             {
                 control.Operated += OnSwitchThrown;
             }
+
+            foreach (var control in mailControls.Where(c => c != null))
+            {
+                control.Operated += OnMailTurned;
+            }
         }
+
+        private void OnMailTurned(DeskInteractable _) => LeafThroughMail();
 
         private void OnDisable()
         {
             foreach (var control in switches.Where(c => c != null))
             {
                 control.Operated -= OnSwitchThrown;
+            }
+
+            foreach (var control in mailControls.Where(c => c != null))
+            {
+                control.Operated -= OnMailTurned;
             }
         }
 
@@ -145,9 +166,10 @@ namespace Monster.Presentation
 
             if (_director.IsFinished)
             {
-                var report = _director.BuildReport();
-                ShowReport(report);
-                ShiftEnded?.Invoke(report);
+                var statement = _campaign.EndShift(_director);
+                ShowStatement(statement);
+                ShowMail(statement.Mail);
+                ShiftEnded?.Invoke(statement);
                 return true;
             }
 
@@ -160,10 +182,17 @@ namespace Monster.Presentation
             BeginShift(shiftIndex);
         }
 
+        public Campaign Campaign => _campaign;
+
         public void BeginShift(int shift)
         {
             shiftIndex = shift;
-            _director = new ShiftDirector(campaignSeed, shift);
+
+            // The campaign is rebuilt up to the requested night rather than resumed,
+            // because the only callers are the start of a run and the self-check, which
+            // wants a specific night without having played the ones before it.
+            _campaign = new Campaign(campaignSeed);
+            _director = _campaign.BeginShift();
 
             if (_vehicleCycle != null)
             {
@@ -176,9 +205,43 @@ namespace Monster.Presentation
                 stage.SetPhase(CheckpointStage.Phase.AtTheWindow, immediate: true);
             }
 
+            OpenShift();
+        }
+
+        /// <summary>Moves on to the next night of the same run, so consequences queued by
+        /// earlier nights actually arrive. BeginShift starts a fresh campaign; this
+        /// continues one.</summary>
+        public bool NextShift()
+        {
+            if (_campaign == null || _campaign.IsOver)
+            {
+                return false;
+            }
+
+            shiftIndex = _campaign.ShiftIndex;
+            _director = _campaign.BeginShift();
+
+            if (_vehicleCycle != null)
+            {
+                StopCoroutine(_vehicleCycle);
+                _vehicleCycle = null;
+            }
+
+            if (stage != null)
+            {
+                stage.SetPhase(CheckpointStage.Phase.AtTheWindow, immediate: true);
+            }
+
+            OpenShift();
+            return true;
+        }
+
+        private void OpenShift()
+        {
             RefreshDesk();
             RefreshManual();
             RefreshLogbook(null);
+            ShowMail(_campaign.MailFor(shiftIndex));
         }
 
         /// <summary>Puts a specific vehicle at the window without deciding anything on the
@@ -305,24 +368,72 @@ namespace Monster.Presentation
             Show(logbook, new DocumentContent("DUTY LOG", fields));
         }
 
-        private void ShowReport(ShiftReport report)
+        /// <summary>The morning report, which deliberately does not say how many decisions
+        /// were right. The wage is flat per vehicle so accuracy cannot be read out of the
+        /// money either; errors come back days later as deductions that never say which
+        /// decision they are for. A test guards that this stays true.</summary>
+        private void ShowStatement(NightlyStatement statement)
         {
             var fields = new List<DocumentField>
             {
-                new("PROCESSED", report.Processed.ToString(CultureInfo.InvariantCulture)),
-                new("CORRECT", $"{report.Correct} / {report.Processed}"),
-                new("GROSS", $"{report.GrossPay} CR"),
-                new("PENALTY", report.Penalty == 0 ? "0 CR" : $"-{report.Penalty} CR"),
-                new("NET", $"{report.NetPay} CR"),
+                new("PROCESSED", statement.Processed.ToString(CultureInfo.InvariantCulture)),
+                new("QUOTA", statement.Quota.ToString(CultureInfo.InvariantCulture)),
+                new("WAGE", $"{statement.Wage} CR"),
+                new("WITHHELD", statement.Deductions == 0 ? "0 CR" : $"-{statement.Deductions} CR"),
+                new("NET", $"{statement.Net} CR"),
+                new("BALANCE", $"{statement.Credits} CR"),
             };
 
-            Show(logbook, new DocumentContent($"MORNING REPORT - NIGHT {report.ShiftIndex + 1}", fields,
-                report.QuotaMet ? "QUOTA MET" : "QUOTA NOT MET"));
+            Show(logbook, new DocumentContent($"MORNING REPORT - NIGHT {statement.ShiftIndex + 1}", fields,
+                statement.QuotaMet ? "QUOTA MET" : "QUOTA NOT MET"));
 
             permit?.Clear();
             biometrics?.Clear();
             cabin?.Clear();
             intercom?.Clear();
+        }
+
+        /// <summary>Whatever the office sent. The topmost notice is the one on the tray;
+        /// the rest are under it, which is why only one is legible at a time.</summary>
+        private void ShowMail(IReadOnlyList<Notice> mail)
+        {
+            _mail = mail ?? Array.Empty<Notice>();
+            _mailPage = 0;
+            RefreshMail();
+        }
+
+        /// <summary>Turns to the next item in the tray, wrapping. Wired to clicking the post
+        /// while already leaning over it.</summary>
+        public void LeafThroughMail()
+        {
+            if (_mail.Count > 1)
+            {
+                _mailPage = (_mailPage + 1) % _mail.Count;
+                RefreshMail();
+            }
+        }
+
+        private void RefreshMail()
+        {
+            if (mailTray == null)
+            {
+                return;
+            }
+
+            if (_mail.Count == 0)
+            {
+                Show(mailTray, new DocumentContent("DISTRICT POST", Array.Empty<DocumentField>(),
+                    "NOTHING TODAY"));
+                return;
+            }
+
+            var notice = _mail[_mailPage];
+            var fields = notice.Lines.Select(line => new DocumentField(string.Empty, line)).ToList();
+            var footer = _mail.Count > 1
+                ? $"ITEM {_mailPage + 1} OF {_mail.Count}"
+                : "FILED";
+
+            Show(mailTray, new DocumentContent(notice.Heading, fields, footer, null, 0));
         }
 
         private static void Show(PrintedSurface surface, DocumentContent content) => surface?.Show(content);
