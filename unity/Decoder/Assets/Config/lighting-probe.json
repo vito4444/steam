@@ -19,7 +19,7 @@
   "fogDensity": 0.05,
   "lights": {
     "keyLampWarm": {
-      "intensity": 3.6,
+      "intensity": 4.3,
       "range": 2.4,
       "spotAngle": 72.0
     },
@@ -54,12 +54,12 @@
   },
   "emission": {
     "crtScreen": 1.45,
-    "neonLamp": 1.5,
+    "neonLamp": 2.2,
     "meterFace": 0.3,
     "dialStrip": 0.45,
     "frostedGlass": 0.85,
     "labelPlate": 0.16,
-    "indicatorLamp": 1.5,
-    "lampBulb": 2.6
+    "indicatorLamp": 1.9,
+    "lampBulb": 3.2
   }
 }
