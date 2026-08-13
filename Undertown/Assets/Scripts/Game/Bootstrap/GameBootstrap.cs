@@ -24,6 +24,7 @@ namespace Undertown.Game.Bootstrap
         private TownState _town;
         private WorldRenderer _renderer;
         private BuildingRenderer _buildings;
+        private AgentRenderer _agents;
         private HudController _hud;
         private Camera _camera;
         private float _tickAccumulator;
@@ -40,11 +41,13 @@ namespace Undertown.Game.Bootstrap
             _town = new TownState(map, _seed);
             SeedStartingHoldings(_town);
             TownFounder.Found(_town);
+            AgentSystem.Populate(_town);
 
             _renderer = BuildRenderer();
             _renderer.Bind(map);
 
             _buildings = BuildBuildingRenderer(_town, _renderer.ActiveDepth);
+            _agents = BuildAgentRenderer(_town, _renderer.ActiveDepth);
 
             _camera = BuildCamera(settings, _town);
             _hud = BuildHud(_town);
@@ -65,6 +68,8 @@ namespace Undertown.Game.Bootstrap
                 _tickAccumulator -= wholeMinutes;
                 _town.Clock.Advance(wholeMinutes);
                 ProductionSystem.Tick(_town, wholeMinutes);
+                AgentSystem.Tick(_town, wholeMinutes);
+                InspectionSystem.Tick(_town, wholeMinutes);
             }
 
             if (Input.GetKeyDown(KeyCode.Tab)) SwitchLayer();
@@ -75,7 +80,30 @@ namespace Undertown.Game.Bootstrap
         {
             _renderer.ToggleLayer();
             _buildings.ApplyLayerVisibility(_renderer.ActiveDepth);
+            _agents.SetActiveDepth(_renderer.ActiveDepth);
             UpdateLayerBadge();
+        }
+
+        /// <summary>
+        /// Fast-forwards the simulation. Used by the screenshot harness to document states
+        /// that would otherwise take minutes of real time to reach, such as an inspection.
+        /// </summary>
+        public void FastForward(int minutes)
+        {
+            const int chunk = 15;
+            for (int elapsed = 0; elapsed < minutes; elapsed += chunk)
+            {
+                int step = Mathf.Min(chunk, minutes - elapsed);
+                _town.Clock.Advance(step);
+                ProductionSystem.Tick(_town, step);
+                AgentSystem.Tick(_town, step);
+                InspectionSystem.Tick(_town, step);
+            }
+
+            Debug.Log($"[SMOKE] fast-forward landed on season {_town.Clock.Season + 1} day {_town.Clock.DayOfSeason} " +
+                      $"{_town.Clock.TimeOfDayLabel}, suspicion {_town.Suspicion}, " +
+                      $"grain {_town.Stock.Get(MaterialId.Grain)}, ale {_town.Stock.Get(MaterialId.Ale)}, " +
+                      $"moonshine {_town.Stock.Get(MaterialId.Moonshine)}");
         }
 
         private void UpdateLayerBadge()
@@ -129,6 +157,15 @@ namespace Undertown.Game.Bootstrap
             var renderer = go.AddComponent<BuildingRenderer>();
             renderer.Bind(town);
             renderer.ApplyLayerVisibility(activeDepth);
+            return renderer;
+        }
+
+        private static AgentRenderer BuildAgentRenderer(TownState town, int activeDepth)
+        {
+            var go = new GameObject("Agents");
+            var renderer = go.AddComponent<AgentRenderer>();
+            renderer.Bind(town);
+            renderer.SetActiveDepth(activeDepth);
             return renderer;
         }
 

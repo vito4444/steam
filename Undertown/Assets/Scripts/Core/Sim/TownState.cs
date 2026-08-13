@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Undertown.Core.Agents;
 using Undertown.Core.Buildings;
 using Undertown.Core.Determinism;
 using Undertown.Core.Economy;
@@ -36,6 +37,26 @@ namespace Undertown.Core.Sim
         public readonly LedgerBook Books = new LedgerBook();
         public readonly Stockpile Stock = new Stockpile();
         public readonly List<Building> Buildings = new List<Building>();
+        public readonly List<Villager> Villagers = new List<Villager>();
+
+        /// <summary>The recipes the empire has on file, and therefore the ones it checks yields against.</summary>
+        public readonly RecipeExpectation[] Recipes =
+        {
+            new RecipeExpectation(MaterialId.Grain, MaterialId.Ale, 2000),
+            new RecipeExpectation(MaterialId.Clay, MaterialId.Brick, 1000),
+        };
+
+        public Inspector ActiveInspector;
+
+        /// <summary>Chambers the empire already knows about, so a second tap on one is not a second discovery.</summary>
+        public readonly HashSet<Coord> DiscoveredHollows = new HashSet<Coord>();
+
+        public int SoundingsRemaining;
+        public int PatrolStopsDone;
+        public int LastInspectionDay = -1;
+        public bool SpoilNoticed;
+        public AuditReport LastAudit;
+        public readonly List<string> LastFindings = new List<string>();
 
         public int Suspicion { get; private set; }
         public int Coin;
@@ -101,6 +122,33 @@ namespace Undertown.Core.Sim
         public int SpoilExposure => Math.Max(0, SurfaceSpoil - SpoilTolerated);
 
         public AuditSettings CurrentAuditSettings => AuditSettings.ForLevel(InspectorLevel);
+
+        /// <summary>How much contraband the cellars can keep out of sight. Each cellar store holds this much.</summary>
+        public const int HiddenStoragePerCellar = 120;
+
+        public int HiddenStorageCapacity
+        {
+            get
+            {
+                int capacity = 0;
+                for (int i = 0; i < Buildings.Count; i++)
+                    if (Buildings[i].Kind == BuildingKind.UnderStore) capacity += HiddenStoragePerCellar;
+                return capacity;
+            }
+        }
+
+        /// <summary>
+        /// What an inspector can actually count. He walks the warehouse, not the cellars, so
+        /// contraband inside the hidden stores is simply not there as far as the audit is
+        /// concerned. Anything beyond that capacity has to sit somewhere he does walk - which
+        /// makes cellar space a hard ceiling on production rather than a convenience.
+        /// </summary>
+        public int VisibleStock(MaterialId id)
+        {
+            int total = Stock.Get(id);
+            if (!Materials.IsContraband(id)) return total;
+            return Math.Max(0, total - HiddenStorageCapacity);
+        }
 
         public void Record(string entry)
         {

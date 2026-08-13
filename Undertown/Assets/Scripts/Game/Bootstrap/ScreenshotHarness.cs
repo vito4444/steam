@@ -25,6 +25,13 @@ namespace Undertown.Game.Bootstrap
         private int _width = 1920;
         private int _height = 1080;
 
+        /// <summary>
+        /// Simulated minutes to run before the first capture. An inspection lands on day 10,
+        /// which is hours of real time away at normal speed; documenting that state needs the
+        /// clock pushed forward rather than the capture waited out.
+        /// </summary>
+        private int _warmupMinutes;
+
         private void Start()
         {
             if (!ParseArguments()) { enabled = false; return; }
@@ -59,6 +66,9 @@ namespace Undertown.Game.Bootstrap
                         int.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out _width);
                         int.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out _height);
                         break;
+                    case "-autoshotWarmupMinutes" when i + 1 < args.Length:
+                        int.TryParse(args[++i], NumberStyles.Integer, CultureInfo.InvariantCulture, out _warmupMinutes);
+                        break;
                 }
             }
             return !string.IsNullOrEmpty(_directory);
@@ -71,6 +81,23 @@ namespace Undertown.Game.Bootstrap
             // Let the first frame finish so the tilemaps have actually rendered.
             yield return new WaitForEndOfFrame();
             yield return new WaitForSecondsRealtime(0.5f);
+
+            if (_warmupMinutes > 0)
+            {
+                var bootstrap = FindFirstObjectByType<GameBootstrap>();
+                if (bootstrap != null)
+                {
+                    bootstrap.FastForward(_warmupMinutes);
+                    Debug.Log($"[SHOT] fast-forwarded {_warmupMinutes} simulated minutes");
+                }
+
+                // The HUD reads the town in its own Update, which for this component has
+                // already run by the time the coroutine resumes. Without giving it a couple
+                // of whole frames the capture shows the state from before the jump.
+                yield return null;
+                yield return null;
+                yield return new WaitForEndOfFrame();
+            }
 
             for (int i = 1; i <= Mathf.Max(1, _frames); i++)
             {

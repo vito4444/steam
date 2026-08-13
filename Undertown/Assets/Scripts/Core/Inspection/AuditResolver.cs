@@ -11,7 +11,7 @@ namespace Undertown.Core.Inspection
     [Serializable]
     public struct AuditSettings
     {
-        /// <summary>Stock discrepancy, as a share of throughput, that gets waved through.</summary>
+        /// <summary>Stock discrepancy, as a share of everything that entered the stores, that gets waved through.</summary>
         public int StockTolerancePerMille;
 
         /// <summary>Shortfall between recipe-implied output and declared output that gets waved through.</summary>
@@ -35,11 +35,11 @@ namespace Undertown.Core.Inspection
             int clamped = level < 1 ? 1 : (level > 5 ? 5 : level);
             switch (clamped)
             {
-                case 1: return new AuditSettings { StockTolerancePerMille = 150, YieldTolerancePerMille = 250, LossBaselinePerMille = 50, LossMultiplierPerMille = 3000, ContrabandWeightPerMille = 3000 };
-                case 2: return new AuditSettings { StockTolerancePerMille = 110, YieldTolerancePerMille = 200, LossBaselinePerMille = 50, LossMultiplierPerMille = 2500, ContrabandWeightPerMille = 3000 };
-                case 3: return new AuditSettings { StockTolerancePerMille = 80, YieldTolerancePerMille = 160, LossBaselinePerMille = 45, LossMultiplierPerMille = 2200, ContrabandWeightPerMille = 3000 };
-                case 4: return new AuditSettings { StockTolerancePerMille = 50, YieldTolerancePerMille = 120, LossBaselinePerMille = 40, LossMultiplierPerMille = 1800, ContrabandWeightPerMille = 3000 };
-                default: return new AuditSettings { StockTolerancePerMille = 30, YieldTolerancePerMille = 80, LossBaselinePerMille = 35, LossMultiplierPerMille = 1500, ContrabandWeightPerMille = 3000 };
+                case 1: return new AuditSettings { StockTolerancePerMille = 200, YieldTolerancePerMille = 250, LossBaselinePerMille = 50, LossMultiplierPerMille = 3000, ContrabandWeightPerMille = 3000 };
+                case 2: return new AuditSettings { StockTolerancePerMille = 160, YieldTolerancePerMille = 200, LossBaselinePerMille = 50, LossMultiplierPerMille = 2500, ContrabandWeightPerMille = 3000 };
+                case 3: return new AuditSettings { StockTolerancePerMille = 120, YieldTolerancePerMille = 160, LossBaselinePerMille = 45, LossMultiplierPerMille = 2200, ContrabandWeightPerMille = 3000 };
+                case 4: return new AuditSettings { StockTolerancePerMille = 80, YieldTolerancePerMille = 120, LossBaselinePerMille = 40, LossMultiplierPerMille = 1800, ContrabandWeightPerMille = 3000 };
+                default: return new AuditSettings { StockTolerancePerMille = 50, YieldTolerancePerMille = 80, LossBaselinePerMille = 35, LossMultiplierPerMille = 1500, ContrabandWeightPerMille = 3000 };
             }
         }
     }
@@ -145,7 +145,11 @@ namespace Undertown.Core.Inspection
             int gap = Math.Abs(flow.ExpectedStock - physicalCount(id));
             if (gap == 0) return;
 
-            int denominator = Math.Max(1, flow.Throughput);
+            // Measured against everything that entered the stores, not against total ledger
+            // activity. Consumption and sales inflate throughput, which would let a town with
+            // busy books hide a larger absolute shortfall than a quiet one - the opposite of
+            // what an auditor would conclude.
+            int denominator = Math.Max(1, flow.Inflow);
             int ratio = gap * 1000 / denominator;
             int excess = ratio - settings.StockTolerancePerMille;
             if (excess <= 0) return;
@@ -214,6 +218,14 @@ namespace Undertown.Core.Inspection
         }
 
         /// <summary>
+        /// Ceiling on what any single line of the audit can contribute. Without it, a
+        /// material with no ledger activity at all divides by a denominator of one and a
+        /// single finding annexes the town outright - which reads as a bug to the player
+        /// however defensible the arithmetic is.
+        /// </summary>
+        public const int MaxSuspicionPerIssue = 25;
+
+        /// <summary>
         /// Converts a per-mille overshoot into suspicion points. Ten per mille of overshoot
         /// is one point, so a discrepancy that doubles the tolerance on an ordinary material
         /// is a nuisance while the same overshoot on contraband is a serious problem.
@@ -222,7 +234,8 @@ namespace Undertown.Core.Inspection
         {
             int weight = Materials.IsContraband(id) ? settings.ContrabandWeightPerMille : 1000;
             int points = excessPerMille * weight / 1000 / 10;
-            return points < 1 ? 1 : points;
+            if (points < 1) points = 1;
+            return points > MaxSuspicionPerIssue ? MaxSuspicionPerIssue : points;
         }
     }
 }
