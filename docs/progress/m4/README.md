@@ -108,6 +108,23 @@ And signing the log left the player still staring at it, now showing a fresh and
 empty duty log for a night that had already started behind their head. Opening a
 shift releases whatever was being read, because it belonged to the night before.
 
+## Everything the bearer said
+
+![The intercom transcript](shots/09_transcript.png)
+
+A reply replaced the last one. Questions cost nine minutes each off a clock the
+player is short of, and their answers were the least durable thing on the desk: a
+player who spent three of them could read one answer and had to hold the other two
+in their head while deciding.
+
+The intercom keeps a transcript for the current bearer — the key that asked it, what
+came back, and how long the pause was — and clears when the vehicle does. Asking the
+same question twice is refused, because the answer is deterministic and it would
+cost nine minutes to be told what is already on the screen.
+
+That was also the emptiest area of the frame, and it is now filled with the thing
+the player most needs to see rather than with decoration.
+
 ## Both faces on one screen
 
 ![The cabin feed](shots/08_two_faces.png)
@@ -207,8 +224,8 @@ ended up, and a test walks four hundred bearers checking it still touches.
 ## Verification
 
 ```
-121/121 edit-mode tests passed, 0 failed, 0 skipped
-self-check: 10 checkpoints, 61 ms/frame (16.5 fps), 259 renderers, 4178 triangles,
+125/125 edit-mode tests passed, 0 failed, 0 skipped
+self-check: 10 checkpoints, 61 ms/frame (16.4 fps), 259 renderers, 4178 triangles,
             12 lights, 0 errors, 4.6 MB managed heap
 input:      camera turned 18.7 degrees, 4 interactables hovered,
             click reached target, switch thrown by click
@@ -225,6 +242,18 @@ The aim dot does not appear in the self-check screenshots: an overlay canvas is 
 captured when a camera renders to a texture. That keeps the art-direction comparison
 measuring the frame rather than the interface, but it does mean the artifact shots
 are half a pixel-hair different from what a player sees.
+
+## A pattern worth naming
+
+Three of the changes in this milestone are the same bug wearing different clothes.
+The photograph comparison, the intercom replies and — before M3 — the truncated
+criteria all asked the player to hold something in their head because the thing they
+needed was in a place they could not look at while looking at the other thing.
+
+None of it showed up in a test. Every one of them was found by trying to play, and
+each one had passed every check the project had because the data was correct: the
+right photograph was on the permit, the right reply was on the screen. Being correct
+and being usable are different properties, and only one of them has an assertion.
 
 ## Gaps
 
