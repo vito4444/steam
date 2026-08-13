@@ -56,6 +56,8 @@ namespace Decoder.UI
         private CopyAssist _assist = CopyAssist.Characters;
         private string _lastStationCallsign;
 
+        private RectTransform _archivePanel;
+        private Text _archiveText;
         private Text _fistText;
         private Text _fistArchiveText;
         private string _fistCallsign;
@@ -114,6 +116,21 @@ namespace Decoder.UI
         {
             _copyBuffer.Clear();
             RefreshCopyArea();
+        }
+
+        /// <summary>开合档案。自动演练用它模拟玩家按 F2。</summary>
+        public void ToggleArchive(bool open)
+        {
+            if (_archivePanel == null)
+            {
+                return;
+            }
+
+            _archivePanel.gameObject.SetActive(open);
+            if (open)
+            {
+                RefreshArchivePanel();
+            }
         }
 
         /// <summary>查一组电码。自动演练用它模拟玩家按 L。</summary>
@@ -197,7 +214,7 @@ namespace Decoder.UI
             AppendLog($"值班开始 · {shift?.inGameDate}");
             AppendLog("按住鼠标右键转头，左键拖动旋钮搜频");
             AppendLog("听到电码后用键盘抄下数字或字母");
-            AppendLog("Tab 换填写栏 · [ ] 翻密码本 · D 解密 · L 查电码表");
+            AppendLog("Tab 换填写栏 · [ ] 翻密码本 · D 解密 · L 查电码表 · F2 档案");
             AppendLog(_campaign.StandingLine());
             RestoreProgress();
             RefreshPad();
@@ -283,6 +300,16 @@ namespace Decoder.UI
             {
                 AdvanceToNextShift();
                 return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.F2))
+            {
+                var open = !_archivePanel.gameObject.activeSelf;
+                _archivePanel.gameObject.SetActive(open);
+                if (open)
+                {
+                    RefreshArchivePanel();
+                }
             }
 
             if (Input.GetKeyDown(KeyCode.Tab))
@@ -499,10 +526,62 @@ namespace Decoder.UI
             var measured = FistAnalyzer.Measure(station.Timeline);
             _fistText.text = measured.Describe();
 
-            var archived = ShiftLibrary.KnownFistFor(station.Callsign);
+            // 对照的是玩家自己听出来的档案，不是内容表里的标准答案。
+            // 第一次听到某个台时本来就没有对照——那正是他还没积累到的东西。
+            var archived = _campaign.ArchivedFist(station.Callsign);
             _fistArchiveText.text = archived.IsValid
                 ? archived.Describe()
-                : "档案里没有这个呼号。";
+                : "第一次听到这个呼号。";
+
+            _campaign.NoteFist(station.Callsign, _shift != null ? _shift.shiftId : string.Empty, measured);
+            RefreshArchivePanel();
+        }
+
+        /// <summary>
+        /// 把档案摊开。每个台一行：呼号、第一次听到的班次、听过几次，
+        /// 以及当时听出来的手法。
+        /// </summary>
+        private void RefreshArchivePanel()
+        {
+            if (_archiveText == null || !_archivePanel.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            if (_campaign.fistArchive.Count == 0)
+            {
+                _archiveText.text = "还没有听过任何电台。";
+                return;
+            }
+
+            var builder = new StringBuilder();
+            foreach (var record in _campaign.fistArchive)
+            {
+                builder.Append(record.callsign)
+                    .Append("    ")
+                    .Append(ShiftTitle(record.firstHeardShift))
+                    .Append(" 第一次听到")
+                    .Append(record.timesHeard > 1 ? $"，之后又听过 {record.timesHeard - 1} 次" : string.Empty)
+                    .Append('\n')
+                    .Append("        ")
+                    .Append(record.ToFist().Describe())
+                    .Append("\n\n");
+            }
+
+            _archiveText.text = builder.ToString();
+        }
+
+        private static string ShiftTitle(string shiftId)
+        {
+            foreach (var shift in ShiftLibrary.All())
+            {
+                if (shift.shiftId == shiftId)
+                {
+                    return shift.title;
+                }
+            }
+
+            return shiftId;
         }
 
         private void RefreshPad()
@@ -787,7 +866,8 @@ namespace Decoder.UI
         private void AppendLog(string line)
         {
             _log.Add(line);
-            while (_log.Count > 6)
+            // 五行是这块面板装得下的极限。多一行就会顶出去。
+            while (_log.Count > 5)
             {
                 _log.RemoveAt(0);
             }
@@ -912,22 +992,36 @@ namespace Decoder.UI
             _verdictText = Label(reportPanel, "", 24, Phosphor, TextAnchor.UpperRight,
                 new Vector2(-28f, -16f), new Vector2(280f, 150f), anchorRight: true);
 
+            // 档案。平时收起来，按 F2 摊开。
+            // 玩家隔了几天回来接着玩，记不住某个台上次听起来什么样，
+            // 这层玩法唯一的线索不能只存在他脑子里。
+            _archivePanel = Panel(root, "ArchivePanel",
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(900f, 560f),
+                pivot: new Vector2(0.5f, 0.5f));
+            Label(_archivePanel, "电台档案", 30, Amber, TextAnchor.UpperLeft,
+                new Vector2(32f, -24f), new Vector2(400f, 40f));
+            Label(_archivePanel, "F2 收起", 22, PhosphorDim, TextAnchor.UpperRight,
+                new Vector2(-32f, -24f), new Vector2(200f, 32f), anchorRight: true);
+            _archiveText = Label(_archivePanel, "", 22, Phosphor, TextAnchor.UpperLeft,
+                new Vector2(32f, -76f), new Vector2(836f, 460f));
+            _archivePanel.gameObject.SetActive(false);
+
             // 左下：节奏分析。手法是这个电台身份的一部分，
             // 呼号可以伪造，手伪造不了。面板只描述听到的东西，不下结论。
             var fistPanel = Panel(root, "FistPanel",
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -530f), new Vector2(470f, 152f));
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -508f), new Vector2(470f, 144f));
             Label(fistPanel, "节奏分析", 22, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(20f, -14f), new Vector2(260f, 30f));
             _fistText = Label(fistPanel, "没有可分析的信号。", 20, Phosphor, TextAnchor.UpperLeft,
-                new Vector2(20f, -44f), new Vector2(430f, 48f));
+                new Vector2(20f, -42f), new Vector2(430f, 30f));
             Label(fistPanel, "档案", 20, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(20f, -94f), new Vector2(120f, 26f));
+                new Vector2(20f, -76f), new Vector2(120f, 26f));
             _fistArchiveText = Label(fistPanel, "", 20, Amber, TextAnchor.UpperLeft,
-                new Vector2(20f, -118f), new Vector2(430f, 30f));
+                new Vector2(20f, -102f), new Vector2(430f, 30f));
 
             // 左中：密码本。玩家要自己从报头读页码再翻到那一页。
             var padPanel = Panel(root, "PadPanel",
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -344f), new Vector2(470f, 168f));
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -336f), new Vector2(470f, 156f));
             Label(padPanel, "一次性密码本", 22, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(20f, -14f), new Vector2(260f, 30f));
             _padPageText = Label(padPanel, "第 001 页", 24, Amber, TextAnchor.UpperRight,
@@ -935,7 +1029,7 @@ namespace Decoder.UI
             Label(padPanel, "[ ] 翻页 · D 解密", 18, PhosphorDim, TextAnchor.UpperRight,
                 new Vector2(-20f, -42f), new Vector2(240f, 26f), anchorRight: true);
             _padDigitsText = Label(padPanel, "", 20, Phosphor, TextAnchor.UpperLeft,
-                new Vector2(20f, -66f), new Vector2(430f, 92f));
+                new Vector2(20f, -66f), new Vector2(430f, 80f));
 
             // 右上抄收纸下方补一块解密结果
             _solvedText = Label(copyPanel, "", 24, Phosphor, TextAnchor.UpperLeft,
@@ -956,10 +1050,12 @@ namespace Decoder.UI
 
             // 左下：值班日志
             var logPanel = Panel(root, "LogPanel",
-                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(40f, 216f), new Vector2(560f, 180f),
+                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(40f, 236f), new Vector2(560f, 152f),
                 pivot: new Vector2(0f, 0f));
+            // 文字区要比面板矮。Text 不会自己裁切，装不下就直接画到面板外面去，
+            // 压在上一块面板上。
             _logText = Label(logPanel, "", 20, PhosphorDim, TextAnchor.LowerLeft,
-                new Vector2(20f, 16f), new Vector2(520f, 152f), anchorBottom: true);
+                new Vector2(20f, 16f), new Vector2(520f, 120f), anchorBottom: true);
         }
 
         private static RectTransform Panel(Transform parent, string name,

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Decoder.Signal;
 
 namespace Decoder.Gameplay
 {
@@ -56,6 +57,49 @@ namespace Decoder.Gameplay
     }
 
     /// <summary>
+    /// 档案里记着的一个电台。
+    ///
+    /// 玩家隔了几天回来接着玩，记不住 M08 上次听起来什么样。
+    /// 这层玩法唯一的线索不能只存在他脑子里。
+    /// </summary>
+    [Serializable]
+    public struct FistRecord
+    {
+        public string callsign;
+        public string firstHeardShift;
+        public int timesHeard;
+        public float dahRatio;
+        public float charGapRatio;
+        public float wordGapRatio;
+        public float jitter;
+
+        public OperatorFist ToFist()
+        {
+            return new OperatorFist
+            {
+                dahRatio = dahRatio,
+                charGapRatio = charGapRatio,
+                wordGapRatio = wordGapRatio,
+                jitter = jitter,
+            };
+        }
+
+        public static FistRecord From(string callsign, string shiftId, OperatorFist fist)
+        {
+            return new FistRecord
+            {
+                callsign = callsign,
+                firstHeardShift = shiftId,
+                timesHeard = 1,
+                dahRatio = fist.dahRatio,
+                charGapRatio = fist.charGapRatio,
+                wordGapRatio = fist.wordGapRatio,
+                jitter = fist.jitter,
+            };
+        }
+    }
+
+    /// <summary>
     /// 战役进度。
     ///
     /// 刻意做成纯数据加纯函数，不碰 Unity 的任何 API：
@@ -77,6 +121,9 @@ namespace Decoder.Gameplay
 
         /// <summary>当前这一班做到哪了。上报之后会被清空。</summary>
         public ShiftProgress progress;
+
+        /// <summary>听过的电台档案。玩家翻它来对照手法。</summary>
+        public List<FistRecord> fistArchive = new List<FistRecord>();
 
         /// <summary>已完成的班次数。</summary>
         public int CompletedShifts => shiftIndex;
@@ -189,6 +236,50 @@ namespace Decoder.Gameplay
         }
 
         /// <summary>
+        /// 记下听到的手法。
+        ///
+        /// 只记第一次听到的那一份，之后累加次数而不覆盖。
+        /// 覆盖会毁掉这层玩法：冒充者的手法一旦盖掉本人的，
+        /// 档案就成了帮凶，玩家再也对照不出来。
+        /// </summary>
+        public void NoteFist(string callsign, string shiftId, OperatorFist fist)
+        {
+            if (string.IsNullOrEmpty(callsign) || !fist.IsValid)
+            {
+                return;
+            }
+
+            for (var i = 0; i < fistArchive.Count; i++)
+            {
+                if (fistArchive[i].callsign != callsign)
+                {
+                    continue;
+                }
+
+                var existing = fistArchive[i];
+                existing.timesHeard++;
+                fistArchive[i] = existing;
+                return;
+            }
+
+            fistArchive.Add(FistRecord.From(callsign, shiftId, fist));
+        }
+
+        /// <summary>查档案里这个呼号的手法。没听过就返回无效值。</summary>
+        public OperatorFist ArchivedFist(string callsign)
+        {
+            foreach (var record in fistArchive)
+            {
+                if (record.callsign == callsign)
+                {
+                    return record.ToFist();
+                }
+            }
+
+            return default;
+        }
+
+        /// <summary>
         /// 序列化成一行行的文本。
         ///
         /// 用自己的格式而不是 JsonUtility：存档要能被人打开看懂，
@@ -210,6 +301,19 @@ namespace Decoder.Gameplay
                     .Append(record.submittedLevel).Append('\t')
                     .Append(record.correctLevel).Append('\t')
                     .Append(record.accuracy.ToString("F4"))
+                    .Append('\n');
+            }
+
+            foreach (var record in fistArchive)
+            {
+                builder.Append("fist\t")
+                    .Append(record.callsign).Append('\t')
+                    .Append(record.firstHeardShift).Append('\t')
+                    .Append(record.timesHeard).Append('\t')
+                    .Append(record.dahRatio.ToString("F4")).Append('\t')
+                    .Append(record.charGapRatio.ToString("F4")).Append('\t')
+                    .Append(record.wordGapRatio.ToString("F4")).Append('\t')
+                    .Append(record.jitter.ToString("F4"))
                     .Append('\n');
             }
 
@@ -274,7 +378,11 @@ namespace Decoder.Gameplay
                 return null;
             }
 
-            var state = new CampaignState { history = new List<ReportRecord>() };
+            var state = new CampaignState
+            {
+                history = new List<ReportRecord>(),
+                fistArchive = new List<FistRecord>(),
+            };
 
             for (var i = 1; i < lines.Length; i++)
             {
@@ -307,6 +415,33 @@ namespace Decoder.Gameplay
                             return null;
                         }
 
+                        break;
+
+                    case "fist":
+                        if (parts.Length < 8)
+                        {
+                            return null;
+                        }
+
+                        if (!int.TryParse(parts[3], out var timesHeard) ||
+                            !float.TryParse(parts[4], out var dah) ||
+                            !float.TryParse(parts[5], out var charGap) ||
+                            !float.TryParse(parts[6], out var wordGap) ||
+                            !float.TryParse(parts[7], out var jitter))
+                        {
+                            return null;
+                        }
+
+                        state.fistArchive.Add(new FistRecord
+                        {
+                            callsign = parts[1],
+                            firstHeardShift = parts[2],
+                            timesHeard = timesHeard,
+                            dahRatio = dah,
+                            charGapRatio = charGap,
+                            wordGapRatio = wordGap,
+                            jitter = jitter,
+                        });
                         break;
 
                     case "progress":

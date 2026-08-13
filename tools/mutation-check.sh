@@ -49,6 +49,8 @@ MUTATIONS=(
   "点划分界从两倍挪到一点二倍|${RUNTIME}/OperatorFist.cs|var threshold = downs[0] * 2f;|var threshold = downs[0] * 1.2f;"
   "手法抖动不再影响发报时长|${RUNTIME}/MorseCode.cs|var factor = 1f + noise.NextWhite() * fist.jitter;|var factor = 1f;"
   "第四班的冒充者改回本人的手法|${GAMEPLAY}/ShiftLibrary.cs|fist = M08Impostor,|fist = M08Operator,"
+  "档案被后来听到的手法覆盖|${GAMEPLAY}/CampaignState.cs|                var existing = fistArchive[i];\n                existing.timesHeard++;\n                fistArchive[i] = existing;\n                return;|                var existing = FistRecord.From(callsign, shiftId, fist);\n                existing.timesHeard = fistArchive[i].timesHeard + 1;\n                fistArchive[i] = existing;\n                return;"
+  "档案在交班时被清空|${GAMEPLAY}/CampaignState.cs|            progress = default;|            progress = default;\n            fistArchive.Clear();"
 )
 
 restore() {

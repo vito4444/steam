@@ -1,4 +1,5 @@
 using Decoder.Gameplay;
+using Decoder.Signal;
 using NUnit.Framework;
 
 namespace Decoder.Tests
@@ -355,6 +356,105 @@ namespace Decoder.Tests
         public void Deserialize_ReturnsNullOnTruncatedProgressLine()
         {
             Assert.IsNull(CampaignState.Deserialize("decoder-save\nprogress\tshift-01\t字段不够\n"));
+        }
+
+        // ---- 手法档案 ----
+
+        private static OperatorFist SampleFist(float dah = 3.35f, float jitter = 0.055f)
+        {
+            return new OperatorFist
+            {
+                dahRatio = dah,
+                charGapRatio = 2.55f,
+                wordGapRatio = 6.8f,
+                jitter = jitter,
+            };
+        }
+
+        [Test]
+        public void NoteFist_RecordsFirstEncounter()
+        {
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+
+            Assert.AreEqual(1, state.fistArchive.Count);
+            Assert.AreEqual("M08", state.fistArchive[0].callsign);
+            Assert.AreEqual("shift-01", state.fistArchive[0].firstHeardShift);
+            Assert.AreEqual(1, state.fistArchive[0].timesHeard);
+        }
+
+        [Test]
+        public void NoteFist_DoesNotOverwriteWithLaterEncounters()
+        {
+            // 覆盖会毁掉这层玩法：冒充者的手法一旦盖掉本人的，
+            // 档案就成了帮凶，玩家再也对照不出来。
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist(3.35f, 0.055f));
+            state.NoteFist("M08", "shift-04", SampleFist(2.7f, 0.13f));
+
+            Assert.AreEqual(1, state.fistArchive.Count);
+            Assert.AreEqual(3.35f, state.fistArchive[0].dahRatio, 0.001f, "档案被冒充者的手法覆盖了");
+            Assert.AreEqual("shift-01", state.fistArchive[0].firstHeardShift);
+            Assert.AreEqual(2, state.fistArchive[0].timesHeard);
+        }
+
+        [Test]
+        public void NoteFist_IgnoresInvalidInput()
+        {
+            var state = new CampaignState();
+            state.NoteFist(null, "shift-01", SampleFist());
+            state.NoteFist("M08", "shift-01", default);
+
+            Assert.AreEqual(0, state.fistArchive.Count);
+        }
+
+        [Test]
+        public void ArchivedFist_ReturnsInvalidForUnheardCallsign()
+        {
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+
+            Assert.IsTrue(state.ArchivedFist("M08").IsValid);
+            Assert.IsFalse(state.ArchivedFist("R7X").IsValid);
+        }
+
+        [Test]
+        public void FistArchive_RoundTripsThroughSave()
+        {
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+            state.NoteFist("M08", "shift-02", SampleFist());
+            state.NoteFist("R7X", "shift-01", SampleFist(3.6f, 0.19f));
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.AreEqual(2, restored.fistArchive.Count);
+
+            var m08 = restored.ArchivedFist("M08");
+            Assert.IsTrue(m08.IsValid);
+            Assert.AreEqual(3.35f, m08.dahRatio, 0.001f);
+            Assert.AreEqual(0.055f, m08.jitter, 0.001f);
+            Assert.AreEqual(2, restored.fistArchive[0].timesHeard);
+            Assert.AreEqual(3.6f, restored.ArchivedFist("R7X").dahRatio, 0.001f);
+        }
+
+        [Test]
+        public void FistArchive_SurvivesReportAndShiftAdvance()
+        {
+            // 档案是跨班次积累的。交班时被清掉就白记了。
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            Assert.AreEqual(1, state.fistArchive.Count);
+            Assert.IsTrue(state.ArchivedFist("M08").IsValid);
+        }
+
+        [Test]
+        public void Deserialize_ReturnsNullOnTruncatedFistLine()
+        {
+            Assert.IsNull(CampaignState.Deserialize("decoder-save\nfist\tM08\tshift-01\t字段不够\n"));
         }
 
         [Test]

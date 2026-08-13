@@ -119,7 +119,13 @@ namespace Decoder.Gameplay
             hud.SetStatusBanner("自动演练 · 送出上报");
             yield return new WaitForSeconds(stepSeconds * 0.5f);
 
-            // 第六步：送出，看判定。
+            // 第六步：翻一下档案，确认听过的电台都记下来了。
+            hud.SetStatusBanner("自动演练 · 翻阅电台档案");
+            hud.ToggleArchive(true);
+            yield return new WaitForSeconds(stepSeconds * 1.5f);
+            hud.ToggleArchive(false);
+
+            // 第七步：送出，看判定。
             hud.SubmitReport();
             Debug.Log("[PlaytestDriver] 已送出上报");
             hud.SetStatusBanner("自动演练 · 完成");
