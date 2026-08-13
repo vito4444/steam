@@ -94,7 +94,22 @@ namespace Decoder.Gameplay
             yield return new WaitForSeconds(stepSeconds);
             Debug.Log($"[PlaytestDriver] 抄收完成: {hud.CopiedBuffer}");
 
-            // 第三步：把威胁等级调到这条电文应有的等级。
+            // 第三步：逐组查电码表。这是玩家真正要做的动作，
+            // 一组一组查出来才知道电文说的是什么。
+            hud.SetStatusBanner("自动演练 · 查电码表");
+            var groups = digits.Length / ChineseTelegraphCode.CodeLength;
+            for (var g = 0; g < groups; g++)
+            {
+                hud.LookUpOneGroup();
+                yield return new WaitForSeconds(stepSeconds * 0.5f);
+            }
+
+            // 第四步：填上报单。呼号和频率都要玩家自己记，系统不代填。
+            hud.SetStatusBanner("自动演练 · 填写上报单");
+            hud.FillForm(primary.callsign, primary.frequencyKHz.ToString("F2"));
+            yield return new WaitForSeconds(stepSeconds);
+
+            // 第五步：把威胁等级调到这条电文应有的等级。
             while (hud.SelectedLevel != primary.correctLevel)
             {
                 hud.CycleLevel(hud.SelectedLevel < primary.correctLevel ? 1 : -1);
@@ -104,7 +119,7 @@ namespace Decoder.Gameplay
             hud.SetStatusBanner("自动演练 · 送出上报");
             yield return new WaitForSeconds(stepSeconds * 0.5f);
 
-            // 第四步：送出，看判定。
+            // 第六步：送出，看判定。
             hud.SubmitReport();
             Debug.Log("[PlaytestDriver] 已送出上报");
             hud.SetStatusBanner("自动演练 · 完成");

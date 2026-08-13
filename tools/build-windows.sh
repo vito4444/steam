@@ -20,6 +20,7 @@ if [[ "${2:-station}" != "probe" ]]; then
     # 场景生成必须在独立的编辑器进程里先做完，原因见 BuildScript.BuildStationWindows64 的注释。
     echo "生成可玩场景"
     "$(dirname "$0")/build-station-scene.sh" > /dev/null
+    wait_for_unity_exit
 fi
 
 echo "构建 Windows x64 -> ${OUT_DIR}"

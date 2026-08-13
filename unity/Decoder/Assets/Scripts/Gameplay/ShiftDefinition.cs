@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Decoder.Signal;
+using UnityEngine;
 
 namespace Decoder.Gameplay
 {
@@ -65,6 +66,13 @@ namespace Decoder.Gameplay
         /// <summary>是否是本班次的主线信号。主线漏收会推进剧情的失败分支。</summary>
         public bool isPrimary;
 
+        [Header("一次性密码本")]
+        [Tooltip("密码本册子的种子。同一册子在整个战役里保持不变")]
+        public int padBookSeed = 19851104;
+
+        [Tooltip("这条电文用的页码。玩家要从报头读出来，翻到对应页才解得开")]
+        public int padPage;
+
         /// <summary>解出后向玩家展示的提示，用于串联剧情，可留空。</summary>
         public string debriefNote = string.Empty;
 
@@ -86,6 +94,20 @@ namespace Decoder.Gameplay
                     return ChineseTelegraphCode.ToDigitStream(telegraph.EncodeText(plainText));
 
                 case SignalKind.OneTimePad:
+                {
+                    if (telegraph == null)
+                    {
+                        throw new ArgumentNullException(nameof(telegraph),
+                            "加密电文的明文是中文，需要码表才能先转成数字");
+                    }
+
+                    // 先把汉字转成电码数字，再整体加密。顺序不能反：
+                    // 密码本作用在数字流上，而不是作用在汉字上。
+                    var plainDigits = ChineseTelegraphCode.ToDigitStream(
+                        telegraph.EncodeText(plainText));
+                    return OneTimePad.BuildTransmission(plainDigits, padBookSeed, padPage);
+                }
+
                 case SignalKind.PlainMorse:
                 default:
                     return plainText.ToUpperInvariant();

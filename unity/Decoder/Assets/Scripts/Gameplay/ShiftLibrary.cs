@@ -72,5 +72,79 @@ namespace Decoder.Gameplay
 
             return shift;
         }
+
+        /// <summary>
+        /// 第二班。设计意图：
+        ///
+        /// 引入一次性密码本。玩家第一次遇到"抄下来的数字查不到字"的情况——
+        /// 因为它们是密文。报头的三位数字是页码指示，翻到密码本对应那一页
+        /// 逐位相减才是真正的电码。游戏不会明说这一点，
+        /// 但值班日志里会有前一班留下的一句话把玩家推向密码本。
+        ///
+        /// 干扰信号从两条加到三条，其中一条是同样用密码本、但页码不同的邻站通联。
+        /// 玩家如果拿主线的页码去解它，会得到一串通顺不了的数字——
+        /// 这正是让玩家理解"页码是关键"的时刻。
+        /// </summary>
+        public static ShiftDefinition SecondShift()
+        {
+            var shift = new ShiftDefinition
+            {
+                shiftId = "shift-02",
+                title = "第二班 · 页码",
+                inGameDate = "1985-11-05",
+                noiseSeed = 19851105,
+                bandLowKHz = 6800f,
+                bandHighKHz = 7200f,
+            };
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "M08",
+                frequencyKHz = 7012f,
+                kind = SignalKind.OneTimePad,
+                wordsPerMinute = 11f,
+                strength = 0.92f,
+                startOffsetSeconds = 2f,
+                plainText = "货已上车",
+                padPage = 23,
+                correctLevel = ThreatLevel.Urgent,
+                isPrimary = true,
+                debriefNote = "值班军官问你从哪一页解的。你说二十三。他点了点头，没再说话。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "M14",
+                frequencyKHz = 6862f,
+                kind = SignalKind.OneTimePad,
+                wordsPerMinute = 13f,
+                strength = 0.6f,
+                startOffsetSeconds = 9f,
+                plainText = "一切正常",
+                padPage = 71,
+                correctLevel = ThreatLevel.Routine,
+                debriefNote = "邻站的例行通联。他们用的不是二十三页。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "R7X",
+                frequencyKHz = 7108f,
+                kind = SignalKind.PlainMorse,
+                wordsPerMinute = 15f,
+                strength = 0.78f,
+                plainText = "QRZ DE R7X PSE K",
+                correctLevel = ThreatLevel.Routine,
+                debriefNote = "还是那个业余台。他大概永远等不到回应。",
+            });
+
+            return shift;
+        }
+
+        /// <summary>按顺序返回全部班次。存档与班次推进用它。</summary>
+        public static ShiftDefinition[] All()
+        {
+            return new[] { FirstShift(), SecondShift() };
+        }
     }
 }

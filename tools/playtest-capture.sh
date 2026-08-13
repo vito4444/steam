@@ -28,6 +28,7 @@ rm -f "${OUT_DIR}"/*.png
 # 而构建过程一句警告都不给。
 echo "生成可玩场景"
 "$(dirname "$0")/build-station-scene.sh" > /dev/null
+wait_for_unity_exit
 
 echo "构建 Linux x64"
 rm -rf "${BUILD_DIR}"
@@ -79,6 +80,16 @@ for delay in 5 9 13 17 21; do
     done
 
     if ! kill -0 "${PLAYER_PID}" 2>/dev/null; then
+        if grep -q "is corrupted" "${PLAYER_LOG}" 2>/dev/null && [[ "${DECODER_RETRIED:-0}" != "1" ]]; then
+            # level0 损坏几乎总是 Library 缓存不一致造成的，与刚改的代码无关。
+            # 清掉缓存重跑一次，比在错误的方向上排查半天划算得多。
+            echo "检测到 level0 损坏，清空缓存后重试一次" >&2
+            cleanup
+            trap - EXIT
+            clear_unity_cache
+            DECODER_RETRIED=1 exec "$0" "$@"
+        fi
+
         echo "游戏进程在第 ${delay} 秒前退出了" >&2
         tail -30 "${PLAYER_LOG}" >&2
         exit 1

@@ -33,6 +33,41 @@ run_unity_headless() {
     "${UNITY_BIN}" -nographics "$@"
 }
 
+# 等待所有 Unity 编辑器进程完全退出。
+#
+# 场景生成与构建是两个独立的编辑器进程。前一个进程即使已经打印了退出信息，
+# 后台仍可能在写 Library 与资源导入结果；此时启动下一个进程去构建，
+# 读到的是写了一半的状态，产出的 level0 在运行时报 corrupted 直接崩溃，
+# 而构建过程一句警告都不给。表现为间歇性失败，与场景内容无关。
+wait_for_unity_exit() {
+    local waited=0
+    while pgrep -f "${UNITY_ROOT}/Editor/Unity" > /dev/null 2>&1; do
+        sleep 1
+        waited=$((waited + 1))
+        if [[ ${waited} -ge 60 ]]; then
+            echo "等待 Unity 退出超时，仍有进程在运行" >&2
+            return 1
+        fi
+    done
+
+    # 进程消失之后再给文件系统一点时间落盘。
+    sleep 2
+    return 0
+}
+
+# 清空 Unity 的资源缓存，强制下一次启动重新导入。
+#
+# 反复改代码之后 Library 会进入一种不一致的状态：编译和构建都报成功，
+# 但产出的 level0 在运行时报 corrupted 直接崩溃。这个失败与场景内容无关，
+# 排查时极易把它误判成"刚加的那个东西有问题"——本项目已经因此得出过
+# 三个错误结论（同进程构建、着色器进包、内嵌网格过多），全都不是真因。
+#
+# 判断依据很简单：清掉 Library 重来一次就正常。代价是几十秒的重新导入。
+clear_unity_cache() {
+    echo "清空 Library 缓存并重新导入"
+    rm -rf "${PROJECT_PATH}/Library" "${PROJECT_PATH}/Temp" 2>/dev/null || true
+}
+
 # 从 Unity 日志里提取真正的失败原因，避免在几万行日志里翻找。
 report_unity_log() {
     local log_file="$1"

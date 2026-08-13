@@ -52,6 +52,27 @@ namespace Decoder.UI
         private CopyAssist _assist = CopyAssist.Characters;
         private string _lastStationCallsign;
 
+        private Text _padPageText;
+        private Text _padDigitsText;
+        private Text _solvedText;
+        private Text _formCallsignText;
+        private Text _formFrequencyText;
+        private Text _focusHintText;
+
+        /// <summary>键盘输入当前落在哪个字段上。</summary>
+        private enum InputFocus
+        {
+            Copy,
+            Callsign,
+            Frequency,
+        }
+
+        private InputFocus _focus = InputFocus.Copy;
+        private int _padPage = 1;
+        private readonly StringBuilder _callsignBuffer = new StringBuilder(8);
+        private readonly StringBuilder _frequencyBuffer = new StringBuilder(10);
+        private readonly StringBuilder _solvedBuffer = new StringBuilder(64);
+
         private ShiftDefinition _shift;
         private ChineseTelegraphCode _telegraph;
         private readonly StringBuilder _copyBuffer = new StringBuilder(64);
@@ -79,6 +100,34 @@ namespace Decoder.UI
         {
             _copyBuffer.Clear();
             RefreshCopyArea();
+        }
+
+        /// <summary>查一组电码。自动演练用它模拟玩家按 L。</summary>
+        public void LookUpOneGroup()
+        {
+            LookUpNextGroup();
+        }
+
+        /// <summary>用当前页解密。自动演练用它模拟玩家按 D。</summary>
+        public void SolveCurrentPad()
+        {
+            SolveWithPad();
+        }
+
+        /// <summary>翻到指定页。自动演练用它模拟玩家翻密码本。</summary>
+        public void TurnPadTo(int page)
+        {
+            SetPadPage(page);
+        }
+
+        /// <summary>填写上报单上的呼号与频率。自动演练用它模拟玩家敲键盘。</summary>
+        public void FillForm(string callsign, string frequency)
+        {
+            _callsignBuffer.Clear();
+            _callsignBuffer.Append(callsign ?? string.Empty);
+            _frequencyBuffer.Clear();
+            _frequencyBuffer.Append(frequency ?? string.Empty);
+            RefreshForm();
         }
 
         /// <summary>顶部横幅。平时显示班次标题，自动演练时显示当前步骤。</summary>
@@ -120,11 +169,19 @@ namespace Decoder.UI
             }
 
             _copyBuffer.Clear();
+            _callsignBuffer.Clear();
+            _frequencyBuffer.Clear();
+            _solvedBuffer.Clear();
+            _focus = InputFocus.Copy;
+            _padPage = 1;
             _log.Clear();
             SetStatusBanner(string.IsNullOrEmpty(shiftTitle) ? shift?.title ?? "" : shiftTitle);
             AppendLog($"值班开始 · {shift?.inGameDate}");
             AppendLog("按住鼠标右键转头，左键拖动旋钮搜频");
             AppendLog("听到电码后用键盘抄下数字或字母");
+            AppendLog("Tab 换填写栏 · [ ] 翻密码本 · D 解密 · L 查电码表");
+            RefreshPad();
+            RefreshForm();
         }
 
         private void Update()
@@ -189,6 +246,124 @@ namespace Decoder.UI
             {
                 CycleLevel(1);
             }
+
+            if (Input.GetKeyDown(KeyCode.Tab))
+            {
+                _focus = (InputFocus)(((int)_focus + 1) % 3);
+                RefreshForm();
+            }
+
+            // 翻密码本。页码要玩家自己从报头读出来再翻过去，
+            // 游戏不会替他翻——翻错页解出来就是一串通顺不了的数字。
+            if (Input.GetKeyDown(KeyCode.LeftBracket))
+            {
+                SetPadPage(_padPage - 1);
+            }
+            else if (Input.GetKeyDown(KeyCode.RightBracket))
+            {
+                SetPadPage(_padPage + 1);
+            }
+
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                SolveWithPad();
+            }
+
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                LookUpNextGroup();
+            }
+        }
+
+        private void SetPadPage(int page)
+        {
+            _padPage = Mathf.Clamp(page, 0, 999);
+            RefreshPad();
+        }
+
+        /// <summary>
+        /// 用当前翻到的这一页解密抄收纸上的内容。
+        /// 页码不对就会得到一串解不通的数字，游戏不会提示——
+        /// 玩家得自己发现译不出字，回头核对报头。
+        /// </summary>
+        private void SolveWithPad()
+        {
+            var wire = ChineseTelegraphCode.ToDigitStream(_copyBuffer.ToString());
+            if (wire.Length <= OneTimePad.PageIndicatorDigits)
+            {
+                AppendLog("抄收的内容还不够解密，至少要有报头加一组。");
+                return;
+            }
+
+            var solved = OneTimePad.Solve(wire, _shift?.Primary?.padBookSeed ?? 19851104, _padPage);
+            _solvedBuffer.Clear();
+            _solvedBuffer.Append(solved);
+            _solvedText.text = GroupForReading(solved);
+            AppendLog($"用第 {_padPage} 页解出 {solved.Length} 位数字。");
+        }
+
+        /// <summary>
+        /// 查电码表。一次查一组四位，从还没查过的位置往后推。
+        /// 这一步刻意做成玩家的动作而不是自动翻译：查表是这个职业的核心动作，
+        /// 替玩家做掉，中文电码就只剩一个设定而不是玩法。
+        /// </summary>
+        private void LookUpNextGroup()
+        {
+            // 优先查解密后的结果，没有再查抄收原文——
+            // 明码电文不需要解密这一步。
+            var source = _solvedBuffer.Length > 0
+                ? _solvedBuffer.ToString()
+                : ChineseTelegraphCode.ToDigitStream(_copyBuffer.ToString());
+
+            var already = _lookupText.text.Length * ChineseTelegraphCode.CodeLength;
+            if (already + ChineseTelegraphCode.CodeLength > source.Length)
+            {
+                AppendLog("没有更多完整的电码组可查了。");
+                return;
+            }
+
+            var group = source.Substring(already, ChineseTelegraphCode.CodeLength);
+            var found = _telegraph.TryGetCharacter(group, out var character);
+            _lookupText.text += found ? character.ToString() : "□";
+            AppendLog(found
+                ? $"{group} 查得「{character}」"
+                : $"{group} 在码表里查不到。");
+        }
+
+        private void RefreshPad()
+        {
+            if (_padPageText == null)
+            {
+                return;
+            }
+
+            var seed = _shift?.Primary?.padBookSeed ?? 19851104;
+            _padPageText.text = $"第 {_padPage:D3} 页";
+            var page = OneTimePad.GeneratePage(seed, _padPage);
+            _padDigitsText.text = GroupForReading(page.Substring(0, Mathf.Min(40, page.Length)));
+        }
+
+        private void RefreshForm()
+        {
+            if (_formCallsignText == null)
+            {
+                return;
+            }
+
+            _formCallsignText.text = _callsignBuffer.Length > 0
+                ? _callsignBuffer.ToString()
+                : "＿＿＿";
+            _formFrequencyText.text = _frequencyBuffer.Length > 0
+                ? _frequencyBuffer.ToString()
+                : "＿＿＿＿";
+
+            _formCallsignText.color = _focus == InputFocus.Callsign ? Phosphor : PhosphorDim;
+            _formFrequencyText.color = _focus == InputFocus.Frequency ? Phosphor : PhosphorDim;
+            _copiedText.color = _focus == InputFocus.Copy ? Phosphor : PhosphorDim;
+
+            _focusHintText.text = _focus == InputFocus.Copy ? "正在填：抄收纸"
+                : _focus == InputFocus.Callsign ? "正在填：呼号"
+                : "正在填：频率";
         }
 
         private static string AssistLabel(CopyAssist assist)
@@ -251,26 +426,41 @@ namespace Decoder.UI
                 return;
             }
 
+            var target = _focus == InputFocus.Callsign ? _callsignBuffer
+                : _focus == InputFocus.Frequency ? _frequencyBuffer
+                : _copyBuffer;
+
             foreach (var c in typed)
             {
                 if (c == '\b')
                 {
-                    if (_copyBuffer.Length > 0)
+                    if (target.Length > 0)
                     {
-                        _copyBuffer.Length--;
+                        target.Length--;
                     }
                 }
                 else if (c == '\n' || c == '\r')
                 {
                     SubmitReport();
                 }
+                else if (c == '\t')
+                {
+                    // 制表符由 HandleHotkeys 处理，这里吞掉避免它落进文本
+                }
                 else if (!char.IsControl(c))
                 {
-                    _copyBuffer.Append(char.ToUpperInvariant(c));
+                    // 频率栏只收数字和小数点，免得玩家把呼号敲进去还不自知
+                    if (_focus == InputFocus.Frequency && !char.IsDigit(c) && c != '.')
+                    {
+                        continue;
+                    }
+
+                    target.Append(char.ToUpperInvariant(c));
                 }
             }
 
             RefreshCopyArea();
+            RefreshForm();
         }
 
         private void RefreshCopyArea()
@@ -280,11 +470,9 @@ namespace Decoder.UI
                 ? "<等待抄收>"
                 : GroupForReading(raw);
 
-            var digits = ChineseTelegraphCode.ToDigitStream(raw);
-            _lookupText.text = digits.Length >= ChineseTelegraphCode.CodeLength
-                ? _telegraph.DecodeDigits(digits)
-                : "";
-            _decodedText.text = _lookupText.text;
+            // 这里刻意不自动翻译。查表是这个职业的核心动作，
+            // 替玩家做掉之后，中文电码就只剩一个设定而不是玩法。
+            // 译文由玩家按 L 一组一组查出来。
         }
 
         /// <summary>四位一组显示，和真实报务纸的分组习惯一致，也方便玩家核对。</summary>
@@ -329,11 +517,20 @@ namespace Decoder.UI
                 return;
             }
 
+            // 呼号和频率都取玩家自己填的。以前这两项是系统代填的，
+            // 等于把"记录截获参数"这一步从玩家手里拿走了。
+            float.TryParse(_frequencyBuffer.ToString(), out var reportedFrequency);
+
+            // 加密电文按解密后的数字判分，玩家没解密就拿原始密文去比，自然对不上。
+            var submittedText = _solvedBuffer.Length > 0
+                ? _solvedBuffer.ToString()
+                : _copyBuffer.ToString();
+
             var grade = ReportGrader.Grade(target, new ReportSubmission
             {
-                Callsign = target.callsign,
-                FrequencyKHz = receiver.tunedKHz,
-                CopiedText = _copyBuffer.ToString(),
+                Callsign = _callsignBuffer.ToString(),
+                FrequencyKHz = reportedFrequency,
+                CopiedText = submittedText,
                 Level = _selectedLevel,
             }, _telegraph);
 
@@ -344,7 +541,9 @@ namespace Decoder.UI
             _replyText.text = ReportAftermath.Reply(target, grade);
             _noteText.text = "黑板：" + ReportAftermath.DeskNote(target, grade);
 
-            AppendLog($"已送出 {target.callsign} · 准确度 {grade.Accuracy:P0} · {LevelLabel(_selectedLevel)}");
+            AppendLog($"已送出 · 准确度 {grade.Accuracy:P0} · {LevelLabel(_selectedLevel)}" +
+                      $" · 呼号{(grade.CallsignCorrect ? "对" : "错")}" +
+                      $" · 频率{(grade.FrequencyCorrect ? "对" : "错")}");
             AppendLog("次日报纸：" + ReportAftermath.Headline(target, grade));
         }
 
@@ -494,14 +693,51 @@ namespace Decoder.UI
                 pivot: new Vector2(0.5f, 0f));
             Label(reportPanel, "电报上报单", 22, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(24f, -14f), new Vector2(300f, 30f));
+            // 上报单分四列排：等级在左，截获参数在中，操作提示在右，判定在最右。
+            // 挤在一起会让玩家在最需要看清的时候读错自己填了什么。
             Label(reportPanel, "威胁等级", 22, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(24f, -50f), new Vector2(200f, 30f));
+                new Vector2(24f, -52f), new Vector2(200f, 30f));
             _levelText = Label(reportPanel, LevelLabel(_selectedLevel), 32, Amber, TextAnchor.UpperLeft,
-                new Vector2(24f, -80f), new Vector2(260f, 44f));
-            Label(reportPanel, "← → 调整等级        回车 送出", 20, PhosphorDim, TextAnchor.UpperLeft,
-                new Vector2(300f, -84f), new Vector2(460f, 30f));
-            _verdictText = Label(reportPanel, "", 26, Phosphor, TextAnchor.UpperRight,
-                new Vector2(-24f, -46f), new Vector2(620f, 96f), anchorRight: true);
+                new Vector2(24f, -84f), new Vector2(260f, 44f));
+
+            Label(reportPanel, "呼号", 20, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(300f, -14f), new Vector2(120f, 26f));
+            _formCallsignText = Label(reportPanel, "＿＿＿", 26, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(300f, -40f), new Vector2(200f, 34f));
+            Label(reportPanel, "频率 kHz", 20, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(300f, -80f), new Vector2(140f, 26f));
+            _formFrequencyText = Label(reportPanel, "＿＿＿＿", 26, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(300f, -106f), new Vector2(200f, 34f));
+
+            _focusHintText = Label(reportPanel, "正在填：抄收纸", 22, Amber, TextAnchor.UpperLeft,
+                new Vector2(540f, -14f), new Vector2(300f, 28f));
+            Label(reportPanel, "Tab 换栏 · L 查电码表", 18, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(540f, -46f), new Vector2(320f, 26f));
+            Label(reportPanel, "[ ] 翻页 · D 用当页解密", 18, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(540f, -72f), new Vector2(320f, 26f));
+            Label(reportPanel, "← → 等级 · 回车 送出", 18, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(540f, -98f), new Vector2(320f, 26f));
+
+            _verdictText = Label(reportPanel, "", 24, Phosphor, TextAnchor.UpperRight,
+                new Vector2(-24f, -14f), new Vector2(280f, 130f), anchorRight: true);
+
+            // 左中：密码本。玩家要自己从报头读页码再翻到那一页。
+            var padPanel = Panel(root, "PadPanel",
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -344f), new Vector2(470f, 168f));
+            Label(padPanel, "一次性密码本", 22, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(20f, -14f), new Vector2(260f, 30f));
+            _padPageText = Label(padPanel, "第 001 页", 24, Amber, TextAnchor.UpperRight,
+                new Vector2(-20f, -14f), new Vector2(200f, 30f), anchorRight: true);
+            Label(padPanel, "[ ] 翻页 · D 解密", 18, PhosphorDim, TextAnchor.UpperRight,
+                new Vector2(-20f, -42f), new Vector2(240f, 26f), anchorRight: true);
+            _padDigitsText = Label(padPanel, "", 20, Phosphor, TextAnchor.UpperLeft,
+                new Vector2(20f, -66f), new Vector2(430f, 92f));
+
+            // 右上抄收纸下方补一块解密结果
+            _solvedText = Label(copyPanel, "", 24, Phosphor, TextAnchor.UpperLeft,
+                new Vector2(20f, -262f), new Vector2(580f, 48f));
+            Label(copyPanel, "解密结果", 20, PhosphorDim, TextAnchor.UpperLeft,
+                new Vector2(20f, -238f), new Vector2(240f, 26f));
 
             // 右下：后果。这套设计里没有分数，玩家只从回电和字条知道自己干得怎么样。
             var replyPanel = Panel(root, "ReplyPanel",

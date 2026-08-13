@@ -15,7 +15,7 @@ namespace Decoder.Tests
     {
         private static IEnumerable<ShiftDefinition> AllShifts()
         {
-            yield return ShiftLibrary.FirstShift();
+            return ShiftLibrary.All();
         }
 
         [Test]
@@ -27,7 +27,9 @@ namespace Decoder.Tests
             {
                 foreach (var entry in shift.transmissions)
                 {
-                    if (entry.kind != SignalKind.ChineseTelegraph)
+                    // 明码摩尔斯之外的两种体制，明文都是中文，都要能查到电码。
+                    // 加密电文尤其如此：它是先转电码再加密的，查不到码就根本发不出去。
+                    if (entry.kind == SignalKind.PlainMorse)
                     {
                         continue;
                     }
@@ -49,7 +51,7 @@ namespace Decoder.Tests
             {
                 foreach (var entry in shift.transmissions)
                 {
-                    if (entry.kind == SignalKind.ChineseTelegraph)
+                    if (entry.kind != SignalKind.PlainMorse)
                     {
                         continue;
                     }
@@ -160,6 +162,57 @@ namespace Decoder.Tests
                         $"{entry.callsign} 太慢，一遍要发很久");
                     Assert.LessOrEqual(entry.wordsPerMinute, 25f,
                         $"{entry.callsign} 超过 25 WPM，新手抄不下来");
+                }
+            }
+        }
+
+        [Test]
+        public void EveryEncryptedTransmissionSolvesBackToItsPlainText()
+        {
+            // 加密电文必须能用它自己声明的页码解回原文。解不回来的话，
+            // 玩家照着规则一步步算出来的结果会对不上，而他没法判断
+            // 是自己算错了还是游戏错了——这种挫败不可接受。
+            var table = ChineseTelegraphCode.Shared;
+
+            foreach (var shift in AllShifts())
+            {
+                foreach (var entry in shift.transmissions)
+                {
+                    if (entry.kind != SignalKind.OneTimePad)
+                    {
+                        continue;
+                    }
+
+                    var wire = entry.ResolveAirText(table);
+                    var page = OneTimePad.ReadPageNumber(wire);
+
+                    Assert.AreEqual(entry.padPage, page,
+                        $"{entry.callsign} 的报头页码与声明的不一致");
+
+                    var solved = OneTimePad.Solve(wire, entry.padBookSeed, page);
+                    Assert.AreEqual(entry.plainText, table.DecodeDigits(solved),
+                        $"{entry.callsign} 用自己的页码解不回原文");
+                }
+            }
+        }
+
+        [Test]
+        public void EncryptedTransmissionsInTheSameShiftUseDifferentPages()
+        {
+            // 同一班里两条加密电文如果用同一页，玩家拿主线的页码去解干扰信号
+            // 也能解通，"页码是关键"这个教学点就传达不到了。
+            foreach (var shift in AllShifts())
+            {
+                var seen = new HashSet<int>();
+                foreach (var entry in shift.transmissions)
+                {
+                    if (entry.kind != SignalKind.OneTimePad)
+                    {
+                        continue;
+                    }
+
+                    Assert.IsTrue(seen.Add(entry.padPage),
+                        $"{shift.shiftId} 里有两条电文都用第 {entry.padPage} 页");
                 }
             }
         }
