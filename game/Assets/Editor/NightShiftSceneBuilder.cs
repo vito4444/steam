@@ -553,6 +553,150 @@ namespace Monster.EditorTools
 
         // ---------------------------------------------------------------------- outside --
 
+        /// <summary>The furniture of a road: kerbs, delineator posts, a chicane and a sign.
+        ///
+        /// This is what turns the view through the window from a barrier floating in grey
+        /// into somewhere. The reflector tips matter most: they are the only things out
+        /// there that catch the vehicle's headlamps, so as it comes down the road they light
+        /// up in sequence and give the fog a depth the fog itself cannot.</summary>
+        private static void BuildRoadside(Transform parent, Material treeline)
+        {
+            var roadside = new GameObject("Roadside").transform;
+            roadside.SetParent(parent, false);
+
+            var kerb = Mat("Kerb", new Color(0.115f, 0.112f, 0.105f), 0.16f, 0f, null,
+                Grunge("Grunge_Kerb", 256, 5.0f, 0.9f, 0f, 8123), 6f);
+            var postMaterial = Mat("MarkerPost", new Color(0.300f, 0.295f, 0.270f), 0.18f);
+            var concrete = Mat("Chicane", new Color(0.190f, 0.185f, 0.170f), 0.14f, 0f, null,
+                Grunge("Grunge_Chicane", 256, 4.2f, 1.1f, 0f, 3311), 2.4f);
+
+            // Emissive rather than merely light-coloured: a retroreflector returns light to
+            // its source, which no material in a rasteriser does, so it is faked.
+            var reflectorAmber = Mat("ReflectorAmber", new Color(0.20f, 0.09f, 0.01f), 0.5f, 0f,
+                new Color(1.00f, 0.42f, 0.05f) * 2.6f);
+            var reflectorWhite = Mat("ReflectorWhite", new Color(0.18f, 0.18f, 0.17f), 0.5f, 0f,
+                new Color(0.90f, 0.88f, 0.78f) * 2.0f);
+
+            foreach (var side in new[] { -1f, 1f })
+            {
+                Box($"Kerb_{side:F0}", roadside, new Vector3(side * 4.3f, 0.07f, 11f),
+                    new Vector3(0.34f, 0.14f, 22f), kerb);
+            }
+
+            for (var i = 0; i < 6; i++)
+            {
+                var z = 5.6f + i * 2.15f;
+                foreach (var side in new[] { -1f, 1f })
+                {
+                    var post = new GameObject($"Marker_{i}_{side:F0}").transform;
+                    post.SetParent(roadside, false);
+                    post.localPosition = new Vector3(side * 4.32f, 0f, z);
+                    Box("Post", post, new Vector3(0f, 0.76f, 0f), new Vector3(0.09f, 1.52f, 0.06f),
+                        postMaterial);
+                    Box("Reflector", post, new Vector3(side * -0.035f, 1.28f, 0f),
+                        new Vector3(0.03f, 0.13f, 0.05f), side < 0f ? reflectorWhite : reflectorAmber);
+                    BoothAtmosphere.Glare($"MarkerGlare_{i}_{side:F0}", post,
+                        new Vector3(side * -0.06f, 1.28f, 0f), 0.42f,
+                        side < 0f ? new Color(0.60f, 0.58f, 0.50f) : new Color(0.72f, 0.30f, 0.05f));
+                }
+            }
+
+            // A chicane. Vehicles have to slow and weave, which is why one stops here at all.
+            var chicane = new[] { (-1.6f, 12.4f), (1.9f, 10.2f), (-1.9f, 8.0f) };
+            for (var i = 0; i < chicane.Length; i++)
+            {
+                var (x, z) = chicane[i];
+                Box($"Block_{i}", roadside, new Vector3(x, 0.34f, z), new Vector3(1.5f, 0.68f, 0.44f),
+                    concrete);
+                Box($"BlockStripe_{i}", roadside, new Vector3(x, 0.60f, z - 0.23f),
+                    new Vector3(1.2f, 0.10f, 0.02f), reflectorWhite);
+
+                // A wand on each block, because the block itself sits under the sill line.
+                Box($"BlockWand_{i}", roadside, new Vector3(x + 0.6f, 1.06f, z),
+                    new Vector3(0.05f, 0.76f, 0.05f), postMaterial);
+                Box($"BlockWandTip_{i}", roadside, new Vector3(x + 0.6f, 1.38f, z - 0.03f),
+                    new Vector3(0.07f, 0.14f, 0.04f), reflectorAmber);
+            }
+
+            // A sign on the near side, angled at the driver. Unreadable at this distance and
+            // in this fog, which is the point: it is a shape you recognise, not information.
+            var signPost = new GameObject("Sign").transform;
+            signPost.SetParent(roadside, false);
+            signPost.localPosition = new Vector3(-3.5f, 0f, 6.4f);
+            signPost.localRotation = Quaternion.Euler(0f, 24f, 0f);
+            Box("Mast", signPost, new Vector3(0f, 1.05f, 0f), new Vector3(0.08f, 2.10f, 0.08f), postMaterial);
+            Box("Board", signPost, new Vector3(0f, 2.06f, 0f), new Vector3(0.92f, 0.66f, 0.05f),
+                Mat("SignFace", new Color(0.34f, 0.31f, 0.24f), 0.22f, 0f,
+                    new Color(0.10f, 0.09f, 0.07f)));
+            Box("Border", signPost, new Vector3(0f, 2.06f, -0.03f), new Vector3(0.80f, 0.54f, 0.02f),
+                Mat("SignBorder", new Color(0.42f, 0.10f, 0.08f), 0.22f));
+
+            BuildDistantLights(roadside);
+
+            // A fence running back along the left, cut off by the fog rather than ending.
+            for (var i = 0; i < 9; i++)
+            {
+                var z = 5.2f + i * 1.55f;
+                Box($"FencePost_{i}", roadside, new Vector3(-5.4f, 0.72f, z),
+                    new Vector3(0.10f, 1.44f, 0.10f), treeline);
+            }
+
+            foreach (var y in new[] { 0.52f, 1.02f, 1.38f })
+            {
+                Box($"FenceWire_{y:F2}", roadside, new Vector3(-5.4f, y, 11.4f),
+                    new Vector3(0.03f, 0.03f, 13.8f), treeline);
+            }
+        }
+
+        /// <summary>Lights receding into the fog.
+        ///
+        /// Dark objects do not give fog depth. Past ten metres or so everything unlit
+        /// converges on the fog's own colour and simply disappears, which is why a treeline
+        /// at twenty metres was invisible no matter how large it was. Light is the only
+        /// thing that survives the distance, so the depth out there is built from lamps: a
+        /// beacon at ten metres, a work light at fifteen, lit windows at eighteen.</summary>
+        private static void BuildDistantLights(Transform parent)
+        {
+            var mast = Mat("DistantMast", new Color(0.10f, 0.10f, 0.09f), 0.2f);
+
+            // Amber beacon, the kind that sits on top of a barrier housing.
+            var beacon = new GameObject("Beacon").transform;
+            beacon.SetParent(parent, false);
+            beacon.localPosition = new Vector3(3.55f, 0f, 9.8f);
+            Box("Mast", beacon, new Vector3(0f, 1.30f, 0f), new Vector3(0.09f, 2.60f, 0.09f), mast);
+            Box("Lamp", beacon, new Vector3(0f, 2.68f, 0f), new Vector3(0.20f, 0.22f, 0.20f),
+                Mat("BeaconLamp", new Color(0.30f, 0.12f, 0.01f), 0.4f, 0f,
+                    new Color(1.00f, 0.46f, 0.06f) * 4.5f));
+            BoothAtmosphere.Glare("BeaconGlare", beacon, new Vector3(0f, 2.68f, -0.14f), 1.9f,
+                new Color(1.05f, 0.44f, 0.07f));
+
+            // A work light further back, pointed away, so all that reaches the booth is the
+            // halo and the pool it throws on the fog.
+            var work = new GameObject("WorkLight").transform;
+            work.SetParent(parent, false);
+            work.localPosition = new Vector3(-6.2f, 0f, 14.6f);
+            Box("Mast", work, new Vector3(0f, 1.85f, 0f), new Vector3(0.12f, 3.70f, 0.12f), mast);
+            BoothAtmosphere.Glare("WorkGlare", work, new Vector3(0f, 3.60f, -0.20f), 4.2f,
+                new Color(0.62f, 0.58f, 0.46f));
+
+            // A hut with two lit windows. At eighteen metres the building is fog and the
+            // windows are all that is left of it, which is exactly the read.
+            var hut = new GameObject("Hut").transform;
+            hut.SetParent(parent, false);
+            hut.localPosition = new Vector3(7.4f, 0f, 17.5f);
+            Box("Shell", hut, new Vector3(0f, 1.55f, 0f), new Vector3(4.6f, 3.10f, 3.4f),
+                Mat("HutShell", new Color(0.045f, 0.045f, 0.048f), 0.10f));
+            foreach (var offset in new[] { -1.05f, 1.05f })
+            {
+                Box($"Window_{offset:F1}", hut, new Vector3(offset, 1.85f, -1.72f),
+                    new Vector3(0.86f, 0.62f, 0.05f),
+                    Mat("HutWindow", new Color(0.24f, 0.20f, 0.12f), 0.3f, 0f,
+                        new Color(1.00f, 0.80f, 0.48f) * 2.4f));
+                BoothAtmosphere.Glare($"HutGlare_{offset:F1}", hut,
+                    new Vector3(offset, 1.85f, -1.80f), 2.1f, new Color(0.78f, 0.60f, 0.34f));
+            }
+        }
+
         private static void BuildOutside(Transform parent)
         {
             var asphaltGrunge = Grunge("Grunge_Asphalt", 512, 11.0f, 1.25f, 0.0f, 4407);
@@ -573,19 +717,25 @@ namespace Monster.EditorTools
             var haze = Mat("Haze", new Color(0.02f, 0.02f, 0.025f), 0.0f, 0f, FogColor * 1.35f);
             Box("Backdrop", parent, new Vector3(0f, 8f, 30f), new Vector3(60f, 22f, 0.4f), haze);
 
-            // A treeline and two utility poles, deep enough in the fog that they are just
-            // darker patches. Without them the view through the window is a flat grey
-            // rectangle and the whole shot loses its depth.
+            // A treeline, deep enough in the fog that it is just darker patches. Without it
+            // the view through the window is a flat grey rectangle.
+            //
+            // Pulled in from seventeen to twenty-three metres, where the fog left 6 percent
+            // of the geometry showing and the whole treeline was invisible. Everything that
+            // is meant to read sits between five and sixteen metres now, which is the band
+            // this fog density actually passes light through.
             var treeline = Mat("Treeline", new Color(0.020f, 0.024f, 0.026f), 0.05f);
             var random = new System.Random(41);
-            for (var i = 0; i < 14; i++)
+            for (var i = 0; i < 16; i++)
             {
-                var x = -14f + i * 2.1f + (float)random.NextDouble() * 1.1f;
-                var height = 3.4f + (float)random.NextDouble() * 3.6f;
-                var z = 17f + (float)random.NextDouble() * 6f;
+                var x = -15f + i * 1.95f + (float)random.NextDouble() * 1.1f;
+                var height = 3.8f + (float)random.NextDouble() * 4.2f;
+                var z = 12.5f + (float)random.NextDouble() * 5.5f;
                 Box($"Tree_{i}", parent, new Vector3(x, height * 0.5f, z),
                     new Vector3(0.9f + (float)random.NextDouble() * 0.7f, height, 0.9f), treeline);
             }
+
+            BuildRoadside(parent, treeline);
 
             var floodPole = new GameObject("CheckpointFlood").transform;
             floodPole.SetParent(parent, false);
