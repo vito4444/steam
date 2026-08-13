@@ -51,7 +51,7 @@ namespace Undertown.Game.Presentation
                     ? IsoPropArt.For(kind, IsoTileArt.VariantAt(x, y))
                     : ClutterOn(cell, kind);
 
-                if (art != null) Place(ref used, cell, art, offset: -1);
+                if (art != null) Place(ref used, cell, art, offset: -1, jitter: true);
 
                 var fence = IsoFenceArt.For(FenceEdgesAt(cell, kind));
                 if (fence != null) Place(ref used, cell, fence, offset: 1);
@@ -107,11 +107,30 @@ namespace Undertown.Game.Presentation
             _hasTown = true;
         }
 
-        private void Place(ref int used, Coord cell, Sprite art, int offset)
+        private void Place(ref int used, Coord cell, Sprite art, int offset, bool jitter = false)
         {
             var sprite = Take(used++);
             sprite.sprite = art;
-            sprite.transform.position = _world.CellCentre(cell);
+
+            var at = _world.CellCentre(cell);
+
+            // Scenery is nudged off the centre of its cell. Every tree, bush and stone sitting
+            // exactly on a cell centre puts the whole map on a visible lattice - a wood comes
+            // out looking like an orchard, and scattered stones look laid out. Fences, banks
+            // and jetties are not offset: those belong to the cell edge and have to line up
+            // with their neighbours.
+            //
+            // Twice as far across as up, because a cell is twice as wide as it is tall, so an
+            // equal nudge in world units would read as a much larger one sideways.
+            if (jitter)
+            {
+                int h = Hash(cell.X * 3 + 1, cell.Y * 7 + 5);
+                float dx = ((h % 21) - 10) / 44f;
+                float dy = (((h / 21) % 11) - 5) / 44f;
+                at += new Vector3(dx, dy, 0f);
+            }
+
+            sprite.transform.position = at;
 
             // Scenery goes behind whatever the player builds on the cell; fencing goes in
             // front of it, since a fence along the near edge of a plot stands between the
@@ -284,8 +303,9 @@ namespace Undertown.Game.Presentation
             int h = Hash(cell.X, cell.Y);
             if (yard || plot)
             {
-                if (h % (yard ? 5 : 9) != 0) return null;
-                return IsoPropArt.ForClutter(TownClutter[(h / 9) % TownClutter.Length]);
+                if (h % (yard ? 3 : 8) != 0) return null;
+                return IsoPropArt.ForClutter(
+                    TownClutter[(h / 9) % TownClutter.Length], (h / 131) & 3);
             }
 
             // Open country gets bushes, weeds and loose stone. The land beyond the town was a
@@ -297,10 +317,19 @@ namespace Undertown.Game.Presentation
             return IsoPropArt.ForClutter(CountryClutter[(h / 3) % CountryClutter.Length], (h / 31) & 3);
         }
 
+        /// <summary>
+        /// Weighted by repetition, as the country list is. Barrels and stacked timber are what
+        /// a working yard is mostly full of; the well appears once or twice a town, which is
+        /// how often a town has one.
+        /// </summary>
         private static readonly IsoPropArt.Clutter[] TownClutter =
         {
-            IsoPropArt.Clutter.Woodpile, IsoPropArt.Clutter.Crates, IsoPropArt.Clutter.Barrels,
-            IsoPropArt.Clutter.Cart, IsoPropArt.Clutter.Well, IsoPropArt.Clutter.Fence,
+            IsoPropArt.Clutter.Woodpile, IsoPropArt.Clutter.Woodpile,
+            IsoPropArt.Clutter.Barrels, IsoPropArt.Clutter.Barrels,
+            IsoPropArt.Clutter.Crates, IsoPropArt.Clutter.Crates,
+            IsoPropArt.Clutter.Haystack,
+            IsoPropArt.Clutter.ChoppingBlock, IsoPropArt.Clutter.Bricks,
+            IsoPropArt.Clutter.Cart, IsoPropArt.Clutter.Fence, IsoPropArt.Clutter.Well,
         };
 
         /// <summary>

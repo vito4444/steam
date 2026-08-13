@@ -31,7 +31,7 @@ namespace Undertown.Game.Presentation
         /// </summary>
         public enum Clutter
         {
-            Well, Woodpile, Crates, Barrels, Cart, Fence,
+            Well, Woodpile, Crates, Barrels, Cart, Fence, Haystack, Bricks, ChoppingBlock,
 
             // Open country, away from anything the town uses.
             Shrub, TallGrass, Stones, LoneTree, Broadleaf,
@@ -57,6 +57,9 @@ namespace Undertown.Game.Presentation
                 case Clutter.Barrels: Barrels(px, cx, cy); break;
                 case Clutter.Cart: Cart(px, cx, cy); break;
                 case Clutter.Fence: Fence(px, cx, cy); break;
+                case Clutter.Haystack: Haystack(px, cx, cy, variant); break;
+                case Clutter.Bricks: Bricks(px, cx, cy, variant); break;
+                case Clutter.ChoppingBlock: ChoppingBlock(px, cx, cy, variant); break;
                 case Clutter.Shrub: Shrub(px, cx, cy, variant); break;
                 case Clutter.TallGrass: TallGrass(px, cx, cy, variant); break;
                 case Clutter.Stones: Stones(px, cx, cy, variant); break;
@@ -398,6 +401,95 @@ namespace Undertown.Game.Presentation
                 Plot(px, x + dx, y + dy, banded ? hoop : dx < -1 ? lit : stave);
             }
             for (int dx = -3; dx <= 3; dx++) Plot(px, x + dx, y + 13, C(0x8E, 0x66, 0x3C));
+        }
+
+        /// <summary>
+        /// A rick of loose hay under a weighted cap, the bulkiest thing in a yard. Nothing in
+        /// the town was taller than a barrel except the buildings, so every yard read as swept.
+        /// </summary>
+        private static void Haystack(Color32[] px, int cx, int cy, int variant)
+        {
+            var hay = C(0x7C, 0x68, 0x33);
+            var hayLit = C(0x94, 0x7E, 0x40);
+            var hayDark = C(0x56, 0x46, 0x22);
+
+            int top = 15 + (variant & 1) * 4;
+            GroundShadow(px, cx + 3, cy - 1, 13, 5);
+
+            for (int lift = 0; lift < top; lift++)
+            {
+                float t = lift / (float)top;
+                int half = Mathf.RoundToInt(Mathf.Lerp(9f, 2f, t * t));
+                for (int dx = -half; dx <= half; dx++)
+                {
+                    var tone = dx < -half / 3 ? hayLit : dx > half / 2 ? hayDark : hay;
+                    // Straw pulled out in wisps rather than a smooth cone.
+                    if ((dx * 7 + lift * 13 + variant * 5) % 9 == 0) tone = hayDark;
+                    Plot(px, cx + dx, cy + lift, tone);
+                }
+            }
+
+            for (int dx = -3; dx <= 3; dx++) Plot(px, cx + dx, cy + top, hayDark);
+        }
+
+        /// <summary>Fired brick stacked to season, in courses laid crossways to bind.</summary>
+        private static void Bricks(Color32[] px, int cx, int cy, int variant)
+        {
+            var brick = C(0x75, 0x42, 0x2F);
+            var brickLit = C(0x8A, 0x51, 0x39);
+            var brickDark = C(0x54, 0x2F, 0x21);
+            var mortar = C(0x4A, 0x30, 0x22);
+
+            GroundShadow(px, cx + 2, cy - 1, 11, 4);
+
+            int courses = 5 + (variant & 1) * 2;
+            for (int course = 0; course < courses; course++)
+            for (int dy = 0; dy < 3; dy++)
+            for (int dx = -9; dx <= 9; dx++)
+            {
+                int y = cy + course * 3 + dy;
+                bool joint = dy == 2 || (dx + course * 4 + 18) % 6 == 0;
+                var tone = joint ? mortar : dx < -4 ? brickLit : dx > 4 ? brickDark : brick;
+                Plot(px, cx + dx, y, tone);
+            }
+        }
+
+        /// <summary>A block with the axe left in it, and the day's chips around the foot.</summary>
+        private static void ChoppingBlock(Color32[] px, int cx, int cy, int variant)
+        {
+            var bark = C(0x50, 0x3A, 0x24);
+            var end = C(0xA6, 0x84, 0x52);
+            var haft = C(0x7E, 0x5C, 0x34);
+            var iron = C(0x54, 0x56, 0x54);
+
+            GroundShadow(px, cx + 2, cy - 1, 9, 4);
+
+            for (int lift = 0; lift < 9; lift++)
+            for (int dx = -6; dx <= 6; dx++)
+            {
+                if (Mathf.Abs(dx) == 6 && (lift < 2 || lift > 7)) continue;
+                Plot(px, cx + dx, cy + lift, dx < -2 ? C(0x62, 0x48, 0x2C) : bark);
+            }
+
+            for (int dy = -3; dy <= 3; dy++)
+            for (int dx = -6; dx <= 6; dx++)
+                if (dx * dx + dy * dy * 4 <= 36) Plot(px, cx + dx, cy + 9 + dy, end);
+
+            if ((variant & 1) == 0)
+            {
+                for (int i = 0; i < 9; i++) Plot(px, cx + 2 + i / 3, cy + 11 + i, haft);
+                for (int dy = 0; dy < 4; dy++)
+                for (int dx = 0; dx < 5; dx++)
+                    Plot(px, cx + 4 + dx, cy + 19 + dy, iron);
+            }
+
+            for (int i = 0; i < 7; i++)
+            {
+                int px2 = cx - 10 + (i * 5 + variant * 3) % 20;
+                int py = cy + 1 + (i * 3) % 5;
+                Plot(px, px2, py, end);
+                Plot(px, px2 + 1, py, C(0x86, 0x68, 0x3E));
+            }
         }
 
         private static void Cart(Color32[] px, int cx, int cy)
