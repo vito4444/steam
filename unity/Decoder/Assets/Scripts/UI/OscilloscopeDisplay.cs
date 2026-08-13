@@ -32,10 +32,21 @@ namespace Decoder.UI
         public float sweepSeconds = 2.4f;
 
         [Header("磷光")]
-        [Tooltip("余辉半衰期。太短像素点，太长糊成一片")]
-        public float persistenceHalfLife = 0.45f;
+        // 半衰期要跟扫描周期挂钩。比周期短太多，光点扫到右半屏时左半屏已经黑了，
+        // 屏幕上永远只有一小段波形在游动；玩家读不出一个字符的完整节奏。
+        // 取周期的一半左右，整圈迹线都留得住，同时新旧之间还有肉眼可辨的亮度梯度，
+        // 一眼能看出光点现在扫到哪。这也正是长余辉示波管的观感。
+        [Tooltip("余辉半衰期。太短只剩一小段在游动，太长糊成一片")]
+        public float persistenceHalfLife = 1.1f;
 
-        public Color traceColor = new Color(0.30f, 0.76f, 0.38f, 1f);
+        // 屏幕配色的唯一定义。建场景时要用同一套颜色烘一张待机贴图给 CRT 材质，
+        // 两边各写一份的话，没通电的屏幕和通了电的屏幕会是两种绿。
+        public static readonly Color DefaultTraceColor = new(0.30f, 0.76f, 0.38f, 1f);
+        public static readonly Color DefaultGridColor = new(0.055f, 0.19f, 0.085f, 1f);
+        public static readonly Color DefaultAxisColor = new(0.11f, 0.36f, 0.17f, 1f);
+        public static readonly Color DefaultBackgroundColor = new(0.010f, 0.045f, 0.020f, 1f);
+
+        public Color traceColor = DefaultTraceColor;
 
         [Tooltip("自发光倍率。纹理值本身很低，靠这个把屏幕点亮")]
         [Range(1f, 12f)] public float emissionBoost = 1.25f;
@@ -45,9 +56,9 @@ namespace Decoder.UI
         // 真实示波器的屏幕底色几乎全黑，迹线是很细的一条。照搬到游戏里的结果是
         // 这块屏幕在画面上只有两个像素宽的亮线，截图十有八九抓在余辉衰减的暗区，
         // 而听障玩家要靠它读点划。底光和刻度都往上提，让屏幕先是"亮着的"。
-        public Color gridColor = new Color(0.055f, 0.19f, 0.085f, 1f);
-        public Color axisColor = new Color(0.11f, 0.36f, 0.17f, 1f);
-        public Color backgroundColor = new Color(0.010f, 0.045f, 0.020f, 1f);
+        public Color gridColor = DefaultGridColor;
+        public Color axisColor = DefaultAxisColor;
+        public Color backgroundColor = DefaultBackgroundColor;
 
         [Header("噪声")]
         [Tooltip("无信号时基线的抖动幅度，占屏高比例")]
@@ -60,8 +71,11 @@ namespace Decoder.UI
 
         private float _sweepPosition;
         private int _lastColumn = -1;
-        private int _lastTopY = -1;
-        private int _lastBottomY = -1;
+        private float _lastAmplitude = -1f;
+
+        // 电子束驻留亮度查表，索引是到中心的归一化距离。见 BuildDwellTable。
+        private const int DwellResolution = 256;
+        private static readonly float[] Dwell = BuildDwellTable();
 
         private void Awake()
         {
@@ -72,6 +86,37 @@ namespace Decoder.UI
 
             _jitter = new NoiseSource(0x5CA1E);
             BuildTexture();
+        }
+
+        /// <summary>
+        /// 一列上某个高度的亮度权重，入参是到中心的距离除以本列幅度。
+        ///
+        /// 示波器上的正弦波不是均匀亮的一整条：光点走的是 y = A·sin(ωt)，
+        /// 垂直速度 ∝ √(A²−y²)，在波峰波谷处速度趋近零、磷光被激发得最久，
+        /// 过零点处最快、最暗。所以满幅键控在屏幕上是"上下两条亮边夹一层暗填充"，
+        /// 而不是一堵实心绿墙——后者是没有这层加权时的样子，一眼假。
+        ///
+        /// 严格的 1/√(1−u²) 在边缘发散、亮带只有一两像素宽，
+        /// 而真实电子束有束斑展宽会把这个尖峰抹开。用幂函数近似这个结果：
+        /// 形状对，过渡柔和，且能整条预计算成查表。
+        /// </summary>
+        public static float DwellWeight(float normalizedDistance)
+        {
+            const float interior = 0.13f;
+            const float falloff = 3.6f;
+            var u = Mathf.Clamp01(normalizedDistance);
+            return interior + (1f - interior) * Mathf.Pow(u, falloff);
+        }
+
+        private static float[] BuildDwellTable()
+        {
+            var table = new float[DwellResolution];
+            for (var i = 0; i < DwellResolution; i++)
+            {
+                table[i] = DwellWeight(i / (float)(DwellResolution - 1));
+            }
+
+            return table;
         }
 
         private void BuildTexture()
@@ -111,47 +156,127 @@ namespace Decoder.UI
             }
         }
 
-        /// <summary>刻度网格。真实示波器是 10 格宽 8 格高，中心两轴更亮。</summary>
         private void PaintGrid()
         {
-            var bg = (Color32)backgroundColor;
-            for (var i = 0; i < _background.Length; i++)
+            PaintGrid(_background, textureWidth, textureHeight, backgroundColor, gridColor, axisColor);
+        }
+
+        /// <summary>刻度网格。真实示波器是 10 格宽 8 格高，中心两轴更亮。</summary>
+        public static void PaintGrid(Color32[] target, int width, int height,
+            Color background, Color grid, Color axis)
+        {
+            var bg = (Color32)background;
+            for (var i = 0; i < target.Length; i++)
             {
-                _background[i] = bg;
+                target[i] = bg;
             }
 
-            var grid = (Color32)gridColor;
-            var axis = (Color32)axisColor;
+            var gridColor32 = (Color32)grid;
+            var axisColor32 = (Color32)axis;
 
             for (var division = 1; division < 10; division++)
             {
-                var x = Mathf.RoundToInt(textureWidth * division / 10f);
-                if (x <= 0 || x >= textureWidth)
+                var x = Mathf.RoundToInt(width * division / 10f);
+                if (x <= 0 || x >= width)
                 {
                     continue;
                 }
 
-                var color = division == 5 ? axis : grid;
-                for (var y = 0; y < textureHeight; y++)
+                var color = division == 5 ? axisColor32 : gridColor32;
+                for (var y = 0; y < height; y++)
                 {
-                    _background[y * textureWidth + x] = color;
+                    target[y * width + x] = color;
                 }
             }
 
             for (var division = 1; division < 8; division++)
             {
-                var y = Mathf.RoundToInt(textureHeight * division / 8f);
-                if (y <= 0 || y >= textureHeight)
+                var y = Mathf.RoundToInt(height * division / 8f);
+                if (y <= 0 || y >= height)
                 {
                     continue;
                 }
 
-                var color = division == 4 ? axis : grid;
-                var row = y * textureWidth;
-                for (var x = 0; x < textureWidth; x++)
+                var color = division == 4 ? axisColor32 : gridColor32;
+                var row = y * width;
+                for (var x = 0; x < width; x++)
                 {
-                    _background[row + x] = color;
+                    target[row + x] = color;
                 }
+            }
+        }
+
+        /// <summary>
+        /// 烘一张屏幕画面给 CRT 材质。
+        ///
+        /// 没有这张贴图，材质的自发光槽是纯色，屏幕在编辑器和画面自检里就是
+        /// 一整块过曝的亮绿方块，既看不出那是台示波器，也会把自检的亮部、
+        /// 饱和度和绿色占比全带偏。运行时组件一启动就会用实时波形覆盖它。
+        ///
+        /// 画的是一段真实的键控波形而不是待机基线：这张图是自检看到的屏幕，
+        /// 而玩家看到的屏幕上永远有信号在跑。画成一条平线的话，自检读到的
+        /// 亮部和对比度会远低于实际画面，照着调光只会越调越偏。
+        /// </summary>
+        public static Texture2D CreateStandbyTexture(int width = 384, int height = 192)
+        {
+            var pixels = new Color32[width * height];
+            PaintGrid(pixels, width, height, DefaultBackgroundColor, DefaultGridColor, DefaultAxisColor);
+
+            // 18 字/分的 CQ 展开约 1.8 秒，正好填满一屏而不至于挤成一片。
+            var timeline = MorseCode.BuildTimeline(MorseCode.Encode("CQ"), 18f);
+            var total = 0f;
+            foreach (var element in timeline)
+            {
+                total += element.Seconds;
+            }
+
+            if (total > 0f)
+            {
+                var center = height * 0.5f;
+                var index = 0;
+                var elapsed = timeline[0].Seconds;
+                for (var x = 0; x < width; x++)
+                {
+                    var t = (x + 0.5f) / width * total;
+                    while (t > elapsed && index < timeline.Count - 1)
+                    {
+                        index++;
+                        elapsed += timeline[index].Seconds;
+                    }
+
+                    var amplitude = timeline[index].KeyDown ? height * 0.42f : height * 0.015f;
+                    PaintStandbyColumn(pixels, width, height, x, center, amplitude);
+                }
+            }
+
+            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                name = "OscilloscopeStandby",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+            texture.SetPixels32(pixels);
+            texture.Apply(false);
+            return texture;
+        }
+
+        private static void PaintStandbyColumn(
+            Color32[] pixels, int width, int height, int column, float center, float amplitude)
+        {
+            var top = Mathf.Clamp(Mathf.RoundToInt(center + amplitude), 0, height - 1);
+            var bottom = Mathf.Clamp(Mathf.RoundToInt(center - amplitude), 0, height - 1);
+            var scale = Mathf.Max(1f, amplitude);
+            var flat = amplitude < 1f;
+
+            for (var y = bottom; y <= top; y++)
+            {
+                var weight = flat ? 1f : DwellWeight(Mathf.Abs(y - center) / scale);
+                var index = y * width + column;
+                var pixel = pixels[index];
+                pixel.r = System.Math.Max(pixel.r, (byte)(DefaultTraceColor.r * weight * 255f));
+                pixel.g = System.Math.Max(pixel.g, (byte)(DefaultTraceColor.g * weight * 255f));
+                pixel.b = System.Math.Max(pixel.b, (byte)(DefaultTraceColor.b * weight * 255f));
+                pixels[index] = pixel;
             }
         }
 
@@ -233,7 +358,6 @@ namespace Decoder.UI
 
         private void DrawColumn(int column, float envelope)
         {
-            var center = textureHeight * 0.5f;
             // 包络是单极性的，示波器上显示成对称的双极波形，和真实 CW 监听一致。
             var amplitude = envelope * textureHeight * 0.42f;
             if (envelope <= 0.001f)
@@ -241,28 +365,29 @@ namespace Decoder.UI
                 amplitude = baselineJitter * textureHeight * Mathf.Abs(_jitter.NextWhite());
             }
 
-            var topY = Mathf.Clamp(Mathf.RoundToInt(center + amplitude), 0, textureHeight - 1);
-            var bottomY = Mathf.Clamp(Mathf.RoundToInt(center - amplitude), 0, textureHeight - 1);
-
-            // 与上一列连线，让陡峭的上升沿画成竖直边而不是两个孤立的点。
-            if (_lastColumn == column - 1 && _lastTopY >= 0)
+            // 键控的上升下降沿只有几毫秒，往往落在两列之间。只画本列幅度的话，
+            // 一个划的两端会缺掉竖边，看上去像断开的两段。取与上一列的较大者补齐，
+            // 陡沿就画成一条完整的竖线——真实示波器上包络突变时也是这样。
+            var span = amplitude;
+            if (_lastColumn == column - 1 && _lastAmplitude >= 0f)
             {
-                topY = FillSpan(column, topY, _lastTopY);
-                bottomY = FillSpan(column, bottomY, _lastBottomY);
+                span = Mathf.Max(amplitude, _lastAmplitude);
             }
 
-            FillSpan(column, bottomY, topY);
+            PaintColumn(column, span);
 
             _lastColumn = column;
-            _lastTopY = topY;
-            _lastBottomY = bottomY;
+            _lastAmplitude = amplitude;
         }
 
-        private int FillSpan(int column, int fromY, int toY)
+        /// <summary>
+        /// 画一列迹线，亮度按电子束驻留时间分布，见 <see cref="BuildDwellTable"/>。
+        /// </summary>
+        private void PaintColumn(int column, float amplitude)
         {
-            var lo = Mathf.Min(fromY, toY);
-            var hi = Mathf.Max(fromY, toY);
-            var trace = (Color32)traceColor;
+            var center = textureHeight * 0.5f;
+            var top = Mathf.Clamp(Mathf.RoundToInt(center + amplitude), 0, textureHeight - 1);
+            var bottom = Mathf.Clamp(Mathf.RoundToInt(center - amplitude), 0, textureHeight - 1);
 
             // 迹线画满 traceWidth 列而不是一列。屏幕在画面里只占两百来像素宽，
             // 384 列的纹理缩下去，单列的线会被采样直接丢掉——
@@ -270,8 +395,25 @@ namespace Decoder.UI
             var from = Mathf.Max(0, column - traceWidth / 2);
             var to = Mathf.Min(textureWidth - 1, column + traceWidth / 2);
 
-            for (var y = lo; y <= hi; y++)
+            // 幅度小于一像素时（无信号的基线），整条按满亮度画，
+            // 否则归一化会把仅有的一两个像素也压到 interior 那一档，基线就没了。
+            var scale = Mathf.Max(1f, amplitude);
+            var flat = amplitude < 1f;
+
+            for (var y = bottom; y <= top; y++)
             {
+                var weight = 1f;
+                if (!flat)
+                {
+                    var u = Mathf.Abs(y - center) / scale;
+                    var slot = Mathf.Clamp(Mathf.RoundToInt(u * (DwellResolution - 1)), 0, DwellResolution - 1);
+                    weight = Dwell[slot];
+                }
+
+                var r = (byte)(traceColor.r * weight * 255f);
+                var g = (byte)(traceColor.g * weight * 255f);
+                var b = (byte)(traceColor.b * weight * 255f);
+
                 var row = y * textureWidth;
                 for (var x = from; x <= to; x++)
                 {
@@ -280,14 +422,12 @@ namespace Decoder.UI
                     // 取最大值而不是相加。磷光是单色的：电子束在同一处停留再久，
                     // 也只是那一种绿更亮，不会变白。加法混合下点和划的粗条
                     // 几帧就累加到饱和，整条迹线变成白色，看着像别的东西。
-                    pixel.r = System.Math.Max(pixel.r, trace.r);
-                    pixel.g = System.Math.Max(pixel.g, trace.g);
-                    pixel.b = System.Math.Max(pixel.b, trace.b);
+                    pixel.r = System.Math.Max(pixel.r, r);
+                    pixel.g = System.Math.Max(pixel.g, g);
+                    pixel.b = System.Math.Max(pixel.b, b);
                     _pixels[index] = pixel;
                 }
             }
-
-            return fromY;
         }
 
         private void OnDestroy()
