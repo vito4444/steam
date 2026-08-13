@@ -577,6 +577,7 @@ namespace Hunter.EditorTools
             var runSo = new SerializedObject(run);
             runSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
             runSo.FindProperty("playerHealth").objectReferenceValue = player.GetComponent<Damageable>();
+            runSo.FindProperty("playerMelee").objectReferenceValue = player.GetComponent<MeleeCombatant>();
             runSo.FindProperty("bell").objectReferenceValue = bell;
             runSo.FindProperty("extractionPoint").objectReferenceValue = handles.BellTower;
             runSo.ApplyModifiedPropertiesWithoutUndo();
@@ -628,6 +629,15 @@ namespace Hunter.EditorTools
             hudSo.FindProperty("playerHealth").objectReferenceValue = player.GetComponent<Damageable>();
             hudSo.ApplyModifiedPropertiesWithoutUndo();
 
+            // Starts hidden; RunBootstrap opens it when a raid resolves.
+            var campGo = new GameObject("CampScreen");
+            campGo.transform.SetParent(gameplayRoot.transform, false);
+            var campScreen = campGo.AddComponent<CampScreen>();
+            var campSo = new SerializedObject(campScreen);
+            campSo.FindProperty("hudCamera").objectReferenceValue = camera.GetComponent<Camera>();
+            campSo.FindProperty("raidHud").objectReferenceValue = hud;
+            campSo.ApplyModifiedPropertiesWithoutUndo();
+
             var audioGo = new GameObject("RaidAudio");
             audioGo.transform.SetParent(gameplayRoot.transform, false);
             var raidAudio = audioGo.AddComponent<RaidAudio>();
@@ -645,6 +655,7 @@ namespace Hunter.EditorTools
             bootSo.FindProperty("playerCamera").objectReferenceValue = camera;
             bootSo.FindProperty("player").objectReferenceValue = player.GetComponent<HunterController>();
             bootSo.FindProperty("combat").objectReferenceValue = player.GetComponent<MeleeCombatant>();
+            bootSo.FindProperty("campScreen").objectReferenceValue = campScreen;
             bootSo.FindProperty("hud").objectReferenceValue = hud;
             bootSo.ApplyModifiedPropertiesWithoutUndo();
         }

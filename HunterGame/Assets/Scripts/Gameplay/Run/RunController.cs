@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Hunter.Gameplay.Actors;
 using Hunter.Gameplay.Camp;
+using Hunter.Gameplay.Combat;
 using Hunter.Gameplay.Items;
 using UnityEngine;
 
@@ -14,8 +15,9 @@ namespace Hunter.Gameplay.Run
         [Header("Hunter")]
         [SerializeField] HunterController player;
         [SerializeField] Damageable playerHealth;
-        [SerializeField] float carryWeightLimit = 32f;
-        [SerializeField] int carrySlots = 18;
+        [SerializeField] MeleeCombatant playerMelee;
+        [SerializeField] float carryWeightLimit = FacilityInfo.BaseCarryWeight;
+        [SerializeField] int carrySlots = FacilityInfo.BaseCarrySlots;
 
         [Header("World")]
         [SerializeField] BellTower bell;
@@ -59,6 +61,22 @@ namespace Hunter.Gameplay.Run
             });
 
             if (player != null) player.Inventory = Inventory;
+
+            // Shrine and forge levels were previously computed and then dropped on the floor,
+            // so those two facilities charged aurum and changed nothing in the raid.
+            if (playerHealth != null)
+                playerHealth.SetMaxHealth(FacilityInfo.BaseVitality + modifiers.VitalityBonus);
+
+            if (playerMelee != null)
+            {
+                int forge = Camp.LevelOf(FacilityKind.Forge);
+                var weapon = MeleeProfile.ForForgeLevel(forge);
+                // Tier alone only changes at three levels; honing is what makes every forge
+                // purchase land, and it has to match what the camp screen quoted.
+                weapon.BaseDamage *= FacilityInfo.ForgeDamageMultiplier(forge);
+                playerMelee.SetProfile(weapon);
+            }
+
             if (playerHealth != null && Application.isPlaying) playerHealth.Died += OnPlayerDied;
 
             Director.PhaseChanged += OnPhaseChanged;

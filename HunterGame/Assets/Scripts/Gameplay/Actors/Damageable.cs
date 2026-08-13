@@ -27,6 +27,14 @@ namespace Hunter.Gameplay.Actors
         public float Health { get; private set; }
         public float Stamina { get; private set; }
         public float MaxHealth => maxHealth;
+
+        /// Set from the camp's shrine level at insertion. Refills by default because a raid
+        /// always starts at full health; the flag exists for tests that check scaling alone.
+        public void SetMaxHealth(float value, bool refill = true)
+        {
+            maxHealth = Mathf.Max(1f, value);
+            if (refill || Health > maxHealth) Health = maxHealth;
+        }
         public bool IsDead => Health <= 0f;
         public float Health01 => maxHealth <= 0f ? 0f : Mathf.Clamp01(Health / maxHealth);
 

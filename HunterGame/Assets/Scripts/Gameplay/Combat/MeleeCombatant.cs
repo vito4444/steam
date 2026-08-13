@@ -33,6 +33,19 @@ namespace Hunter.Gameplay.Combat
         static Coroutine _activeHitStop;
 
         public MeleeProfile Profile => profile;
+
+        /// Swapped at insertion from the camp's forge level. Rejected mid-swing so a weapon
+        /// change cannot leave the state machine holding timings from the previous profile.
+        public bool SetProfile(MeleeProfile value)
+        {
+            if (_machine != null && _machine.Phase != AttackPhase.Idle) return false;
+
+            profile = value;
+            // The machine caches the timings it was constructed with, so it has to be
+            // rebuilt or the new weapon would swing on the old weapon's clock.
+            _machine = new MeleeStateMachine(profile);
+            return true;
+        }
         public AttackPhase Phase => _machine.Phase;
         public float WeaponDamageBonus { get; set; }
 
