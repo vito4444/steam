@@ -444,19 +444,30 @@ namespace Monster.EditorTools
 
             // Intercom keypad. Deliberately across the desk from the verdict switches:
             // one row asks a question and the other ends someone's night.
+            var keyCap = Mat("KeyCap", new Color(0.520f, 0.480f, 0.395f), 0.30f, 0f, null,
+                Grunge("Grunge_KeyCap", 128, 2.6f, 1.25f, 0.0f, 6151), 1.0f);
+
             var keypad = new GameObject("IntercomKeypad").transform;
             keypad.SetParent(parent, false);
             keypad.SetPositionAndRotation(new Vector3(-0.78f, DeskTopY + 0.026f, 0.80f),
                 Quaternion.Euler(-18f, 12f, 0f));
             Box("Plate", keypad, Vector3.zero, new Vector3(0.320f, 0.024f, 0.130f), darkPlastic);
-            Box("Grille", keypad, new Vector3(0f, 0.014f, 0.044f), new Vector3(0.250f, 0.004f, 0.030f), brass);
+            Box("Grille", keypad, new Vector3(0f, 0.014f, 0.044f), new Vector3(0.250f, 0.004f, 0.030f),
+                Mat("Grille", new Color(0.230f, 0.200f, 0.140f), 0.30f, 0.25f, null,
+                    Grunge("Grunge_Grille", 128, 3.4f, 1.20f, 0.0f, 7433), 1.0f));
             for (var i = 0; i < 4; i++)
             {
                 var x = -0.114f + i * 0.076f;
+                // Bone bakelite rather than brass: at 0.7 metallic these small keys came
+                // out a pale yellow-green under the lamp, which is what a software rasteriser
+                // does with a rough metal that has no environment to reflect.
                 IntercomKeys.Add(Box($"Key_{i}", keypad, new Vector3(x, 0.024f, -0.014f),
-                    new Vector3(0.054f, 0.022f, 0.038f), brass).transform);
+                    new Vector3(0.054f, 0.022f, 0.038f), keyCap).transform);
+
+                // On the key face, where a keypad puts them. On the lip in front they were
+                // invisible: a two-millimetre strip of dark plastic edge-on to the seat.
                 IntercomKeyLabels.Add(Anchor($"KeyLabel_{i}", keypad,
-                    new Vector3(x, 0.014f, -0.052f), Quaternion.Euler(90f, 0f, 0f)));
+                    new Vector3(x, 0.0362f, -0.014f), Quaternion.Euler(90f, 0f, 0f)));
             }
 
             // Stamp and ink pad.

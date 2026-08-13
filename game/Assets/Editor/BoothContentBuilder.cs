@@ -29,6 +29,9 @@ namespace Monster.EditorTools
         private static readonly Color PhosphorColour = new(0.34f, 1.00f, 0.46f);
         private static readonly Color EngravedColour = new(0.88f, 0.82f, 0.60f);
 
+        /// <summary>Dark, because these sit on pale key faces rather than on a black plate.</summary>
+        private static readonly Color KeyFaceColour = new(0.13f, 0.115f, 0.095f);
+
         /// <summary>TextMeshPro's fontSize is not a world-space measurement. Measured on
         /// this project's typeface: at fontSize 0.015 a line renders 1.7 mm tall, so one
         /// millimetre of line height costs 0.00882 of fontSize. Every size below is written
@@ -334,7 +337,7 @@ namespace Monster.EditorTools
             {
                 if (i < labelAnchors.Count && labelAnchors[i] != null)
                 {
-                    Text(labelAnchors[i], "Text", font, Mm(13f), EngravedColour,
+                    Text(labelAnchors[i], "Text", font, Mm(22f), KeyFaceColour,
                         new Vector2(0.058f, 0.012f), Vector3.zero, TextAlignmentOptions.Center,
                         FontStyles.Bold).text = captions[i];
                 }
