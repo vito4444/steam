@@ -1,0 +1,31 @@
+* text=auto eol=lf
+
+# Unity text-based assets stay diffable
+*.cs text diff=csharp
+*.shader text
+*.cginc text
+*.hlsl text
+*.asmdef text
+*.json text
+*.md text
+*.yml text
+*.yaml text
+*.unity text
+*.prefab text
+*.asset text
+*.mat text
+*.controller text
+*.meta text
+
+# Production art and audio go through LFS. Scoped to Assets/ on purpose: small
+# reference screenshots under Docs/ are reviewed in pull requests, and routing
+# them through LFS would make them invisible in the diff view.
+Assets/**/*.png filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.psd filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.wav filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.ttf filter=lfs diff=lfs merge=lfs -text
+Assets/**/*.otf filter=lfs diff=lfs merge=lfs -text

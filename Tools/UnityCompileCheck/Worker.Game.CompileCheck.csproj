@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compiles the Unity presentation layer against Unity's managed assemblies without
+    starting the Editor.
+
+    The Editor cannot run here (Unity Personal cannot be activated headlessly), which
+    would otherwise leave Worker.Game completely unverified. Referencing the shipped
+    DLLs directly catches syntax errors, wrong API signatures and bad using directives,
+    which is most of what an Editor compile would have told us.
+
+    It does not replace an Editor compile, and one gap is worth naming because it has
+    already cost a build: this project references every URP assembly at once, whereas
+    Unity honours the reference list in each asmdef. Code that uses a type from an
+    assembly the asmdef does not list compiles here and fails in the Editor. When adding
+    a using directive for a package namespace, check the matching asmdef.
+
+    Point UNITY_MANAGED_DIR and UNITY_PACKAGE_ASSEMBLIES at a Unity installation:
+
+      UNITY_MANAGED_DIR=$HOME/Unity/Hub/Editor/6000.3.21f1/Editor/Data/Managed \
+      dotnet build Tools/UnityCompileCheck/Worker.Game.CompileCheck.csproj
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>Worker.Game.CompileCheck</AssemblyName>
+    <RootNamespace>Worker.Game</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <!-- Unity's facade assemblies deliberately forward types; that is not an error. -->
+    <NoWarn>$(NoWarn);CS0436;CS1701;CS1702</NoWarn>
+    <UnityManagedDir Condition="'$(UnityManagedDir)' == ''">$(UNITY_MANAGED_DIR)</UnityManagedDir>
+
+    <!--
+      Package assemblies come from the project's own Library first. Those are the exact
+      versions this project resolved, so the check matches what Unity will compile;
+      the Editor's bundled template cache is a fallback for a fresh clone that has not
+      been imported yet, and may be a different package version.
+    -->
+    <UnityPackageAssemblies Condition="'$(UnityPackageAssemblies)' == '' AND Exists('$(MSBuildThisFileDirectory)../../Library/ScriptAssemblies')">$(MSBuildThisFileDirectory)../../Library/ScriptAssemblies</UnityPackageAssemblies>
+    <UnityPackageAssemblies Condition="'$(UnityPackageAssemblies)' == ''">$(UNITY_PACKAGE_ASSEMBLIES)</UnityPackageAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/Scripts/Core/**/*.cs" />
+    <Compile Include="../../Assets/Scripts/Game/**/*.cs" />
+    <!--
+      Editor scripts are included too. Leaving them out let a missing asmdef
+      reference in Worker.Editor reach a real batchmode build undetected, which costs
+      a full Editor round trip to discover.
+    -->
+    <Compile Include="../../Assets/Scripts/Editor/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UnityManagedDir)' != ''">
+    <!--
+      Reference every engine module rather than an explicit list. Inside Unity an
+      asmdef gets them all implicitly, so an explicit list here does not fail the same
+      way the real compile does: it rejects code Unity would happily accept, which
+      makes the check actively misleading.
+    -->
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.*Module.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.dll" Private="false" />
+    <Reference Include="$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEngine/UnityEngine.UI.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEditor.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEditor.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEditor.CoreModule.dll" Private="false" Condition="Exists('$(UnityManagedDir)/UnityEditor.CoreModule.dll')" />
+    <Reference Include="$(UnityManagedDir)/UnityEditor.*Module.dll" Private="false" />
+  </ItemGroup>
+
+  <!--
+    Listed one by one rather than globbed: the project's ScriptAssemblies folder also
+    contains Worker.Core.dll and Worker.Game.dll compiled by Unity, and referencing
+    those alongside the same sources produces duplicate type errors.
+  -->
+  <ItemGroup Condition="'$(UnityPackageAssemblies)' != ''">
+    <Reference Include="$(UnityPackageAssemblies)/UnityEngine.UI.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/UnityEngine.UI.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Runtime.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Runtime.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Editor.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Universal.Editor.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Editor.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.RenderPipelines.Core.Editor.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.InputSystem.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.InputSystem.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.Mathematics.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Mathematics.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.Burst.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Burst.dll')" />
+    <Reference Include="$(UnityPackageAssemblies)/Unity.Collections.dll" Private="false" Condition="Exists('$(UnityPackageAssemblies)/Unity.Collections.dll')" />
+  </ItemGroup>
+
+  <Target Name="WarnWhenUnityMissing" BeforeTargets="Build" Condition="'$(UnityManagedDir)' == ''">
+    <Warning Text="UNITY_MANAGED_DIR is not set, so the Unity presentation layer was not type-checked." />
+  </Target>
+
+</Project>

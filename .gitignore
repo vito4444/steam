@@ -1,0 +1,63 @@
+# Unity generated
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Build outputs
+/Artifacts/
+/Dist/
+
+# Asset meta files for ignored folders
+/[Aa]ssets/AssetStoreTools*
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# .NET build output at any depth. The tool projects under Tools/ live in the repo,
+# but their bin/obj must not.
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+
+# Unity regenerates these at the repo root on every import. Scoped to the root on
+# purpose: the hand-written project files under Tools/ are tracked, because without
+# them a fresh clone cannot build or test anything.
+/*.csproj
+/*.sln
+/*.unityproj
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Crash reports
+sysinfo.txt
+crashlytics-build.properties
+
+# Unity license artifacts must never be committed
+*.ulf
+*.alf
+Unity_lic.xml
+
+# dotnet test scratch
+/Tools/CoreTests/**/bin/
+/Tools/CoreTests/**/obj/
