@@ -306,6 +306,23 @@ almost every ray in the room did. It is attached to the tray itself now, and an
 unscaled target is refused with an error rather than silently becoming metres
 across.
 
+With that fixed, the loop was played by hand end to end. Aiming took one more
+correction: the screen captures were offset 28 pixels from the viewport, because
+`xdotool getwindowgeometry` reports the frame and `xwininfo` reports the client
+area, so every crosshair overlay had been drawn in the wrong place.
+
+| before the switch | after | four seconds later |
+|---|---|---|
+| ![](play/before_the_switch.png) | ![](play/after_the_switch.png) | ![](play/next_vehicle.png) |
+
+Throwing HOLD advanced the desk clock from 22:00 to 22:18, replaced the biometric
+readout with a different subject's — BLINK 16 to 22, PUPIL REACTIVE to FIXED,
+SURF 36.6C to 36.1C — and emptied the road. Four seconds later the barrier was
+back down, headlights were in the fog and a new silhouette stood at the window.
+
+That is the whole loop, performed by a person: read, decide, watch them go, watch
+the next one arrive.
+
 Two things the play session turned up on the way:
 
 **Un-hovering set an object's emission to black** rather than restoring what its
@@ -398,15 +415,11 @@ machine is Linux. That has to change before release.
 
 Reassessed from M2's list.
 
-1. **Only one person has played it, and only for a minute.** Looking, hovering,
-   leaning in and backing out are confirmed by hand on a real display. Throwing a
-   switch by hand is not: aiming a script at a two-centimetre knob is unreliable
-   once the pointer is locked and the capture is not pixel-aligned with the
-   viewport. Rather than keep poking at it, the self-check now aims the camera at
-   a named verdict switch, clicks it through the real interactor and asserts the
-   queue advanced — `switch_thrown_by_click: true`. That is a better guard than
-   one manual success would have been, but it is not the same as a person
-   playing. *Medium.*
+1. **Played for minutes, not hours.** Looking, hovering, leaning in, backing out,
+   throwing a switch and watching the next vehicle arrive are all confirmed by
+   hand. Nobody has played a full night, and nobody has played one who did not
+   write it — so nothing is known about whether the manual is followable, whether
+   the clock bites, or whether any of it is enjoyable. *Medium.*
 2. **Audio has never been heard.** Synthesised, structurally tested, and now
    wired to the intercom as well — but this machine has no audio device.
    *Medium.*
