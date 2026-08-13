@@ -14,8 +14,8 @@ SOURCES="${RUNTIME} ${GAMEPLAY}"
 # 每条变异的格式: 描述|文件|原文|替换文
 MUTATIONS=(
   "摩尔斯 S 的码型改错|${RUNTIME}/MorseCode.cs|['S'] = \"...\",|['S'] = \"..-\","
-  "摩尔斯划的时长从 3 单位改成 2 单位|${RUNTIME}/MorseCode.cs|var length = token[i] == Dah ? 3f : 1f;|var length = token[i] == Dah ? 2f : 1f;"
-  "词间隔从 7 单位改成 3 单位|${RUNTIME}/MorseCode.cs|ReplaceOrAppendGap(timeline, unit * 7f, unit);|ReplaceOrAppendGap(timeline, unit * 3f, unit);"
+  "摩尔斯划的时长从 3 单位改成 2 单位|${RUNTIME}/MorseCode.cs|timeline.Add(new Element(true, Shape(token[i] == Dah ? fist.dahRatio : 1f)));|timeline.Add(new Element(true, Shape(token[i] == Dah ? 2f : 1f)));"
+  "词间隔从 7 单位改成 3 单位|${RUNTIME}/MorseCode.cs|ReplaceOrAppendGap(timeline, Shape(fist.wordGapRatio), unit);|ReplaceOrAppendGap(timeline, unit * 3f, unit);"
   "PARIS 单位公式的分子改错|${RUNTIME}/MorseCode.cs|return 1.2f / wordsPerMinute;|return 1.5f / wordsPerMinute;"
   "电码分组长度从 4 改成 3|${RUNTIME}/ChineseTelegraphCode.cs|public const int CodeLength = 4;|public const int CodeLength = 3;"
   "电码表解析的汉字偏移错一位|${RUNTIME}/ChineseTelegraphCode.cs|var character = line[CodeLength];|var character = line[CodeLength - 1];"
@@ -42,6 +42,13 @@ MUTATIONS=(
   "存档解析忽略版本号上限|${GAMEPLAY}/CampaignState.cs|                        if (state.version > CurrentVersion)\n                        {\n                            // 比本体还新的存档不要硬解，字段含义可能已经变了。\n                            return null;\n                        }|                        if (false)\n                        {\n                            return null;\n                        }"
   "存档损坏时抛异常而不是返回 null|${GAMEPLAY}/CampaignState.cs|            if (lines.Length == 0 || lines[0].Trim() != "decoder-save")\n            {\n                return null;\n            }|            if (lines.Length == 0 || lines[0].Trim() != "decoder-save")\n            {\n                return new CampaignState();\n            }"
   "处境评价不再区分好坏|${GAMEPLAY}/CampaignState.cs|            if (standing >= 0.7f)|            if (standing >= -99f)"
+  "手法抖动的量纲换算被去掉|${RUNTIME}/OperatorFist.cs|private const float MeanAbsoluteToAmplitude = 2f;|private const float MeanAbsoluteToAmplitude = 1f;"
+  "点长改用最小值而不是中位数|${RUNTIME}/OperatorFist.cs|var dit = Median(ditSamples);|var dit = ditSamples[0];"
+  "手法距离忽略字符间隔|${RUNTIME}/OperatorFist.cs|return dah * 0.4f + charGap * 0.4f + wordGap * 0.2f;|return dah * 0.8f + wordGap * 0.2f;"
+  "样本不足时也硬给结论|${RUNTIME}/OperatorFist.cs|            if (timeline == null || timeline.Count < MinimumElements)\n            {\n                return default;\n            }|            if (timeline == null || timeline.Count < 1)\n            {\n                return default;\n            }"
+  "点划分界从两倍挪到一点二倍|${RUNTIME}/OperatorFist.cs|var threshold = downs[0] * 2f;|var threshold = downs[0] * 1.2f;"
+  "手法抖动不再影响发报时长|${RUNTIME}/MorseCode.cs|var factor = 1f + noise.NextWhite() * fist.jitter;|var factor = 1f;"
+  "第四班的冒充者改回本人的手法|${GAMEPLAY}/ShiftLibrary.cs|fist = M08Impostor,|fist = M08Operator,"
 )
 
 restore() {
