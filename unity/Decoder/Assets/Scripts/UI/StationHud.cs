@@ -527,10 +527,10 @@ namespace Decoder.UI
 
             _formCallsignText.text = _callsignBuffer.Length > 0
                 ? _callsignBuffer.ToString()
-                : "＿＿＿";
+                : "___";
             _formFrequencyText.text = _frequencyBuffer.Length > 0
                 ? _frequencyBuffer.ToString()
-                : "＿＿＿＿";
+                : "____";
 
             // 没填的栏也要看得清。玩家得先看见那里能填，才会去填。
             _formCallsignText.color = _focus == InputFocus.Callsign ? Amber
@@ -893,11 +893,11 @@ namespace Decoder.UI
 
             Label(reportPanel, "呼号", 22, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(320f, -16f), new Vector2(140f, 28f));
-            _formCallsignText = Label(reportPanel, "＿＿＿", 26, PhosphorDim, TextAnchor.UpperLeft,
+            _formCallsignText = Label(reportPanel, "___", 26, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(320f, -46f), new Vector2(220f, 40f));
             Label(reportPanel, "频率 kHz", 22, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(320f, -94f), new Vector2(160f, 28f));
-            _formFrequencyText = Label(reportPanel, "＿＿＿＿", 26, PhosphorDim, TextAnchor.UpperLeft,
+            _formFrequencyText = Label(reportPanel, "____", 26, PhosphorDim, TextAnchor.UpperLeft,
                 new Vector2(320f, -124f), new Vector2(240f, 40f));
 
             _focusHintText = Label(reportPanel, "正在填：抄收纸", 24, Amber, TextAnchor.UpperLeft,

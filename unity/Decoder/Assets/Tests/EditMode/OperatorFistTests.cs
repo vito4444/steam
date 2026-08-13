@@ -274,6 +274,42 @@ namespace Decoder.Tests
         }
 
         [Test]
+        public void Describe_AgreesBetweenArchivedAndMeasuredFist()
+        {
+            // 玩家靠"这次听到的"和"档案里记的"两行描述的异同来起疑。
+            // 同一个人的两行因为舍入而不同，比不给描述还糟。
+            var operators = new[]
+            {
+                Fist(3.35f, 2.55f, 6.8f, 0.055f),
+                Fist(3.05f, 3.15f, 7.1f, 0.075f),
+                Fist(3.6f, 3.9f, 7.6f, 0.19f),
+                Fist(2.85f, 3.35f, 7.2f, 0.065f),
+            };
+
+            foreach (var archived in operators)
+            {
+                var measured = FistAnalyzer.Measure(Timeline(archived, 13));
+
+                Assert.AreEqual(archived.Describe(), measured.Describe(),
+                    $"档案与实测的描述对不上：档案 {archived.dahRatio:F2}/{archived.jitter:F3}");
+            }
+        }
+
+        [Test]
+        public void Describe_StillSeparatesImpostorFromGenuine()
+        {
+            // 放宽分档边界之后，冒充者和本人的描述必须仍然不同，
+            // 否则唯一的线索就没了。
+            var genuine = Fist(3.35f, 2.55f, 6.8f, 0.055f);
+            var impostor = Fist(2.7f, 3.5f, 7.4f, 0.13f);
+
+            var heardGenuine = FistAnalyzer.Measure(Timeline(genuine, 17));
+            var heardImpostor = FistAnalyzer.Measure(Timeline(impostor, 17));
+
+            Assert.AreNotEqual(heardGenuine.Describe(), heardImpostor.Describe());
+        }
+
+        [Test]
         public void Describe_DistinguishesDraggedFromClippedDashes()
         {
             var dragged = Fist(3.6f, 3f, 7f, 0.08f).Describe();

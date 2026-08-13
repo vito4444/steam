@@ -91,29 +91,33 @@ namespace Decoder.Signal
 
             var parts = new List<string>();
 
-            if (dahRatio >= 3.35f)
+            if (dahRatio >= 3.25f)
             {
                 parts.Add("划拖得长");
             }
-            else if (dahRatio <= 2.65f)
+            else if (dahRatio <= 2.75f)
             {
                 parts.Add("划收得短");
             }
 
-            if (charGapRatio <= 2.5f)
+            if (charGapRatio <= 2.6f)
             {
                 parts.Add("字挨得紧");
             }
-            else if (charGapRatio >= 3.6f)
+            else if (charGapRatio >= 3.5f)
             {
                 parts.Add("字之间停得久");
             }
 
+            // 每一档的边界都离常用的手法参数留出余量。测量值总会和定义值差一点，
+            // 边界卡得太紧会出现同一个人的档案描述和实测描述不一致，
+            // 而玩家正是靠这两行的异同来起疑的——它们因为舍入而不同，
+            // 比不给描述还糟。
             if (jitter >= 0.14f)
             {
                 parts.Add("手不稳");
             }
-            else if (jitter <= 0.045f)
+            else if (jitter <= 0.085f)
             {
                 parts.Add("手很稳");
             }
@@ -235,10 +239,19 @@ namespace Decoder.Signal
         }
 
         /// <summary>
-        /// 抖动幅度：点长的平均相对偏差。
-        /// 用平均绝对偏差而不是标准差，是因为一次大的失手不该
-        /// 把整段的评价拉到"手很抖"去。
+        /// 抖动幅度：点长的平均相对偏差，换算回 OperatorFist.jitter 的尺度。
+        ///
+        /// 用平均绝对偏差而不是标准差，是因为一次大的失手不该把整段的评价
+        /// 拉到"手很抖"去。
+        ///
+        /// 末尾那个二倍不是随手加的。生成端的抖动是乘性的，偏差取自
+        /// 均匀分布在正负一之间的白噪声，它的绝对值期望是二分之一，
+        /// 所以直接量到的平均偏差只有 jitter 参数的一半。不换算的话，
+        /// 档案里记的 jitter 和面板上量出来的永远差一倍，
+        /// 两边的描述会在分档边界上打架。
         /// </summary>
+        private const float MeanAbsoluteToAmplitude = 2f;
+
         private static float Jitter(List<float> ditSamples, float dit)
         {
             if (ditSamples.Count == 0 || dit <= 0f)
@@ -252,7 +265,7 @@ namespace Decoder.Signal
                 sum += Math.Abs(sample - dit);
             }
 
-            return sum / ditSamples.Count / dit;
+            return sum / ditSamples.Count / dit * MeanAbsoluteToAmplitude;
         }
     }
 }
