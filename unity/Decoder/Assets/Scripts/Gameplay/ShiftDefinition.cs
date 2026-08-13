@@ -32,6 +32,9 @@ namespace Decoder.Gameplay
 
         /// <summary>一次性密码本加密的数字电文。</summary>
         OneTimePad,
+
+        /// <summary>慢扫描传真图。不用抄写，得盯着屏幕把图看完。</summary>
+        Facsimile,
     }
 
     /// <summary>
@@ -76,6 +79,13 @@ namespace Decoder.Gameplay
         [Tooltip("这条电文是不是有人冒充。玩家要靠手法察觉，系统不提示")]
         public bool isImpostor;
 
+        [Header("慢扫描传真")]
+        [Tooltip("传真图的题材。只对 Facsimile 信号有意义")]
+        public FacsimileSubject facsimileSubject = FacsimileSubject.Calibration;
+
+        [Tooltip("传真图的种子。同一次传输每次接收都要得到同一幅图")]
+        public int facsimileSeed = 4242;
+
         [Header("一次性密码本")]
         [Tooltip("密码本册子的种子。同一册子在整个战役里保持不变")]
         public int padBookSeed = 19851104;
@@ -118,6 +128,10 @@ namespace Decoder.Gameplay
                     return OneTimePad.BuildTransmission(plainDigits, padBookSeed, padPage);
                 }
 
+                case SignalKind.Facsimile:
+                    // 传真台不发字符，图像本身就是内容。
+                    return string.Empty;
+
                 case SignalKind.PlainMorse:
                 default:
                     return plainText.ToUpperInvariant();
@@ -126,6 +140,10 @@ namespace Decoder.Gameplay
 
         public SignalSynthesizer.Station BuildStation(ChineseTelegraphCode telegraph)
         {
+            var facsimile = kind == SignalKind.Facsimile
+                ? FacsimileImage.Render(facsimileSubject, facsimileSeed)
+                : null;
+
             return new SignalSynthesizer.Station(
                 callsign,
                 frequencyKHz,
@@ -133,7 +151,8 @@ namespace Decoder.Gameplay
                 wordsPerMinute,
                 strength,
                 fist: fist,
-                fistSeed: fistSeed)
+                fistSeed: fistSeed,
+                facsimile: facsimile)
             {
                 StartOffsetSeconds = startOffsetSeconds,
             };

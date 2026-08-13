@@ -18,6 +18,15 @@ namespace Decoder.Tests
             return ShiftLibrary.All();
         }
 
+        /// <summary>
+        /// 这条信号是不是有人在敲键。传真是机器逐行扫出来的，
+        /// 没有发报人，也就没有手法、没有抖动种子、档案里也不会有它的记录。
+        /// </summary>
+        private static bool HasOperator(TransmissionEntry entry)
+        {
+            return entry.kind != SignalKind.Facsimile;
+        }
+
         [Test]
         public void EveryChineseCharacterIsInTheCodeTable()
         {
@@ -175,6 +184,11 @@ namespace Decoder.Tests
             {
                 foreach (var entry in shift.transmissions)
                 {
+                    if (!HasOperator(entry))
+                    {
+                        continue;
+                    }
+
                     Assert.IsTrue(entry.fist.IsValid,
                         $"{shift.shiftId} 的 {entry.callsign} 没有配手法");
                 }
@@ -244,6 +258,11 @@ namespace Decoder.Tests
             {
                 foreach (var entry in shift.transmissions)
                 {
+                    if (!HasOperator(entry))
+                    {
+                        continue;
+                    }
+
                     Assert.IsTrue(seeds.Add(entry.fistSeed),
                         $"{shift.shiftId} 的 {entry.callsign} 用了重复的抖动种子 {entry.fistSeed}");
                 }
@@ -259,6 +278,11 @@ namespace Decoder.Tests
             {
                 foreach (var entry in shift.transmissions)
                 {
+                    if (!HasOperator(entry))
+                    {
+                        continue;
+                    }
+
                     Assert.IsTrue(ShiftLibrary.KnownFistFor(entry.callsign).IsValid,
                         $"档案里查不到 {entry.callsign}");
                 }

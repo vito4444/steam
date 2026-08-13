@@ -387,10 +387,82 @@ namespace Decoder.Gameplay
             return shift;
         }
 
+        /// <summary>
+        /// 第五班。设计意图：
+        ///
+        /// 引入慢扫描传真。它和前四班的每一条信号都相反——不用抄、不用查表、不用解密，
+        /// 但要求玩家在一个频率上一动不动地待够十几秒。前四班训练出来的习惯是
+        /// 不停扫频找信号，这一班第一次惩罚那个习惯：手一动，图就废了。
+        ///
+        /// 更要紧的是它同时在两个频率上摆了东西。传真在扫的时候，M08 在另一头发
+        /// 一条短电文。两件事都想要就两件事都做不好，玩家必须选一个——
+        /// 而选哪个的后果要到交班之后才知道。这是本作第一次把"注意力"本身做成资源。
+        /// </summary>
+        public static ShiftDefinition FifthShift()
+        {
+            var shift = new ShiftDefinition
+            {
+                shiftId = "shift-05",
+                title = "第五班 · 一幅图",
+                inGameDate = "1985-11-19",
+                noiseSeed = 19851119,
+                bandLowKHz = 6800f,
+                bandHighKHz = 7200f,
+            };
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "F31",
+                frequencyKHz = 6968f,
+                kind = SignalKind.Facsimile,
+                facsimileSubject = FacsimileSubject.Facility,
+                facsimileSeed = 51119,
+                strength = 0.94f,
+                startOffsetSeconds = 6f,
+                plainText = "设施平面图",
+                correctLevel = ThreatLevel.Flash,
+                isPrimary = true,
+                debriefNote = "围墙、主楼、两栋附属，右上角有人用圈标了一处。"
+                              + "标记的位置在图上，不在电文里——发图的人知道收图的人认得那地方。",
+            });
+
+            // 传真扫到一半时 M08 开始发。两件事撞在一起是这一班的全部设计。
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "M08",
+                fist = M08Operator,
+                fistSeed = 511,
+                frequencyKHz = 7042f,
+                kind = SignalKind.ChineseTelegraph,
+                wordsPerMinute = 17f,
+                strength = 0.81f,
+                startOffsetSeconds = 11f,
+                plainText = "图已发出",
+                correctLevel = ThreatLevel.Attention,
+                debriefNote = "他只说了这四个字。你如果在看图，就没听见。",
+            });
+
+            shift.transmissions.Add(new TransmissionEntry
+            {
+                callsign = "B02",
+                fist = M14Operator,
+                fistSeed = 512,
+                frequencyKHz = 7154f,
+                kind = SignalKind.PlainMorse,
+                wordsPerMinute = 14f,
+                strength = 0.58f,
+                plainText = "QRT DE B02",
+                correctLevel = ThreatLevel.Routine,
+                debriefNote = "B02 关机了。这几天他关得一次比一次早。",
+            });
+
+            return shift;
+        }
+
         /// <summary>按顺序返回全部班次。存档与班次推进用它。</summary>
         public static ShiftDefinition[] All()
         {
-            return new[] { FirstShift(), SecondShift(), ThirdShift(), FourthShift() };
+            return new[] { FirstShift(), SecondShift(), ThirdShift(), FourthShift(), FifthShift() };
         }
 
         /// <summary>

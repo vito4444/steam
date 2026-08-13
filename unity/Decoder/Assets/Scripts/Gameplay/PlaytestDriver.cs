@@ -49,6 +49,64 @@ namespace Decoder.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// 演练哪一班。默认第一班，用 -playtestShift 指定别的。
+        /// 传真那一班的画面只有跑到它才截得到。
+        /// </summary>
+        private static ShiftDefinition ResolveShift()
+        {
+            var all = ShiftLibrary.All();
+            var args = Environment.GetCommandLineArgs();
+            for (var i = 0; i < args.Length - 1; i++)
+            {
+                if (!string.Equals(args[i], "-playtestShift", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (int.TryParse(args[i + 1], out var index) && index >= 1 && index <= all.Length)
+                {
+                    return all[index - 1];
+                }
+            }
+
+            return all[0];
+        }
+
+        /// <summary>守着频率把整幅传真看完，并把扫描进度记进日志。</summary>
+        private IEnumerator WatchFacsimile()
+        {
+            hud.SetStatusBanner("自动演练 · 接收图像，不要动旋钮");
+
+            var deadline = Time.unscaledTime + 30f;
+            var lastLogged = -1;
+            while (Time.unscaledTime < deadline)
+            {
+                var station = receiver.CurrentStation;
+                if (station?.Facsimile != null)
+                {
+                    var progress = station.FacsimileProgress(receiver.Synthesizer.ElapsedSeconds);
+                    var percent = Mathf.Clamp01((float)(progress / station.TotalSeconds));
+                    var decile = Mathf.FloorToInt(percent * 10f);
+                    if (decile > lastLogged)
+                    {
+                        lastLogged = decile;
+                        Debug.Log($"[PlaytestDriver] 图像接收 {percent:P0}");
+                    }
+
+                    if (progress >= station.TotalSeconds)
+                    {
+                        Debug.Log("[PlaytestDriver] 整幅图接收完毕");
+                        break;
+                    }
+                }
+
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(stepSeconds);
+        }
+
         private IEnumerator RunScript()
         {
             if (receiver == null || hud == null)
@@ -57,12 +115,13 @@ namespace Decoder.Gameplay
                 yield break;
             }
 
-            var shift = ShiftLibrary.FirstShift();
+            var shift = ResolveShift();
             var primary = shift.Primary;
             var telegraph = ChineseTelegraphCode.Shared;
 
+            hud.LoadShift(shift);
             hud.SetStatusBanner("自动演练 · 正在扫描频段");
-            Debug.Log("[PlaytestDriver] 开始演练");
+            Debug.Log($"[PlaytestDriver] 开始演练 {shift.shiftId}");
 
             // 第一步：从频段低端扫到主线电台，模拟玩家搜频的过程。
             var from = shift.bandLowKHz;
@@ -82,26 +141,35 @@ namespace Decoder.Gameplay
                       $"呼号 {receiver.CurrentStation?.Callsign ?? "无"}");
             hud.SetStatusBanner($"自动演练 · 截获 {receiver.CurrentStation?.Callsign}");
 
-            // 第二步：逐字抄下电码，模拟玩家一边听一边敲。
-            var digits = primary.ResolveAirText(telegraph);
-            var perChar = Mathf.Max(0.04f, stepSeconds / Mathf.Max(1, digits.Length));
-            foreach (var c in digits)
+            if (primary.kind == SignalKind.Facsimile)
             {
-                hud.AppendCopiedCharacter(c);
-                yield return new WaitForSeconds(perChar);
+                // 传真班次没有抄写这一步，玩家要做的就是守住频率把图看完。
+                // 演练也照这个来，否则截出来的图永远只有开头几行。
+                yield return StartCoroutine(WatchFacsimile());
             }
-
-            yield return new WaitForSeconds(stepSeconds);
-            Debug.Log($"[PlaytestDriver] 抄收完成: {hud.CopiedBuffer}");
-
-            // 第三步：逐组查电码表。这是玩家真正要做的动作，
-            // 一组一组查出来才知道电文说的是什么。
-            hud.SetStatusBanner("自动演练 · 查电码表");
-            var groups = digits.Length / ChineseTelegraphCode.CodeLength;
-            for (var g = 0; g < groups; g++)
+            else
             {
-                hud.LookUpOneGroup();
-                yield return new WaitForSeconds(stepSeconds * 0.5f);
+                // 第二步：逐字抄下电码，模拟玩家一边听一边敲。
+                var digits = primary.ResolveAirText(telegraph);
+                var perChar = Mathf.Max(0.04f, stepSeconds / Mathf.Max(1, digits.Length));
+                foreach (var c in digits)
+                {
+                    hud.AppendCopiedCharacter(c);
+                    yield return new WaitForSeconds(perChar);
+                }
+
+                yield return new WaitForSeconds(stepSeconds);
+                Debug.Log($"[PlaytestDriver] 抄收完成: {hud.CopiedBuffer}");
+
+                // 第三步：逐组查电码表。这是玩家真正要做的动作，
+                // 一组一组查出来才知道电文说的是什么。
+                hud.SetStatusBanner("自动演练 · 查电码表");
+                var groups = digits.Length / ChineseTelegraphCode.CodeLength;
+                for (var g = 0; g < groups; g++)
+                {
+                    hud.LookUpOneGroup();
+                    yield return new WaitForSeconds(stepSeconds * 0.5f);
+                }
             }
 
             // 第四步：填上报单。呼号和频率都要玩家自己记，系统不代填。

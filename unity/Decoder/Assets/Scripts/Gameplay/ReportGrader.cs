@@ -95,9 +95,16 @@ namespace Decoder.Gameplay
             var copied = Normalize(submission.CopiedText);
             var target = Normalize(expectedAir);
 
+            // 传真没有可抄的字符，抄收纸不参与判定。
+            //
+            // 这不等于"看不看图都一样"：图上有什么决定了这条信号该报什么等级，
+            // 没看图的人不会知道那张平面图上有人圈了一处，只会当例行流量报上去。
+            // 判读的责任被压到等级这一项上，而等级从来都是这份工作真正的考核项。
+            var isFacsimile = expected.kind == SignalKind.Facsimile;
+
             var grade = new ReportGrade
             {
-                Accuracy = SimilarityRatio(copied, target),
+                Accuracy = isFacsimile ? 1f : SimilarityRatio(copied, target),
                 FrequencyCorrect = Math.Abs(submission.FrequencyKHz - expected.frequencyKHz)
                                    <= FrequencyToleranceKHz,
                 CallsignCorrect = string.Equals(Normalize(submission.Callsign),
@@ -106,9 +113,16 @@ namespace Decoder.Gameplay
                 ExpectedText = expected.plainText,
             };
 
-            grade.DecodedText = expected.kind == SignalKind.ChineseTelegraph && telegraph != null
-                ? telegraph.DecodeDigits(copied)
-                : copied;
+            if (isFacsimile)
+            {
+                grade.DecodedText = "（图像）";
+            }
+            else
+            {
+                grade.DecodedText = expected.kind == SignalKind.ChineseTelegraph && telegraph != null
+                    ? telegraph.DecodeDigits(copied)
+                    : copied;
+            }
 
             grade.Outcome = ResolveOutcome(grade);
             return grade;

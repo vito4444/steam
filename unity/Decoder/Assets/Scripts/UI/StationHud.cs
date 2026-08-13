@@ -267,6 +267,19 @@ namespace Decoder.UI
                 }
             }
 
+            // 传真是连续载波，喂给电码解码器只会解出一串乱码，
+            // 而那串乱码看上去和真的抄收结果一模一样，玩家会照着它抄。
+            if (station?.Facsimile != null)
+            {
+                _morse.Reset();
+                if (_liveCopyText != null)
+                {
+                    _liveCopyText.text = DescribeFacsimile(station, synth.ElapsedSeconds);
+                }
+
+                return;
+            }
+
             // 信号太弱时不喂数据。这一点很重要：辅助工具不该比玩家的耳朵更灵，
             // 否则玩家会发现盯着转写带比调准频率更省事，搜频这一层玩法就废了。
             var readable = station != null && receiver.SignalLevel > 0.45f;
@@ -278,6 +291,42 @@ namespace Decoder.UI
                     ? "（辅助已关闭）"
                     : _morse.Format(_assist);
             }
+        }
+
+        /// <summary>
+        /// 传真接收的进度说明。
+        ///
+        /// 不用抄写，所以这一栏改说"图扫到哪儿了"。扫描进度得给出来：
+        /// 玩家需要知道还要在这个频率上再守多久，才能决定要不要为了另一个
+        /// 频率上的东西放弃这幅图。这个取舍是第五班的全部内容。
+        /// </summary>
+        private string DescribeFacsimile(SignalSynthesizer.Station station, double elapsedSeconds)
+        {
+            var image = station.Facsimile;
+            var progress = station.FacsimileProgress(elapsedSeconds);
+            if (progress < 0d)
+            {
+                return "图像信号 · 等待开始";
+            }
+
+            if (progress < FacsimileSignal.LeaderSeconds)
+            {
+                return "图像信号 · 引导音，马上开扫";
+            }
+
+            if (progress >= station.TotalSeconds)
+            {
+                var wait = station.TotalSeconds + 3f - progress;
+                return wait > 0f
+                    ? $"图像信号 · 本幅已完，下一幅 {wait:F0} 秒后"
+                    : "图像信号 · 等待下一幅";
+            }
+
+            var line = FacsimileSignal.LineSeconds(image.Width, station.FacsimilePixelSeconds);
+            var row = Mathf.Min(image.Height,
+                Mathf.FloorToInt((float)((progress - FacsimileSignal.LeaderSeconds) / line)) + 1);
+            var remaining = station.TotalSeconds - progress;
+            return $"图像信号 · 第 {row}/{image.Height} 行，还需 {remaining:F0} 秒\n不用抄，盯住屏幕";
         }
 
         private void HandleHotkeys()
@@ -526,6 +575,16 @@ namespace Decoder.UI
             }
 
             _fistCallsign = station.Callsign;
+
+            // 传真是机器逐行扫出来的，没有人在敲键。硬去量它的"手法"只会
+            // 从连续载波里量出一组毫无意义的数字，而玩家会把它当真。
+            if (station.Facsimile != null)
+            {
+                _fistText.text = "机器扫描，没有手法可认。";
+                _fistArchiveText.text = string.Empty;
+                return;
+            }
+
             var measured = FistAnalyzer.Measure(station.Timeline);
             _fistText.text = measured.Describe();
 

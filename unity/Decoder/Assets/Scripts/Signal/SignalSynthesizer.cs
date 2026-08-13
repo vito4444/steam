@@ -208,6 +208,22 @@ namespace Decoder.Signal
         }
 
         /// <summary>
+        /// 传真台此刻的音频频率。
+        ///
+        /// 图像本身的调制是绝对频率（黑 1500、白 2300），失配把整条音频搬移——
+        /// 这正是真实接收机上的表现，也是玩家能听出"调偏了"的原因：
+        /// 图还在扫，但音调整体高了或低了一截，屏幕上的图像随之整体变亮或变暗。
+        /// </summary>
+        public static float FacsimileToneFor(Station station, double elapsedSeconds, float detuneKHz)
+        {
+            var progress = station.FacsimileProgress(elapsedSeconds);
+            var hertz = FacsimileSignal.FrequencyAt(
+                station.Facsimile, (float)progress, station.FacsimilePixelSeconds);
+            var shifted = hertz + detuneKHz * 700f;
+            return shifted < 40f ? 40f : shifted;
+        }
+
+        /// <summary>
         /// 渲染一段单声道采样。返回值写进 buffer 的前 count 个位置。
         /// 这个方法要能在音频线程里跑，所以内部不做任何分配。
         /// </summary>
@@ -254,7 +270,10 @@ namespace Decoder.Signal
 
                     if (_keyEnvelope > 0f)
                     {
-                        var tone = ToneForDetune(best.FrequencyKHz - TunedKHz);
+                        var detune = best.FrequencyKHz - TunedKHz;
+                        var tone = best.Facsimile != null
+                            ? FacsimileToneFor(best, _elapsedSeconds, detune)
+                            : ToneForDetune(detune);
                         _carrierPhase += 2.0 * Math.PI * tone * dt;
                         if (_carrierPhase > 2.0 * Math.PI)
                         {
@@ -289,7 +308,9 @@ namespace Decoder.Signal
 
             public Station(string callsign, float frequencyKHz, string message,
                 float wordsPerMinute, float strength = 1f, bool loop = true,
-                float loopGapSeconds = 2f, OperatorFist fist = default, int fistSeed = 0)
+                float loopGapSeconds = 2f, OperatorFist fist = default, int fistSeed = 0,
+                FacsimileImage facsimile = null,
+                float facsimilePixelSeconds = FacsimileSignal.DefaultPixelSeconds)
             {
                 Callsign = callsign ?? string.Empty;
                 FrequencyKHz = frequencyKHz;
@@ -298,6 +319,8 @@ namespace Decoder.Signal
                 Strength = strength;
                 Loop = loop;
                 Fist = fist.IsValid ? fist : OperatorFist.Machine;
+                Facsimile = facsimile;
+                FacsimilePixelSeconds = facsimilePixelSeconds;
 
                 // 时序按发报人的手法展开。手法是这个电台身份的一部分，
                 // 玩家最终要靠它认人。
@@ -315,9 +338,39 @@ namespace Decoder.Signal
                     _keyStates[i] = timeline[i].KeyDown;
                 }
 
+                if (facsimile != null)
+                {
+                    // 传真台不发电码，一幅图占满整个周期。留的间隔比电码长得多：
+                    // 玩家错过开头就得等下一幅，这段空白要长到能让他意识到自己错过了。
+                    accumulated = FacsimileSignal.TotalSeconds(facsimile, facsimilePixelSeconds);
+                    _loopSeconds = accumulated + Math.Max(3f, loopGapSeconds);
+                    TotalSeconds = accumulated;
+                    return;
+                }
+
                 // 循环播报之间留一段静默，否则玩家分不清一遍结束和下一遍开始。
                 _loopSeconds = accumulated + Math.Max(0f, loopGapSeconds);
                 TotalSeconds = accumulated;
+            }
+
+            /// <summary>非空表示这个电台发的是慢扫描传真图，不是电码。</summary>
+            public FacsimileImage Facsimile { get; }
+
+            public float FacsimilePixelSeconds { get; }
+
+            /// <summary>
+            /// 传真在本轮里已经发了多久。负数表示这一轮还没开始，
+            /// 大于整幅时长表示已经发完、正在等下一轮。
+            /// </summary>
+            public double FacsimileProgress(double elapsedSeconds)
+            {
+                var t = elapsedSeconds - StartOffsetSeconds;
+                if (t < 0d)
+                {
+                    return t;
+                }
+
+                return Loop ? t % _loopSeconds : t;
             }
 
             /// <summary>这个电台的发报人手法。冒充者的呼号可以是假的，这个不行。</summary>
@@ -343,6 +396,13 @@ namespace Decoder.Signal
 
             public bool IsKeyDown(double elapsedSeconds)
             {
+                if (Facsimile != null)
+                {
+                    // 传真是连续载波，发图期间一直有音，只有轮次之间的空白才停。
+                    var progress = FacsimileProgress(elapsedSeconds);
+                    return progress >= 0d && progress < TotalSeconds;
+                }
+
                 if (_cumulativeSeconds.Length == 0)
                 {
                     return false;

@@ -73,6 +73,11 @@ namespace Decoder.UI
         private int _lastColumn = -1;
         private float _lastAmplitude = -1f;
 
+        private SignalSynthesizer.Station _facsimileStation;
+        private int _facsimileRow = -1;
+        private double _facsimileCycle = -1d;
+        private NoiseSource _facsimileGrain;
+
         // 电子束驻留亮度查表，索引是到中心的归一化距离。见 BuildDwellTable。
         private const int DwellResolution = 256;
         private static readonly float[] Dwell = BuildDwellTable();
@@ -288,8 +293,24 @@ namespace Decoder.UI
             }
 
             var dt = Time.unscaledDeltaTime;
-            Decay(dt);
-            AdvanceSweep(dt);
+            var station = receiver.Synthesizer.CurrentStation;
+
+            // 同一块管子两种用法：收电码时是示波器，收传真时是显像管。
+            // 真实机房里也是这样——显示单元只有一个，靠面板上的模式开关切换。
+            if (station?.Facsimile != null)
+            {
+                AdvanceFacsimile(station);
+            }
+            else
+            {
+                if (_facsimileStation != null)
+                {
+                    LeaveFacsimileMode();
+                }
+
+                Decay(dt);
+                AdvanceSweep(dt);
+            }
 
             _texture.SetPixels32(_pixels);
             _texture.Apply(false);
@@ -353,6 +374,112 @@ namespace Decoder.UI
             if (_sweepPosition >= 1f)
             {
                 _sweepPosition -= Mathf.Floor(_sweepPosition);
+            }
+        }
+
+        /// <summary>
+        /// 传真模式：图像从上往下一行行长出来。
+        ///
+        /// 不做额外的扫描线指示——"画到哪儿了"由图像自己的边界表达，
+        /// 这也是真实传真机上看到的样子。
+        ///
+        /// 失配与信号强度直接作用在画面上，而不是只反映在音量里：
+        /// 调偏了整幅图会整体发白或发黑（因为解调出的亮度频率被搬移了），
+        /// 信号弱了会爬满噪点。玩家因此可以只看屏幕就把频率调准，
+        /// 这对听障玩家是必须的——这幅图是本班次唯一的情报。
+        /// </summary>
+        private void AdvanceFacsimile(SignalSynthesizer.Station station)
+        {
+            var synth = receiver.Synthesizer;
+            var image = station.Facsimile;
+            var progress = station.FacsimileProgress(synth.ElapsedSeconds);
+            var line = FacsimileSignal.LineSeconds(image.Width, station.FacsimilePixelSeconds);
+            var cycle = System.Math.Floor(
+                (synth.ElapsedSeconds - station.StartOffsetSeconds) / System.Math.Max(1e-6, station.TotalSeconds));
+
+            // 换台、或者这一幅发完进入下一幅，都要把屏幕清干净重新开始。
+            // 不清的话新一幅的上半部分会叠在旧图的下半部分上。
+            if (station != _facsimileStation || cycle != _facsimileCycle || progress < 0d)
+            {
+                EnterFacsimileMode(station, cycle);
+            }
+
+            var intoImage = progress - FacsimileSignal.LeaderSeconds;
+            if (intoImage < 0d)
+            {
+                return;
+            }
+
+            var currentRow = Mathf.Min(image.Height - 1, Mathf.FloorToInt((float)(intoImage / line)));
+
+            // 失配把整条音频搬移，解调出来的亮度就整体偏了。
+            var bias = synth.CurrentDetuneKHz * 700f
+                       / (FacsimileSignal.WhiteHertz - FacsimileSignal.BlackHertz);
+            var level = Mathf.Clamp01(synth.CurrentSignalLevel);
+
+            for (var row = _facsimileRow + 1; row <= currentRow; row++)
+            {
+                PaintFacsimileRow(image, row, level, bias);
+            }
+
+            _facsimileRow = currentRow;
+        }
+
+        private void EnterFacsimileMode(SignalSynthesizer.Station station, double cycle)
+        {
+            _facsimileStation = station;
+            _facsimileCycle = cycle;
+            _facsimileRow = -1;
+            _facsimileGrain ??= new NoiseSource(0xFA);
+
+            // 传真模式下不留示波器的刻度网格：图像会铺满整个屏幕，
+            // 网格压在图像下面只会让本来就粗糙的图更难认。
+            var blank = (Color32)backgroundColor;
+            for (var i = 0; i < _pixels.Length; i++)
+            {
+                _pixels[i] = blank;
+            }
+        }
+
+        private void LeaveFacsimileMode()
+        {
+            _facsimileStation = null;
+            _facsimileRow = -1;
+            _facsimileCycle = -1d;
+            _lastColumn = -1;
+            _lastAmplitude = -1f;
+            System.Array.Copy(_background, _pixels, _pixels.Length);
+        }
+
+        private void PaintFacsimileRow(FacsimileImage image, int row, float level, float bias)
+        {
+            var scaleX = textureWidth / (float)image.Width;
+            var scaleY = textureHeight / (float)image.Height;
+
+            // 纹理原点在左下，图像行号从顶部数起，所以要翻过来。
+            var top = textureHeight - 1 - Mathf.FloorToInt(row * scaleY);
+            var bottom = Mathf.Max(0, textureHeight - Mathf.FloorToInt((row + 1) * scaleY));
+            top = Mathf.Clamp(top, 0, textureHeight - 1);
+
+            // 信号越弱噪点越重。用信号强度的补数，收满格时几乎干净。
+            var grain = (1f - level) * 0.55f;
+
+            for (var y = bottom; y <= top; y++)
+            {
+                var rowOffset = y * textureWidth;
+                for (var x = 0; x < textureWidth; x++)
+                {
+                    var source = Mathf.Min(image.Width - 1, Mathf.FloorToInt(x / scaleX));
+                    var luminance = Mathf.Clamp01(image.Sample(source, row) + bias);
+                    luminance = Mathf.Clamp01(luminance * level + _facsimileGrain.NextWhite() * grain);
+
+                    var index = rowOffset + x;
+                    _pixels[index] = new Color32(
+                        (byte)(traceColor.r * luminance * 255f),
+                        (byte)(traceColor.g * luminance * 255f),
+                        (byte)(traceColor.b * luminance * 255f),
+                        255);
+                }
             }
         }
 
