@@ -160,6 +160,36 @@ Ordered by how much each would close the gap, and annotated with what it actuall
 | Worker traits | Named traits such as Fast Learner and Tidy | No trait system | Expensive. Real design work, and the thing most likely to make workers feel like individuals. |
 | Clock and calendar | A time of day alongside the day counter | Day counter only | Cheap to display, but the simulation has no concept of hours; showing one would be a lie. |
 
+## What a video review found that screenshots hid
+
+An 18 second capture of the running game was reviewed frame by frame
+([`video/worker-dusk.mp4`](video/worker-dusk.mp4)). Three effects that are
+implemented and running turned out to be invisible, which no still frame would
+ever have revealed.
+
+Confirmed working: cargo moving along belts, workers walking the floor, status
+lamps switching between green and amber, warm pools of point light on the floor.
+
+Implemented but invisible, and why:
+
+- **Belt surface scrolling.** The belt is textured with brushed metal, whose
+  striations run along the belt's own axis. Scrolling a horizontally striped
+  texture horizontally produces no perceivable motion. The fix is a texture with
+  cross-belt features, not more scroll speed.
+- **Spinning saw blade.** A smooth grey disc has rotational symmetry, so it looks
+  identical at every angle. It needs teeth, spokes or an off-centre mark before
+  rotation reads at all.
+- **Spinning lathe spindle.** Same problem: a plain cylinder turning about its own
+  axis is indistinguishable from a stationary one.
+
+The general lesson is worth keeping: motion is only visible on features that
+break the symmetry of the axis they move along. Animating a symmetric object is
+wasted work.
+
+Also flagged, and not yet addressed: workers slide rather than walk, workers pass
+through each other, and cargo vanishes on entering a machine rather than being
+consumed visibly.
+
 ## Gap list
 
 Ordered by how much each would move the picture, not by effort. The comparison table
