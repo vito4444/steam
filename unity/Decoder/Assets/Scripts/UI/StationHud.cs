@@ -17,11 +17,14 @@ namespace Decoder.UI
     /// </summary>
     public sealed class StationHud : MonoBehaviour
     {
-        private static readonly Color Phosphor = new Color(0.42f, 1f, 0.52f, 1f);
+        // P1 磷光的实际观感偏黄绿，而且远没有纯绿那么艳。之前那组值
+        // 让画面的平均饱和度冲到 0.54，而 UI 占了很大屏占比，
+        // 整个场景都被带成了荧光绿。
+        private static readonly Color Phosphor = new Color(0.66f, 0.95f, 0.68f, 1f);
         // 暗档从 0.24 提到 0.34：它要负责显示上报单上还没填的占位符，
         // 太暗玩家根本注意不到那里能填。
-        private static readonly Color PhosphorDim = new Color(0.34f, 0.72f, 0.42f, 1f);
-        private static readonly Color Amber = new Color(1f, 0.72f, 0.26f, 1f);
+        private static readonly Color PhosphorDim = new Color(0.50f, 0.72f, 0.53f, 1f);
+        private static readonly Color Amber = new Color(0.95f, 0.76f, 0.42f, 1f);
         private static readonly Color Alert = new Color(1f, 0.36f, 0.28f, 1f);
         // 面板压得比较黑：这些字要盖在被台灯照亮的桌面上，
         // 半透明的底在亮处会让磷光绿彻底糊掉。

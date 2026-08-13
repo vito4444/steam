@@ -99,8 +99,13 @@ namespace Decoder.EditorTools
             return v is { Count: >= 3 } ? new Color(v[0], v[1], v[2]) : fallback;
         }
 
-        private static readonly Color WarmLamp = new(1.0f, 0.72f, 0.36f);
-        private static readonly Color CrtGreen = new(0.30f, 1.0f, 0.45f);
+        // 2700K 白炽灯归一化到 sRGB 大约是 1.00/0.82/0.63。之前那组值的蓝通道
+        // 压得太狠，接近纯橙，强度一提整片桌面就变成橙色色块，
+        // 亚麻油地板和木纹的固有色全被吃掉了。
+        private static readonly Color WarmLamp = new(1.0f, 0.82f, 0.63f);
+        // 暗房里的 CRT 看起来是柔和的黄绿，不是荧光棒。之前那组值几乎是
+        // 纯绿，屏幕又占了画面上部一大块，把整帧的绿色占比推到了四成六。
+        private static readonly Color CrtGreen = new(0.52f, 0.92f, 0.58f);
         private static readonly Color ColdWindow = new(0.45f, 0.62f, 1.0f);
         private static readonly Color NeonAmber = new(1.0f, 0.45f, 0.12f);
 

@@ -1,29 +1,29 @@
 {
   "_comment": "探针场景的光照参数。ProbeSceneBuilder 在生成场景时读取本文件，tools/auto_tune_lighting.py 会按画面自检结果自动改写这里的数值。手工编辑同样有效。",
   "ambientSky": [
-    0.0016,
-    0.002,
-    0.0028
+    0.0048,
+    0.0056,
+    0.0072
   ],
   "ambientEquator": [
-    0.001,
-    0.0012,
-    0.0016
+    0.0032,
+    0.0036,
+    0.0046
   ],
   "ambientGround": [
-    0.0006,
-    0.0006,
-    0.0008
+    0.0012,
+    0.0012,
+    0.0016
   ],
   "fogDensity": 0.05,
   "lights": {
     "keyLampWarm": {
-      "intensity": 4.6,
+      "intensity": 3.6,
       "range": 3.1,
       "spotAngle": 86.0
     },
     "fillCrtGreen": {
-      "intensity": 2.6,
+      "intensity": 1.9,
       "range": 1.7
     },
     "rimColdWindow": {
@@ -32,7 +32,7 @@
       "spotAngle": 54.0
     },
     "bounceDeskWarm": {
-      "intensity": 2.4,
+      "intensity": 1.9,
       "range": 2.0,
       "spotAngle": 92.0
     },
@@ -41,18 +41,18 @@
       "range": 1.9
     },
     "panelWorkLight": {
-      "intensity": 1.5,
+      "intensity": 2.5,
       "range": 2.8,
       "spotAngle": 72.0
     },
     "grazingSide": {
-      "intensity": 2.2,
+      "intensity": 2.6,
       "range": 3.0,
       "spotAngle": 58.0
     }
   },
   "emission": {
-    "crtScreen": 1.6,
+    "crtScreen": 1.45,
     "neonLamp": 3.0,
     "meterFace": 0.3,
     "dialStrip": 0.45,
