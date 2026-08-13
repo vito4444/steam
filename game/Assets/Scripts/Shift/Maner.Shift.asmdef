@@ -1,0 +1,17 @@
+{
+    "name": "Maner.Shift",
+    "rootNamespace": "Maner.Shift",
+    "references": [
+        "Maner.Sim",
+        "Maner.Controls"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

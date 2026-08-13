@@ -1,0 +1,46 @@
+# Unity 生成目录
+game/[Ll]ibrary/
+game/[Tt]emp/
+game/[Oo]bj/
+game/[Bb]uild/
+game/[Bb]uilds/
+game/[Ll]ogs/
+game/[Uu]ser[Ss]ettings/
+game/[Mm]emoryCaptures/
+game/[Rr]ecordings/
+
+# 构建产物与自检输出
+build/
+artifacts/
+screenshots/
+
+# Unity 生成的解决方案与工程文件
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity 崩溃与日志
+sysinfo.txt
+*.stackdump
+crashlytics-build.properties
+
+# 操作系统
+.DS_Store
+Thumbs.db
+.vs/
+.idea/
+
+# 秘密与本地配置
+*.local
+.env
