@@ -545,8 +545,21 @@ namespace Decoder.EditorTools
             // 顶部横贯管道。它悬在仪表墙前方，是画面里最有效的一个投影体：
             // 一根管子能在整面墙上拉出一条贯穿的暗带，把大片均匀的亮面切开。
             AddCylinder(root, "OverheadConduit",
-                new Vector3(0f, 2.56f, 0.40f), new Vector3(0.042f, 1.45f, 0.042f),
+                new Vector3(0f, 2.56f, 0.40f), new Vector3(0.042f, 1.34f, 0.042f),
                 Quaternion.Euler(0, 0, 90f), _steelDark);
+            // 两端各加一个法兰和一段向后拐的弯头。没有它们，管子的端面会在
+            // 视野边缘变成一个孤零零浮在黑暗里的椭圆，看着像穿帮。
+            foreach (var side in new[] { -1f, 1f })
+            {
+                var ex = side * 1.34f;
+                AddCylinder(root, $"ConduitFlange_{(side < 0 ? "L" : "R")}",
+                    new Vector3(ex, 2.56f, 0.40f), new Vector3(0.062f, 0.020f, 0.062f),
+                    Quaternion.Euler(0, 0, 90f), _brassKnob);
+                AddCylinder(root, $"ConduitElbow_{(side < 0 ? "L" : "R")}",
+                    new Vector3(ex + side * 0.02f, 2.56f, 0.30f),
+                    new Vector3(0.040f, 0.11f, 0.040f),
+                    Quaternion.Euler(90f, 0, 0), _steelDark);
+            }
             for (var b = 0; b < 5; b++)
             {
                 AddBox(root, $"ConduitClamp_{b}",
@@ -661,6 +674,97 @@ namespace Decoder.EditorTools
                 Quaternion.Euler(0, 0, 12f), _steelDark);
             AddCylinder(root, "LampShade", new Vector3(-0.86f, 1.18f, -0.78f), new Vector3(0.11f, 0.09f, 0.11f),
                 Quaternion.Euler(64f, 104f, 0f), _steelOlive);
+
+            BuildDeskProps(root);
+        }
+
+        /// <summary>
+        /// 桌面上的零碎。
+        ///
+        /// 这些东西没有一件参与玩法，但桌面是玩家低头时的整个视野——
+        /// 一张空桌子会让人立刻意识到自己在看一个搭出来的场景。
+        /// 概念图里的密度才是目标：铅笔、烟灰缸、气动罐、码表册、搪瓷缸、镇纸，
+        /// 每一件都得有自己的轮廓，不能是几个方块凑数。
+        /// </summary>
+        private static void BuildDeskProps(Transform root)
+        {
+            const float top = 0.767f;
+
+            // 铅笔：六棱杆用细圆柱近似，笔尖用一小段更细的圆柱，末端一小截金属箍
+            var pencil = new Vector3(0.16f, top + 0.005f, -0.78f);
+            AddCylinder(root, "PencilBody", pencil, new Vector3(0.0070f, 0.098f, 0.0070f),
+                Quaternion.Euler(0, 0, 90f), _bakelite);
+            AddCylinder(root, "PencilTip", pencil + new Vector3(0.088f, 0f, 0f),
+                new Vector3(0.0030f, 0.010f, 0.0030f), Quaternion.Euler(0, 0, 90f), _paper);
+            AddCylinder(root, "PencilFerrule", pencil + new Vector3(-0.082f, 0f, 0f),
+                new Vector3(0.0058f, 0.008f, 0.0058f), Quaternion.Euler(0, 0, 90f), _brassKnob);
+
+            // 烟灰缸：一圈壁加一个底，里面几个烟头。夜班的工位上不可能没有这个。
+            var ashtray = new Vector3(0.72f, top, -0.72f);
+            AddCylinder(root, "AshtrayBowl", ashtray + new Vector3(0f, 0.014f, 0f),
+                new Vector3(0.090f, 0.016f, 0.090f), Quaternion.identity, _steelDark);
+            AddCylinder(root, "AshtrayWell", ashtray + new Vector3(0f, 0.026f, 0f),
+                new Vector3(0.062f, 0.006f, 0.062f), Quaternion.identity, _bakelite);
+            for (var b = 0; b < 4; b++)
+            {
+                var angle = b * 74f + 20f;
+                var offset = Quaternion.Euler(0, angle, 0) * new Vector3(0.030f, 0f, 0f);
+                AddCylinder(root, $"CigaretteButt_{b}",
+                    ashtray + offset + new Vector3(0f, 0.031f, 0f),
+                    new Vector3(0.0042f, 0.014f, 0.0042f),
+                    Quaternion.Euler(78f, angle, 0f), _paper);
+            }
+
+            // 气动管道投递罐：黄铜圆筒加两道加强箍。上报单就是塞进它送走的。
+            var canister = new Vector3(0.98f, top + 0.030f, -1.02f);
+            AddCylinder(root, "TubeCanister", canister, new Vector3(0.038f, 0.085f, 0.038f),
+                Quaternion.Euler(0, 12f, 90f), _brassKnob);
+            AddCylinder(root, "TubeCanisterBand1", canister + new Vector3(-0.048f, 0f, -0.010f),
+                new Vector3(0.041f, 0.006f, 0.041f), Quaternion.Euler(0, 12f, 90f), _steelDark);
+            AddCylinder(root, "TubeCanisterBand2", canister + new Vector3(0.048f, 0f, 0.010f),
+                new Vector3(0.041f, 0.006f, 0.041f), Quaternion.Euler(0, 12f, 90f), _steelDark);
+
+            // 中文电码表：一本立着摊开的册子，两片纸页加一条书脊
+            var book = new Vector3(0.40f, top, -1.12f);
+            AddBox(root, "CodeTableSpine", book + new Vector3(0f, 0.006f, 0f),
+                new Vector3(0.014f, 0.012f, 0.170f), _bakelite, Quaternion.Euler(0, -6f, 0));
+            AddBox(root, "CodeTablePageL", book + new Vector3(-0.062f, 0.004f, 0f),
+                new Vector3(0.118f, 0.008f, 0.166f), _paper, Quaternion.Euler(0, -6f, -3f));
+            AddBox(root, "CodeTablePageR", book + new Vector3(0.062f, 0.004f, 0f),
+                new Vector3(0.118f, 0.008f, 0.166f), _paper, Quaternion.Euler(0, -6f, 3f));
+
+            // 搪瓷缸：杯身、杯口的一圈厚边、一个把手
+            var mug = new Vector3(-0.62f, top, -0.70f);
+            AddCylinder(root, "MugBody", mug + new Vector3(0f, 0.048f, 0f),
+                new Vector3(0.056f, 0.048f, 0.056f), Quaternion.identity, _paper);
+            AddCylinder(root, "MugRim", mug + new Vector3(0f, 0.096f, 0f),
+                new Vector3(0.059f, 0.005f, 0.059f), Quaternion.identity, _steelDark);
+            AddBox(root, "MugHandle", mug + new Vector3(0.052f, 0.048f, 0f),
+                new Vector3(0.010f, 0.036f, 0.008f), _paper);
+
+            // 铁尺与印章：抄报台上的常备物
+            AddBox(root, "SteelRuler", new Vector3(-0.34f, top + 0.002f, -0.70f),
+                new Vector3(0.30f, 0.003f, 0.026f), _brassKnob, Quaternion.Euler(0, 8f, 0));
+            AddCylinder(root, "StampHandle", new Vector3(0.58f, top + 0.034f, -1.14f),
+                new Vector3(0.020f, 0.026f, 0.020f), Quaternion.identity, _bakelite);
+            AddCylinder(root, "StampBase", new Vector3(0.58f, top + 0.008f, -1.14f),
+                new Vector3(0.032f, 0.008f, 0.032f), Quaternion.identity, _steelDark);
+
+            // 耳机：挂在桌沿的挂钩上，头梁与两个耳罩
+            var phones = new Vector3(-0.98f, top + 0.052f, -1.10f);
+            AddCylinder(root, "HeadphoneBand", phones, new Vector3(0.070f, 0.008f, 0.070f),
+                Quaternion.Euler(90f, 0, 0), _bakelite);
+            AddCylinder(root, "HeadphoneCupL", phones + new Vector3(-0.068f, -0.018f, 0f),
+                new Vector3(0.032f, 0.014f, 0.032f), Quaternion.Euler(0, 0, 90f), _bakelite);
+            AddCylinder(root, "HeadphoneCupR", phones + new Vector3(0.068f, -0.018f, 0f),
+                new Vector3(0.032f, 0.014f, 0.032f), Quaternion.Euler(0, 0, 90f), _bakelite);
+            for (var c = 0; c < 4; c++)
+            {
+                AddCylinder(root, $"HeadphoneCord_{c}",
+                    phones + new Vector3(0.02f + c * 0.03f, -0.052f - c * 0.004f, 0.03f + c * 0.02f),
+                    new Vector3(0.0045f, 0.026f, 0.0045f),
+                    Quaternion.Euler(72f, 24f * c, 18f), _bakelite);
+            }
         }
 
         // ---------- 右侧窗墙 ----------
@@ -811,9 +915,9 @@ namespace Decoder.EditorTools
             // Unity 相机默认朝 +Z，所以主视角的 yaw 是 180。
             var seat = new Vector3(0f, 1.24f, -0.16f);
 
-            AddShot(root, "probe_front", seat, new Vector3(-7f, 180f, 0f), 74f,
+            AddShot(root, "probe_front", seat, new Vector3(-4f, 180f, 0f), 82f,
                 "docs/research/refshots/iron_nest_heavy_turret_simulator_0.jpg", isMain: true);
-            AddShot(root, "probe_desk", seat, new Vector3(42f, 180f, 0f), 62f,
+            AddShot(root, "probe_desk", seat, new Vector3(50f, 180f, 0f), 82f,
                 "docs/research/refshots/papers_please_0.jpg");
             AddShot(root, "probe_left", seat, new Vector3(4f, 250f, 0f), 58f, "");
             AddShot(root, "probe_right", seat, new Vector3(4f, 105f, 0f), 58f, "");

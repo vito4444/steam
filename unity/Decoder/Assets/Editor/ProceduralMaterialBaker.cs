@@ -94,8 +94,7 @@ namespace Decoder.EditorTools
                     var brush = ProceduralTexture.Fbm(u, v, 9, 38, 2, 0.45f, seed);
 
                     // 稀疏长划痕：脊状噪声在同一方向拉长，形成偶发的深痕。
-                    var scratch = ProceduralTexture.Ridged(u, v, 6, 62, 3, seed + 31);
-                    scratch = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.93f, 1f, scratch));
+                    var scratch = ProceduralTexture.Scratches(u, v, 6, 62, 3, seed + 31, 14f);
 
                     // 大尺度污渍：靠近底部更脏，模拟手汗和积灰。
                     var grime = ProceduralTexture.Fbm(u, v, 3, 3, 4, 0.6f, seed + 77);
@@ -306,8 +305,7 @@ namespace Decoder.EditorTools
                     var fiber = ProceduralTexture.Fbm(u, v, 72, 26, 3, 0.5f, seed);
 
                     // 折痕：少数几条近乎笔直的脊线。
-                    var crease = ProceduralTexture.Ridged(u, v, 2, 5, 2, seed + 19);
-                    crease = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.90f, 1f, crease));
+                    var crease = ProceduralTexture.Scratches(u, v, 2, 5, 2, seed + 19, 12f);
 
                     // 泛黄与霉斑：边缘比中心黄，这是纸张老化的实际规律。
                     var edgeFalloff = Mathf.Max(
@@ -409,10 +407,9 @@ namespace Decoder.EditorTools
                     var stain = ProceduralTexture.Blotches(u, v, 7, 0.70f, 0.14f, seed + 29);
 
                     // 浅划痕：桌面上是各个方向的，不像磨削金属有统一走向。
-                    var scratch = ProceduralTexture.Ridged(u, v, 26, 22, 3, seed + 47);
-                    scratch = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.94f, 1f, scratch));
+                    var scratch = ProceduralTexture.Scratches(u, v, 26, 22, 3, seed + 47, 18f);
 
-                    height[i] = grain * 0.55f + scratch * 0.45f;
+                    height[i] = grain * 0.86f + scratch * 0.14f;
 
                     var baseTone = new Color(0.085f, 0.098f, 0.088f);
                     var worn = new Color(0.135f, 0.142f, 0.126f);
@@ -435,7 +432,7 @@ namespace Decoder.EditorTools
                 Albedo = albedo,
                 MetallicSmoothness = mask,
                 Height = height,
-                NormalStrength = 0.8f,
+                NormalStrength = 0.42f,
             };
         }
 

@@ -100,6 +100,21 @@ namespace Decoder.EditorTools
         }
 
         /// <summary>
+        /// 稀疏划痕。
+        ///
+        /// 不能直接对 Ridged 的结果卡阈值：折叠之后的值大量堆在高端，
+        /// 卡 0.94 这种看着很高的阈值实际会选中一大片，铺满整个表面，
+        /// 渲染出来是一层水波纹而不是几道划痕。先用幂函数把分布压到低端，
+        /// 再卡阈值，才能得到真正稀疏的线条。
+        /// </summary>
+        public static float Scratches(float u, float v, int frequencyX, int frequencyY,
+            int octaves, int seed, float sparsity = 10f)
+        {
+            var ridged = Ridged(u, v, frequencyX, frequencyY, octaves, seed);
+            return Mathf.Pow(Saturate(ridged), sparsity);
+        }
+
+        /// <summary>
         /// 稀疏斑点遮罩。用于气孔、锈斑、掉漆这类离散分布的瑕疵。
         /// coverage 是覆盖率，softness 控制边缘过渡。
         /// </summary>

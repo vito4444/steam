@@ -18,9 +18,9 @@
   "fogDensity": 0.05,
   "lights": {
     "keyLampWarm": {
-      "intensity": 6.0,
-      "range": 2.6,
-      "spotAngle": 64.0
+      "intensity": 4.6,
+      "range": 3.1,
+      "spotAngle": 86.0
     },
     "fillCrtGreen": {
       "intensity": 2.6,
@@ -32,9 +32,9 @@
       "spotAngle": 54.0
     },
     "bounceDeskWarm": {
-      "intensity": 2.0,
-      "range": 1.7,
-      "spotAngle": 78.0
+      "intensity": 2.4,
+      "range": 2.0,
+      "spotAngle": 92.0
     },
     "practicalNeon": {
       "intensity": 1.6,
