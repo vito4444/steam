@@ -1,0 +1,474 @@
+using Decoder.Gameplay;
+using Decoder.Signal;
+using NUnit.Framework;
+
+namespace Decoder.Tests
+{
+    /// <summary>
+    /// 战役进度与存档的测试。
+    ///
+    /// 存档坏掉的代价比大多数 bug 都高：玩家丢的不是一次运行，
+    /// 是他之前几个小时做过的所有判断。所以这里对损坏输入的容错
+    /// 测得比正常路径还密。
+    /// </summary>
+    public sealed class CampaignStateTests
+    {
+        private static ReportRecord Record(
+            ReportOutcome outcome,
+            ThreatLevel submitted = ThreatLevel.Routine,
+            ThreatLevel correct = ThreatLevel.Routine)
+        {
+            return new ReportRecord
+            {
+                shiftId = "shift-01",
+                callsign = "M08",
+                outcome = outcome,
+                submittedLevel = submitted,
+                correctLevel = correct,
+                accuracy = 0.9f,
+            };
+        }
+
+        [Test]
+        public void NewState_StartsAtFirstShiftWithNoHistory()
+        {
+            var state = new CampaignState();
+
+            Assert.AreEqual(0, state.shiftIndex);
+            Assert.AreEqual(0, state.history.Count);
+            Assert.AreEqual(0f, state.Standing);
+        }
+
+        [Test]
+        public void RecordAndAdvance_AppendsHistoryAndMovesToNextShift()
+        {
+            var state = new CampaignState();
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            Assert.AreEqual(1, state.shiftIndex);
+            Assert.AreEqual(1, state.history.Count);
+            Assert.AreEqual(1, state.CompletedShifts);
+        }
+
+        [Test]
+        public void Standing_RewardsExactReports()
+        {
+            var state = new CampaignState();
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            Assert.AreEqual(1f, state.Standing, 0.001f);
+        }
+
+        [Test]
+        public void Standing_PunishesUnderreportingHarderThanOverreporting()
+        {
+            // 把紧急电文压成例行，后果是有人在边境上出事；
+            // 把例行的报成紧急，后果只是浪费一次核查。
+            // 这两件事的分量不该一样。
+            var under = new CampaignState();
+            under.RecordAndAdvance(Record(ReportOutcome.Underreported));
+
+            var over = new CampaignState();
+            over.RecordAndAdvance(Record(ReportOutcome.Overreacted));
+
+            Assert.Less(under.Standing, over.Standing);
+        }
+
+        [Test]
+        public void Standing_IsClampedToUnitRange()
+        {
+            var state = new CampaignState();
+            for (var i = 0; i < 20; i++)
+            {
+                state.RecordAndAdvance(Record(ReportOutcome.Useless));
+            }
+
+            Assert.GreaterOrEqual(state.Standing, -1f);
+
+            var good = new CampaignState();
+            for (var i = 0; i < 20; i++)
+            {
+                good.RecordAndAdvance(Record(ReportOutcome.Clean));
+            }
+
+            Assert.LessOrEqual(good.Standing, 1f);
+        }
+
+        [Test]
+        public void StandingLine_IsNeverEmptyAndCarriesNoNumbers()
+        {
+            // 这个岗位上没人会告诉你你的评分是多少。
+            var outcomes = new[]
+            {
+                ReportOutcome.Clean, ReportOutcome.Garbled, ReportOutcome.Overreacted,
+                ReportOutcome.Underreported, ReportOutcome.Useless,
+            };
+
+            foreach (var outcome in outcomes)
+            {
+                var state = new CampaignState();
+                state.RecordAndAdvance(Record(outcome));
+
+                var line = state.StandingLine();
+                Assert.IsNotEmpty(line, $"{outcome} 没有对应的处境描述");
+                foreach (var c in line)
+                {
+                    Assert.IsFalse(char.IsDigit(c), $"处境描述里不该出现数字：{line}");
+                }
+            }
+        }
+
+        [Test]
+        public void StandingLine_DiffersBetweenGoodAndBadRecords()
+        {
+            var good = new CampaignState();
+            var bad = new CampaignState();
+            for (var i = 0; i < 3; i++)
+            {
+                good.RecordAndAdvance(Record(ReportOutcome.Clean));
+                bad.RecordAndAdvance(Record(ReportOutcome.Useless));
+            }
+
+            Assert.AreNotEqual(good.StandingLine(), bad.StandingLine());
+        }
+
+        [Test]
+        public void UnderreportCount_CountsOnlyLevelsBelowCorrect()
+        {
+            var state = new CampaignState();
+            state.RecordAndAdvance(Record(ReportOutcome.Underreported, ThreatLevel.Routine, ThreatLevel.Urgent));
+            state.RecordAndAdvance(Record(ReportOutcome.Overreacted, ThreatLevel.Flash, ThreatLevel.Routine));
+            state.RecordAndAdvance(Record(ReportOutcome.Clean, ThreatLevel.Urgent, ThreatLevel.Urgent));
+
+            Assert.AreEqual(1, state.UnderreportCount);
+        }
+
+        [Test]
+        public void LevelCorrect_ReflectsExactLevelMatch()
+        {
+            Assert.IsTrue(Record(ReportOutcome.Clean, ThreatLevel.Urgent, ThreatLevel.Urgent).LevelCorrect);
+            Assert.IsFalse(Record(ReportOutcome.Garbled, ThreatLevel.Routine, ThreatLevel.Urgent).LevelCorrect);
+        }
+
+        // ---- 存档 ----
+
+        [Test]
+        public void SerializeThenDeserialize_PreservesEverything()
+        {
+            var state = new CampaignState();
+            state.RecordAndAdvance(new ReportRecord
+            {
+                shiftId = "shift-01",
+                callsign = "M08",
+                outcome = ReportOutcome.Garbled,
+                submittedLevel = ThreatLevel.Urgent,
+                correctLevel = ThreatLevel.Flash,
+                accuracy = 0.8125f,
+            });
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.AreEqual(state.shiftIndex, restored.shiftIndex);
+            Assert.AreEqual(state.history.Count, restored.history.Count);
+            Assert.AreEqual("M08", restored.history[0].callsign);
+            Assert.AreEqual(ReportOutcome.Garbled, restored.history[0].outcome);
+            Assert.AreEqual(ThreatLevel.Flash, restored.history[0].correctLevel);
+            Assert.AreEqual(0.8125f, restored.history[0].accuracy, 0.0001f);
+            Assert.AreEqual(state.Standing, restored.Standing, 0.0001f);
+        }
+
+        [Test]
+        public void Serialize_EmptyStateRoundTrips()
+        {
+            var restored = CampaignState.Deserialize(new CampaignState().Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.AreEqual(0, restored.shiftIndex);
+            Assert.AreEqual(0, restored.history.Count);
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("这不是存档")]
+        [TestCase("decoder-save\nversion\t不是数字\n")]
+        [TestCase("decoder-save\nshift\tx\n")]
+        [TestCase("decoder-save\nreport\t字段不够\n")]
+        [TestCase("decoder-save\nreport\ts\tM08\t不存在的结果\tRoutine\tRoutine\t0.5\n")]
+        public void Deserialize_ReturnsNullOnCorruptInputInsteadOfThrowing(string text)
+        {
+            // 玩家的存档坏了已经够糟了，再让游戏崩一次没有任何意义。
+            Assert.DoesNotThrow(() => CampaignState.Deserialize(text));
+            Assert.IsNull(CampaignState.Deserialize(text));
+        }
+
+        [Test]
+        public void Deserialize_RejectsFutureVersion()
+        {
+            // 比本体还新的存档不要硬解，字段含义可能已经变了。
+            var future = $"decoder-save\nversion\t{CampaignState.CurrentVersion + 1}\nshift\t3\n";
+
+            Assert.IsNull(CampaignState.Deserialize(future));
+        }
+
+        [Test]
+        public void Deserialize_AcceptsCurrentVersion()
+        {
+            var text = $"decoder-save\nversion\t{CampaignState.CurrentVersion}\nshift\t2\n";
+            var state = CampaignState.Deserialize(text);
+
+            Assert.IsNotNull(state);
+            Assert.AreEqual(2, state.shiftIndex);
+        }
+
+        // ---- 班次中途的现场 ----
+
+        [Test]
+        public void Progress_RoundTripsThroughSave()
+        {
+            // 玩家可能抄了十分钟才不得不下线。回来时看到的应该还是
+            // 离开时那张桌子：抄收纸、译文、密码本页码、填了一半的上报单。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress
+                {
+                    active = true,
+                    shiftId = "shift-02",
+                    copied = "0231400 2657",
+                    solved = "14002657",
+                    lookup = "北风",
+                    callsign = "M0",
+                    frequency = "7012.",
+                    padPage = 23,
+                    level = ThreatLevel.Urgent,
+                },
+            };
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.IsTrue(restored.progress.active);
+            Assert.AreEqual("shift-02", restored.progress.shiftId);
+            Assert.AreEqual("0231400 2657", restored.progress.copied);
+            Assert.AreEqual("14002657", restored.progress.solved);
+            Assert.AreEqual("北风", restored.progress.lookup);
+            Assert.AreEqual("M0", restored.progress.callsign);
+            Assert.AreEqual("7012.", restored.progress.frequency);
+            Assert.AreEqual(23, restored.progress.padPage);
+            Assert.AreEqual(ThreatLevel.Urgent, restored.progress.level);
+        }
+
+        [Test]
+        public void Progress_EmptyFieldsSurviveRoundTrip()
+        {
+            // 空串必须能和"字段缺失"区分开，否则一份刚开始还没抄任何东西的
+            // 现场会把存档解歪。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress
+                {
+                    active = true,
+                    shiftId = "shift-01",
+                    copied = string.Empty,
+                    solved = string.Empty,
+                    lookup = string.Empty,
+                    callsign = string.Empty,
+                    frequency = string.Empty,
+                    padPage = 1,
+                    level = ThreatLevel.Routine,
+                },
+            };
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.IsTrue(restored.progress.active);
+            Assert.AreEqual(string.Empty, restored.progress.copied);
+            Assert.AreEqual(string.Empty, restored.progress.callsign);
+        }
+
+        [Test]
+        public void Progress_SurvivesTabsAndNewlinesInCopiedText()
+        {
+            // 字段是制表符分隔的。玩家抄收纸上一个意外的空白字符
+            // 不该把整份存档解歪。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress
+                {
+                    active = true,
+                    shiftId = "shift-01",
+                    copied = "1400\t2657\n6308",
+                    solved = string.Empty,
+                    lookup = string.Empty,
+                    callsign = "M\\08",
+                    frequency = string.Empty,
+                    padPage = 5,
+                    level = ThreatLevel.Routine,
+                },
+            };
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.AreEqual("1400\t2657\n6308", restored.progress.copied);
+            Assert.AreEqual("M\\08", restored.progress.callsign);
+        }
+
+        [Test]
+        public void Progress_IsClearedAfterReport()
+        {
+            // 这一班交出去了，现场就不该再留着——否则下一班开局
+            // 会看到上一班的抄收内容。
+            var state = new CampaignState
+            {
+                progress = new ShiftProgress { active = true, shiftId = "shift-01", copied = "1400" },
+            };
+
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            Assert.IsFalse(state.progress.active);
+            Assert.IsTrue(string.IsNullOrEmpty(state.progress.copied));
+        }
+
+        [Test]
+        public void Progress_InactiveIsNotWrittenToSave()
+        {
+            var text = new CampaignState().Serialize();
+
+            StringAssert.DoesNotContain("progress", text);
+        }
+
+        [Test]
+        public void BelongsTo_RejectsProgressFromAnotherShift()
+        {
+            // 班次对不上就不该恢复，否则第三班开局会顶着第二班的抄收纸。
+            var progress = new ShiftProgress { active = true, shiftId = "shift-02" };
+
+            Assert.IsTrue(progress.BelongsTo("shift-02"));
+            Assert.IsFalse(progress.BelongsTo("shift-03"));
+            Assert.IsFalse(new ShiftProgress { active = false, shiftId = "shift-02" }.BelongsTo("shift-02"));
+        }
+
+        [Test]
+        public void Deserialize_ReturnsNullOnTruncatedProgressLine()
+        {
+            Assert.IsNull(CampaignState.Deserialize("decoder-save\nprogress\tshift-01\t字段不够\n"));
+        }
+
+        // ---- 手法档案 ----
+
+        private static OperatorFist SampleFist(float dah = 3.35f, float jitter = 0.055f)
+        {
+            return new OperatorFist
+            {
+                dahRatio = dah,
+                charGapRatio = 2.55f,
+                wordGapRatio = 6.8f,
+                jitter = jitter,
+            };
+        }
+
+        [Test]
+        public void NoteFist_RecordsFirstEncounter()
+        {
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+
+            Assert.AreEqual(1, state.fistArchive.Count);
+            Assert.AreEqual("M08", state.fistArchive[0].callsign);
+            Assert.AreEqual("shift-01", state.fistArchive[0].firstHeardShift);
+            Assert.AreEqual(1, state.fistArchive[0].timesHeard);
+        }
+
+        [Test]
+        public void NoteFist_DoesNotOverwriteWithLaterEncounters()
+        {
+            // 覆盖会毁掉这层玩法：冒充者的手法一旦盖掉本人的，
+            // 档案就成了帮凶，玩家再也对照不出来。
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist(3.35f, 0.055f));
+            state.NoteFist("M08", "shift-04", SampleFist(2.7f, 0.13f));
+
+            Assert.AreEqual(1, state.fistArchive.Count);
+            Assert.AreEqual(3.35f, state.fistArchive[0].dahRatio, 0.001f, "档案被冒充者的手法覆盖了");
+            Assert.AreEqual("shift-01", state.fistArchive[0].firstHeardShift);
+            Assert.AreEqual(2, state.fistArchive[0].timesHeard);
+        }
+
+        [Test]
+        public void NoteFist_IgnoresInvalidInput()
+        {
+            var state = new CampaignState();
+            state.NoteFist(null, "shift-01", SampleFist());
+            state.NoteFist("M08", "shift-01", default);
+
+            Assert.AreEqual(0, state.fistArchive.Count);
+        }
+
+        [Test]
+        public void ArchivedFist_ReturnsInvalidForUnheardCallsign()
+        {
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+
+            Assert.IsTrue(state.ArchivedFist("M08").IsValid);
+            Assert.IsFalse(state.ArchivedFist("R7X").IsValid);
+        }
+
+        [Test]
+        public void FistArchive_RoundTripsThroughSave()
+        {
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+            state.NoteFist("M08", "shift-02", SampleFist());
+            state.NoteFist("R7X", "shift-01", SampleFist(3.6f, 0.19f));
+
+            var restored = CampaignState.Deserialize(state.Serialize());
+
+            Assert.IsNotNull(restored);
+            Assert.AreEqual(2, restored.fistArchive.Count);
+
+            var m08 = restored.ArchivedFist("M08");
+            Assert.IsTrue(m08.IsValid);
+            Assert.AreEqual(3.35f, m08.dahRatio, 0.001f);
+            Assert.AreEqual(0.055f, m08.jitter, 0.001f);
+            Assert.AreEqual(2, restored.fistArchive[0].timesHeard);
+            Assert.AreEqual(3.6f, restored.ArchivedFist("R7X").dahRatio, 0.001f);
+        }
+
+        [Test]
+        public void FistArchive_SurvivesReportAndShiftAdvance()
+        {
+            // 档案是跨班次积累的。交班时被清掉就白记了。
+            var state = new CampaignState();
+            state.NoteFist("M08", "shift-01", SampleFist());
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            Assert.AreEqual(1, state.fistArchive.Count);
+            Assert.IsTrue(state.ArchivedFist("M08").IsValid);
+        }
+
+        [Test]
+        public void Deserialize_ReturnsNullOnTruncatedFistLine()
+        {
+            Assert.IsNull(CampaignState.Deserialize("decoder-save\nfist\tM08\tshift-01\t字段不够\n"));
+        }
+
+        [Test]
+        public void Serialize_IsHumanReadable()
+        {
+            // 存档要能被人打开看懂：出问题时玩家可以把它贴进反馈里。
+            var state = new CampaignState();
+            state.RecordAndAdvance(Record(ReportOutcome.Clean));
+
+            var text = state.Serialize();
+
+            StringAssert.StartsWith("decoder-save", text);
+            StringAssert.Contains("M08", text);
+            StringAssert.Contains("Clean", text);
+        }
+    }
+}

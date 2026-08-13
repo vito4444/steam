@@ -1,0 +1,2112 @@
+[
+ {
+  "appid": "653530",
+  "name": "Return of the Obra Dinn",
+  "release": "Oct 18, 2018",
+  "price": "$19.99",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Cloud",
+   "Remote Play on TV",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Lucas Pope"
+  ],
+  "pubs": [
+   "3909"
+  ],
+  "meta": 89,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "Lost at sea 1803 ~ The good ship Obra Dinn.",
+  "reviews": {
+   "total": 34940,
+   "pos": 33786,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1677770",
+  "name": "The Case of the Golden Idol",
+  "release": "Oct 13, 2022",
+  "price": "$17.99",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Color Gray Games"
+  ],
+  "pubs": [
+   "Playstack"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "A new kind of detective game that allows you to think and investigate freely. Discover clues surrounding 12 strange and gruesome deaths and build your own theory. Pick your suspect",
+  "reviews": {
+   "total": 10887,
+   "pos": 10646,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1931770",
+  "name": "Chants of Sennaar",
+  "release": "Sep 5, 2023",
+  "price": "$19.99",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Camera Comfort",
+   "Custom Volume Controls",
+   "Mouse Only Option",
+   "DualShock Controller Support"
+  ],
+  "devs": [
+   "Rundisc"
+  ],
+  "pubs": [
+   "Focus Entertainment"
+  ],
+  "meta": 86,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "In this award-winning puzzle adventure game, play as the Traveler on a quest to reunite the Peoples of the Tower. Observe, listen, and decipher ancient languages in a fascinating u",
+  "reviews": {
+   "total": 33688,
+   "pos": 33096,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "239030",
+  "name": "Papers, Please",
+  "release": "Aug 8, 2013",
+  "price": "$4.99",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Trading Cards",
+   "Steam Cloud",
+   "Stats",
+   "Steam Leaderboards",
+   "Remote Play on Phone",
+   "Remote Play on Tablet"
+  ],
+  "devs": [
+   "Lucas Pope"
+  ],
+  "pubs": [
+   "3909"
+  ],
+  "meta": 85,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Congratulations. The October labor lottery is complete. Your name was pulled. For immediate placement, report to the Ministry of Admission at Grestin Border Checkpoint. An apartmen",
+  "reviews": {
+   "total": 80031,
+   "pos": 77863,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1569580",
+  "name": "Blue Prince",
+  "release": "Apr 10, 2025",
+  "price": "$29.99",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "DualSense Controller Support",
+   "DualSense Controller Support",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Dogubomb"
+  ],
+  "pubs": [
+   "Raw Fury"
+  ],
+  "meta": 92,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "Welcome to Mt. Holly, where every dawn unveils a new mystery. Navigate through shifting corridors and ever-changing chambers in this genre-defying strategy puzzle adventure. But wi",
+  "reviews": {
+   "total": 19609,
+   "pos": 16957,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "521840",
+  "name": "Hacknet - Labyrinths",
+  "release": "Mar 31, 2017",
+  "price": "$6.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Downloadable Content",
+   "Steam Achievements",
+   "Steam Trading Cards",
+   "Captions available",
+   "Steam Workshop",
+   "Steam Cloud",
+   "Includes level editor"
+  ],
+  "devs": [
+   "Team Fractal Alligator"
+  ],
+  "pubs": [
+   "Fellow Traveller"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Join an elite hacking team, and work together to execute a series of daring data heists to acquire powerful new software. Explore a whole new rabbit hole in this major expansion to",
+  "reviews": {
+   "total": 773,
+   "pos": 751,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "716490",
+  "name": "EXAPUNKS",
+  "release": "Oct 22, 2018",
+  "price": "$19.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Workshop",
+   "Steam Cloud",
+   "Steam Leaderboards",
+   "Includes level editor",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Zachtronics"
+  ],
+  "pubs": [
+   "Zachtronics"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "The year is 1997. You used to be a hacker, but now you have the phage. You made a deal: one hack, one dose. There’s nothing left to lose… except your life.",
+  "reviews": {
+   "total": 1885,
+   "pos": 1787,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "2211630",
+  "name": "Duskers 2.0",
+  "release": "Coming soon",
+  "price": "Free/NA",
+  "genres": [
+   "Indie",
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Misfits Attic"
+  ],
+  "pubs": [
+   "Misfits Attic"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "What will you sacrifice to bring humanity back? Scavenge derelict spacecraft with your drones via a command-line interface, navigating past whatever is still alive in the dark, in ",
+  "reviews": {
+   "total": 0,
+   "pos": 0,
+   "desc": "No user reviews"
+  }
+ },
+ {
+  "appid": "2008920",
+  "name": "Lorelei and the Laser Eyes",
+  "release": "May 16, 2024",
+  "price": "$24.99",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support"
+  ],
+  "devs": [
+   "Simogo"
+  ],
+  "pubs": [
+   "Annapurna Interactive"
+  ],
+  "meta": 88,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "The stage is set. Imagine an old baroque manor, perhaps a hotel or a museum, somewhere in central Europe. A woman wanders in search of answers.",
+  "reviews": {
+   "total": 3199,
+   "pos": 3000,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "2754380",
+  "name": "The Roottrees are Dead",
+  "release": "Jan 15, 2025",
+  "price": "$19.99",
+  "genres": [
+   "Adventure"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Evil Trout Inc."
+  ],
+  "pubs": [
+   "Evil Trout Inc."
+  ],
+  "meta": 86,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "A genealogical mystery straight out of 1998. Scour the early Internet for clues, uncover hidden connections, and piece together the family tree behind the secretive Roottree Corpor",
+  "reviews": {
+   "total": 9654,
+   "pos": 9320,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1574580",
+  "name": "Strange Horticulture",
+  "release": "Jan 21, 2022",
+  "price": "$15.99",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Bad Viking"
+  ],
+  "pubs": [
+   "Iceberg Interactive"
+  ],
+  "meta": 83,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "Strange Horticulture is an occult puzzle game in which you play as the proprietor of a local plant store. Find and identify new plants, pet your cat, speak to a coven, or join a cu",
+  "reviews": {
+   "total": 15934,
+   "pos": 15056,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1092790",
+  "name": "Inscryption",
+  "release": "Oct 19, 2021",
+  "price": "$19.99",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Trading Cards",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Daniel Mullins Games"
+  ],
+  "pubs": [
+   "Devolver Digital"
+  ],
+  "meta": 85,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Inscryption is an inky black card-based odyssey that blends the deckbuilding roguelike, escape-room style puzzles, and psychological horror into a blood-laced smoothie. Darker stil",
+  "reviews": {
+   "total": 147757,
+   "pos": 143067,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "2379780",
+  "name": "Balatro",
+  "release": "Feb 20, 2024",
+  "price": "$11.99",
+  "genres": [
+   "Casual",
+   "Indie",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Color Alternatives",
+   "Custom Volume Controls",
+   "Mouse Only Option",
+   "Playable without Timed Input"
+  ],
+  "devs": [
+   "LocalThunk"
+  ],
+  "pubs": [
+   "Playstack"
+  ],
+  "meta": 90,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "The poker roguelike. Balatro is a hypnotically satisfying deckbuilder where you play illegal poker hands, discover game-changing jokers, and trigger adrenaline-pumping, outrageous ",
+  "reviews": {
+   "total": 196747,
+   "pos": 192505,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "2835570",
+  "name": "Buckshot Roulette",
+  "release": "Apr 4, 2024",
+  "price": "$2.99",
+  "genres": [
+   "Action",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "PvP",
+   "Online PvP",
+   "Steam Achievements",
+   "Steam Trading Cards",
+   "DualShock Controller Support",
+   "DualShock Controller Support"
+  ],
+  "devs": [
+   "Mike Klubnika"
+  ],
+  "pubs": [
+   "CRITICAL REFLEX"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": true
+  },
+  "desc": "Play Russian roulette with a 12-gauge shotgun. Four enter. One leaves. Roll the dice with your life. Good luck!",
+  "reviews": {
+   "total": 123715,
+   "pos": 117764,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "813230",
+  "name": "ANIMAL WELL",
+  "release": "May 9, 2024",
+  "price": "$17.49",
+  "genres": [
+   "Action",
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Gamepad Recommended",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support"
+  ],
+  "devs": [
+   "Billy Basso"
+  ],
+  "pubs": [
+   "Bigmode"
+  ],
+  "meta": 90,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "Explore a dense, interconnected labyrinth, and unravel its many secrets. Collect items to manipulate your environment in surprising and meaningful ways. Encounter beautiful and uns",
+  "reviews": {
+   "total": 24399,
+   "pos": 23364,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1885110",
+  "name": "Cryptmaster",
+  "release": "May 9, 2024",
+  "price": "$24.99",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "RPG"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Captions available",
+   "Camera Comfort",
+   "Color Alternatives",
+   "Custom Volume Controls"
+  ],
+  "devs": [
+   "Paul Hart",
+   "Lee Williams",
+   "Akupara Games"
+  ],
+  "pubs": [
+   "Akupara Games"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "SAY ANYTHING in this bizarre dungeon adventure where words control everything. Fill in the blanks with text or voice to uncover lost abilities, embark on strange quests, and solve ",
+  "reviews": {
+   "total": 2277,
+   "pos": 2115,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "3812600",
+  "name": "ReStory: Chill Electronics Repairs",
+  "release": "Aug 6, 2026",
+  "price": "$17.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Trading Cards",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support",
+   "Partial Controller Support"
+  ],
+  "devs": [
+   "Mandragora"
+  ],
+  "pubs": [
+   "tinyBuild"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "Run a quaint electronics repair shop in mid-2000s Tokyo. Grow your business by carefully restoring iconic video game consoles, cell phones, music players, and other nostalgic devic",
+  "reviews": {
+   "total": 4954,
+   "pos": 4734,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "2950790",
+  "name": "IRON NEST: Heavy Turret Simulator",
+  "release": "Aug 6, 2026",
+  "price": "$14.99",
+  "genres": [
+   "Action",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Color Alternatives",
+   "#category_contrast_controls",
+   "Custom Volume Controls",
+   "Playable without Timed Input",
+   "DualShock Controller Support"
+  ],
+  "devs": [
+   "Nick Nieuwoudt",
+   "Dominik Latos"
+  ],
+  "pubs": [
+   "Nick Nieuwoudt",
+   "Dominik Latos"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "IRON NEST is a brutal dieselpunk heavy-artillery game where you dominate the battlefield through a colossal war machine. Take map measurements based on the received coordinates, st",
+  "reviews": {
+   "total": 8138,
+   "pos": 7992,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "3722330",
+  "name": "Shift At Midnight",
+  "release": "Jul 22, 2026",
+  "price": "$9.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "Co-op",
+   "Online Co-op",
+   "Steam Achievements",
+   "Adjustable Text Size",
+   "Custom Volume Controls",
+   "Stereo Sound"
+  ],
+  "devs": [
+   "Bun Muen"
+  ],
+  "pubs": [
+   "Kwalee"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "An online co-op detective horror for up to 3 players. Work together across randomly generated shifts to investigate your customers, as some are only pretending to be human. Make on",
+  "reviews": {
+   "total": 8592,
+   "pos": 7562,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "3164500",
+  "name": "Schedule I",
+  "release": "Mar 24, 2025",
+  "price": "$19.99",
+  "genres": [
+   "Action",
+   "Indie",
+   "Simulation",
+   "Strategy",
+   "Early Access"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "Co-op",
+   "Online Co-op",
+   "Steam Achievements",
+   "Full controller support",
+   "Adjustable Text Size",
+   "Camera Comfort"
+  ],
+  "devs": [
+   "TVGS"
+  ],
+  "pubs": [
+   "TVGS"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "From small-time dope pusher to kingpin - manufacture and distribute a range of drugs throughout the grungy city of Hyland Point. Expand your empire with properties, businesses, emp",
+  "reviews": {
+   "total": 312210,
+   "pos": 305370,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "2133760",
+  "name": "Tiny Bookshop",
+  "release": "Aug 7, 2025",
+  "price": "$14.99",
+  "genres": [
+   "Casual",
+   "Indie",
+   "RPG",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Color Alternatives",
+   "Custom Volume Controls",
+   "Mouse Only Option",
+   "Playable without Timed Input",
+   "DualShock Controller Support"
+  ],
+  "devs": [
+   "neoludic games"
+  ],
+  "pubs": [
+   "Skystone Games",
+   "2P Games"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Leave everything behind and open a tiny bookshop by the sea in this cozy narrative management game. Stock your tiny bookshop with different books and items, set up shop in scenic l",
+  "reviews": {
+   "total": 7576,
+   "pos": 7290,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1849790",
+  "name": "Uncle Chop's Rocket Shop",
+  "release": "Dec 5, 2024",
+  "price": "$19.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Beard Envy"
+  ],
+  "pubs": [
+   "Kasedo Games"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "Come on down to Uncle Chop’s Rocket Shop, for all your roguelite spaceship repair simulation needs! WARNING: Untested genre not suitable for people with tentacles for arms or an av",
+  "reviews": {
+   "total": 1216,
+   "pos": 1035,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1562430",
+  "name": "DREDGE",
+  "release": "Mar 30, 2023",
+  "price": "$9.99",
+  "genres": [
+   "Adventure",
+   "RPG"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Camera Comfort",
+   "Color Alternatives",
+   "Custom Volume Controls",
+   "Adjustable Difficulty"
+  ],
+  "devs": [
+   "Black Salt Games"
+  ],
+  "pubs": [
+   "Team17"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "DREDGE is a single-player fishing adventure with a sinister undercurrent. Sell your catch, upgrade your boat, and dredge the depths for long-buried secrets. Explore a mysterious ar",
+  "reviews": {
+   "total": 56103,
+   "pos": 53764,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1262350",
+  "name": "SIGNALIS",
+  "release": "Oct 27, 2022",
+  "price": "$19.99",
+  "genres": [
+   "Action",
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support",
+   "Steam Cloud"
+  ],
+  "devs": [
+   "rose-engine"
+  ],
+  "pubs": [
+   "Balor Games"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "A classic survival horror experience set in a dystopian future where humanity has uncovered a dark secret. Unravel a cosmic mystery, escape terrifying creatures, and scavenge an of",
+  "reviews": {
+   "total": 33969,
+   "pos": 32811,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "2121980",
+  "name": "Void Stranger",
+  "release": "Sep 1, 2023",
+  "price": "$11.99",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Full controller support",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "System Erasure"
+  ],
+  "pubs": [
+   "System Erasure"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "Place your faith and embrace the Void.",
+  "reviews": {
+   "total": 3544,
+   "pos": 3234,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1097100",
+  "name": "Please, Touch The Artwork",
+  "release": "Jan 26, 2022",
+  "price": "$9.99",
+  "genres": [
+   "Casual",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Thomas Waterzooi"
+  ],
+  "pubs": [
+   "Thomas Waterzooi"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "A cozy puzzler with story. Recreate paintings by applying lines &amp; colors in a specific order. Explore beautiful mazes &amp; collect letters of a poem. Help two sweethearts find",
+  "reviews": {
+   "total": 505,
+   "pos": 422,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "368370",
+  "name": "Her Story",
+  "release": "Jun 24, 2015",
+  "price": "$9.99",
+  "genres": [
+   "Adventure",
+   "Casual",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Trading Cards",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Sam Barlow"
+  ],
+  "pubs": [
+   "Sam Barlow"
+  ],
+  "meta": 86,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "A woman is interviewed seven times by the police. Search the video database and explore hundreds of authentic clips to discover her story in this groundbreaking and award winning n",
+  "reviews": {
+   "total": 10384,
+   "pos": 9282,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "3595530",
+  "name": "Dune: Imperium - Immortality",
+  "release": "Jun 10, 2025",
+  "price": "$9.99",
+  "genres": [
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "PvP",
+   "Online PvP",
+   "Cross-Platform Multiplayer",
+   "Downloadable Content",
+   "Steam Achievements",
+   "Full controller support"
+  ],
+  "devs": [
+   "Dire Wolf"
+  ],
+  "pubs": [
+   "Dire Wolf"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "The second expansion for Dune: Imperium leverages the power of scientific research to discover dangerous new strategies!",
+  "reviews": {
+   "total": 60,
+   "pos": 55,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "874260",
+  "name": "The Forgotten City",
+  "release": "Jul 28, 2021",
+  "price": "$24.99",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "RPG"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Modern Storyteller"
+  ],
+  "pubs": [
+   "Dear Villagers"
+  ],
+  "meta": 85,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "The Forgotten City is a narrative-driven time loop adventure in ancient Rome. Discover the ruins of an ancient underground city, travel 2000 years into the past, and unravel the my",
+  "reviews": {
+   "total": 13547,
+   "pos": 12990,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "753640",
+  "name": "Outer Wilds",
+  "release": "Jun 18, 2020",
+  "price": "$24.99",
+  "genres": [
+   "Action",
+   "Adventure"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Adjustable Text Size",
+   "Camera Comfort",
+   "Color Alternatives",
+   "Custom Volume Controls"
+  ],
+  "devs": [
+   "Mobius Digital"
+  ],
+  "pubs": [
+   "Annapurna Interactive"
+  ],
+  "meta": 85,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "Named Game of the Year 2019 by Giant Bomb, Polygon, Eurogamer, and The Guardian, Outer Wilds is a critically-acclaimed and award-winning open world mystery about a solar system tra",
+  "reviews": {
+   "total": 106420,
+   "pos": 101744,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1629520",
+  "name": "A Little to the Left",
+  "release": "Nov 8, 2022",
+  "price": "$5.99",
+  "genres": [
+   "Casual",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Camera Comfort",
+   "Color Alternatives",
+   "Custom Volume Controls",
+   "Adjustable Difficulty"
+  ],
+  "devs": [
+   "Max Inferno"
+  ],
+  "pubs": [
+   "Secret Mode"
+  ],
+  "meta": 75,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "A Little to the Left is a cozy puzzle game that has you sort, stack, and organize household items into pleasing arrangements while you keep an eye out for a mischievous cat with an",
+  "reviews": {
+   "total": 18856,
+   "pos": 17269,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1135690",
+  "name": "Unpacking",
+  "release": "Nov 1, 2021",
+  "price": "$19.99",
+  "genres": [
+   "Casual",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Adjustable Text Size",
+   "Camera Comfort",
+   "Color Alternatives",
+   "Custom Volume Controls"
+  ],
+  "devs": [
+   "Witch Beam"
+  ],
+  "pubs": [
+   "Balor Games"
+  ],
+  "meta": 83,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Unpacking is a zen puzzle game about the familiar experience of pulling possessions out of boxes and fitting them into a new home. Part block-fitting puzzle, part home decoration, ",
+  "reviews": {
+   "total": 40589,
+   "pos": 37836,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "2968420",
+  "name": "PowerWash Simulator 2",
+  "release": "Oct 23, 2025",
+  "price": "$24.99",
+  "genres": [
+   "Casual",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "Co-op",
+   "Online Co-op",
+   "Shared/Split Screen Co-op",
+   "Shared/Split Screen",
+   "Cross-Platform Multiplayer",
+   "Steam Achievements"
+  ],
+  "devs": [
+   "FuturLab"
+  ],
+  "pubs": [
+   "FuturLab"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "PowerWash Simulator is back, bubbling with fresh locations, soap-erior equipment and splashy features. Effortlessly transform soiled surroundings into clean, serene scenes, solo or",
+  "reviews": {
+   "total": 11612,
+   "pos": 10592,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1190970",
+  "name": "House Flipper 2",
+  "release": "Dec 14, 2023",
+  "price": "$39.99",
+  "genres": [
+   "Casual",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "Co-op",
+   "Online Co-op",
+   "LAN Co-op",
+   "Cross-Platform Multiplayer",
+   "Steam Achievements",
+   "Full controller support"
+  ],
+  "devs": [
+   "Frozen District"
+  ],
+  "pubs": [
+   "Frozen District"
+  ],
+  "meta": 79,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "Clean your worries away with this relaxing renovation simulator! Buy, fix, sell, and become a local legend. Or grab your power tools and build anything from scratch! With the onlin",
+  "reviews": {
+   "total": 19739,
+   "pos": 17211,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1382070",
+  "name": "Viewfinder",
+  "release": "Jul 18, 2023",
+  "price": "$24.99",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Sad Owl Studios"
+  ],
+  "pubs": [
+   "Thunderful Publishing"
+  ],
+  "meta": 84,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "Challenge perception, redefine reality, and reshape the world around you with an instant camera. Viewfinder is a new single player game offering gamers hours of interesting and fun",
+  "reviews": {
+   "total": 12934,
+   "pos": 12219,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "835960",
+  "name": "The Talos Principle 2",
+  "release": "Nov 2, 2023",
+  "price": "$29.99",
+  "genres": [
+   "Action",
+   "Adventure"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support",
+   "Steam Cloud"
+  ],
+  "devs": [
+   "Croteam"
+  ],
+  "pubs": [
+   "Devolver Digital"
+  ],
+  "meta": 88,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "The Talos Principle 2 is a thought-provoking first-person puzzle experience that greatly expands on the first game's philosophical themes and stunning environments with increasingl",
+  "reviews": {
+   "total": 13327,
+   "pos": 12649,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1049410",
+  "name": "Superliminal",
+  "release": "Nov 5, 2020",
+  "price": "$19.99",
+  "genres": [
+   "Action",
+   "Adventure"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "PvP",
+   "Online PvP",
+   "Co-op",
+   "Online Co-op",
+   "Steam Achievements",
+   "Full controller support"
+  ],
+  "devs": [
+   "Pillow Castle"
+  ],
+  "pubs": [
+   "Pillow Castle"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Perception is reality. In this mind-bending first-person puzzler, you escape a surreal dream world through solving impossible puzzles using the ambiguity of depth and perspective.",
+  "reviews": {
+   "total": 33874,
+   "pos": 32047,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "2427700",
+  "name": "Backpack Battles",
+  "release": "Jun 13, 2025",
+  "price": "$14.99",
+  "genres": [
+   "Strategy"
+  ],
+  "cats": [
+   "Multi-player",
+   "PvP",
+   "Online PvP",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "DualShock Controller Support",
+   "DualSense Controller Support"
+  ],
+  "devs": [
+   "PlayWithFurcifer"
+  ],
+  "pubs": [
+   "IndieArk",
+   "Shochiku (Japan)"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": true
+  },
+  "desc": "A PvP inventory management auto battler! Buy and craft powerful items, then carefully arrange them in your backpack.",
+  "reviews": {
+   "total": 20580,
+   "pos": 18780,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1794680",
+  "name": "Vampire Survivors",
+  "release": "Oct 20, 2022",
+  "price": "$4.99",
+  "genres": [
+   "Action",
+   "Casual",
+   "Indie",
+   "RPG"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "Co-op",
+   "Online Co-op",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Steam Cloud"
+  ],
+  "devs": [
+   "poncle"
+  ],
+  "pubs": [
+   "poncle"
+  ],
+  "meta": 86,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "Mow down thousands of night creatures and survive until dawn! Vampire Survivors is a gothic horror casual game with rogue-lite elements, where your choices can allow you to quickly",
+  "reviews": {
+   "total": 264618,
+   "pos": 260183,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1404850",
+  "name": "Luck be a Landlord",
+  "release": "Jan 6, 2023",
+  "price": "$9.99",
+  "genres": [
+   "Indie",
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Steam Workshop",
+   "Adjustable Text Size",
+   "Color Alternatives",
+   "#category_contrast_controls"
+  ],
+  "devs": [
+   "TrampolineTales"
+  ],
+  "pubs": [
+   "TrampolineTales"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Luck be a Landlord is a roguelike deckbuilder about using a slot machine to earn rent money and defeat capitalism. This game does not contain any real-world currency gambling or mi",
+  "reviews": {
+   "total": 11517,
+   "pos": 10738,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "2162800",
+  "name": "shapez 2 - Factory",
+  "release": "Apr 23, 2026",
+  "price": "$29.99",
+  "genres": [
+   "Casual",
+   "Indie",
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Workshop",
+   "Adjustable Text Size",
+   "Camera Comfort",
+   "Color Alternatives",
+   "#category_contrast_controls",
+   "Custom Volume Controls"
+  ],
+  "devs": [
+   "tobspr Games"
+  ],
+  "pubs": [
+   "tobspr Games",
+   "Gamirror Games"
+  ],
+  "meta": 80,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Dive into a factory-building game with the focus on just that – building huge space factories! Design sprawling multi-level factories and satisfying production lines without limits",
+  "reviews": {
+   "total": 15038,
+   "pos": 14598,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1127500",
+  "name": "Mini Motorways",
+  "release": "Jul 20, 2021",
+  "price": "$9.99",
+  "genres": [
+   "Casual",
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "Steam Cloud",
+   "Steam Leaderboards",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Dinosaur Polo Club"
+  ],
+  "pubs": [
+   "Dinosaur Polo Club"
+  ],
+  "meta": 87,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "Mini Motorways is a strategy simulation game about designing the road map for a growing city. Build a traffic network, one road at a time, to create a bustling metropolis. Redesign",
+  "reviews": {
+   "total": 24308,
+   "pos": 23401,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "736260",
+  "name": "Baba Is You",
+  "release": "Mar 13, 2019",
+  "price": "$14.99",
+  "genres": [
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support",
+   "Partial Controller Support",
+   "Steam Cloud"
+  ],
+  "devs": [
+   "Hempuli Oy"
+  ],
+  "pubs": [
+   "Hempuli Oy"
+  ],
+  "meta": 87,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Baba Is You is a puzzle game where the rules you have to follow are present as blocks you can interact with. By manipulating them, you can change how the game works, repurpose thin",
+  "reviews": {
+   "total": 24455,
+   "pos": 23899,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "370360",
+  "name": "TIS-100",
+  "release": "Jul 20, 2015",
+  "price": "$6.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Cloud",
+   "Steam Leaderboards",
+   "Includes level editor",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Zachtronics"
+  ],
+  "pubs": [
+   "Zachtronics"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "TIS-100 is an open-ended programming game by Zachtronics, the creators of SpaceChem and Infinifactory, in which you rewrite corrupted code segments to repair the TIS-100 and unlock",
+  "reviews": {
+   "total": 4099,
+   "pos": 3965,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "558990",
+  "name": "Opus Magnum",
+  "release": "Dec 7, 2017",
+  "price": "$19.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Workshop",
+   "Steam Cloud",
+   "Steam Leaderboards",
+   "Includes level editor",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Zachtronics"
+  ],
+  "pubs": [
+   "Zachtronics"
+  ],
+  "meta": 90,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Opus Magnum is the latest open-ended puzzle game from Zachtronics, the creators of SpaceChem, Infinifactory, and SHENZHEN I/O. Design and build machines that assemble potions, pois",
+  "reviews": {
+   "total": 7154,
+   "pos": 6959,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "1444480",
+  "name": "Turing Complete",
+  "release": "Oct 2, 2021",
+  "price": "$19.99",
+  "genres": [
+   "Simulation",
+   "Early Access"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "LevelHead"
+  ],
+  "pubs": [
+   "LevelHead"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Learn CPU architecture with puzzles",
+  "reviews": {
+   "total": 5548,
+   "pos": 5323,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "619150",
+  "name": "while True: learn()",
+  "release": "Jan 17, 2019",
+  "price": "$12.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Adjustable Text Size",
+   "Camera Comfort",
+   "Custom Volume Controls",
+   "Mouse Only Option"
+  ],
+  "devs": [
+   "Luden.io"
+  ],
+  "pubs": [
+   "Luden.io"
+  ],
+  "meta": 73,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "You’re a machine learning specialist who makes neural networks but your cat seems to be better at it. Now you must solve puzzles to build a cat-to-human translation system (who kno",
+  "reviews": {
+   "total": 8165,
+   "pos": 7460,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "605230",
+  "name": "Grey Hack",
+  "release": "Dec 14, 2017",
+  "price": "$19.99",
+  "genres": [
+   "Indie",
+   "Massively Multiplayer",
+   "Simulation",
+   "Early Access"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "MMO",
+   "PvP",
+   "Online PvP",
+   "Co-op",
+   "Online Co-op",
+   "Cross-Platform Multiplayer"
+  ],
+  "devs": [
+   "Loading Home"
+  ],
+  "pubs": [
+   "Loading Home"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Grey Hack is a massively multiplayer hacking simulator game. You're a hacker with full freedom to act as you wish on a vast network of procedurally generated computers.",
+  "reviews": {
+   "total": 1861,
+   "pos": 1677,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "862090",
+  "name": "NITE Team 4 Demo",
+  "release": "May 11, 2018",
+  "price": "Free/NA",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Multi-player",
+   "PvP",
+   "Online PvP",
+   "Co-op",
+   "Online Co-op",
+   "Game demo",
+   "Steam Achievements"
+  ],
+  "devs": [
+   "Alice & Smith"
+  ],
+  "pubs": [
+   "Alice & Smith"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "NITE Team 4 is a military hacking simulation game that explores the world of cyberwarfare and features realistic mission scenarios.",
+  "reviews": {
+   "total": 0,
+   "pos": 0,
+   "desc": "No user reviews"
+  }
+ },
+ {
+  "appid": "839310",
+  "name": "Signal Simulator",
+  "release": "Apr 29, 2018",
+  "price": "$14.99",
+  "genres": [
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Partial Controller Support",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Blagovest Penev"
+  ],
+  "pubs": [
+   "Blagovest Penev"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": true
+  },
+  "desc": "Game inspired by SETI. Take the role of a scientist to find an extraterrestrial signal .Control massive Radio Antennas by using interactive control in your Observatory. Detect , do",
+  "reviews": {
+   "total": 1029,
+   "pos": 815,
+   "desc": "Mostly Positive"
+  }
+ },
+ {
+  "appid": "658850",
+  "name": "Do Not Feed the Monkeys",
+  "release": "Oct 23, 2018",
+  "price": "$15.99",
+  "genres": [
+   "Indie",
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Trading Cards",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support",
+   "Partial Controller Support"
+  ],
+  "devs": [
+   "Fictiorama Studios"
+  ],
+  "pubs": [
+   "Alawar"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "A digital voyeur simulator where you watch strangers through surveillance cameras. Invade their privacy and witness their most intimate moments, but don’t interact with the subject",
+  "reviews": {
+   "total": 12652,
+   "pos": 11837,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "2825530",
+  "name": "Beholder: Conductor",
+  "release": "Apr 23, 2025",
+  "price": "$13.99",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "Simulation",
+   "Strategy"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Alawar"
+  ],
+  "pubs": [
+   "Alawar"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "A Beholder series spin-off. Become a conductor of the Determination Bringer train: monitor passengers, report incidents, and carry out important Ministry assignments — whose level ",
+  "reviews": {
+   "total": 5162,
+   "pos": 4716,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1147550",
+  "name": "Not For Broadcast",
+  "release": "Jan 25, 2022",
+  "price": "$6.24",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Steam Trading Cards",
+   "Captions available",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "NotGames"
+  ],
+  "pubs": [
+   "tinyBuild"
+  ],
+  "meta": 82,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "A new political Party has won a landslide in the General Election, and for some reason the editor at the news station you work at has done a runner. Now it’s up to you, the Janitor",
+  "reviews": {
+   "total": 12602,
+   "pos": 11829,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "1771980",
+  "name": "The Operator",
+  "release": "Jul 22, 2024",
+  "price": "$13.99",
+  "genres": [
+   "Adventure",
+   "Indie",
+   "Simulation"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "Captions available",
+   "Adjustable Text Size",
+   "Camera Comfort",
+   "Color Alternatives",
+   "Custom Volume Controls"
+  ],
+  "devs": [
+   "Bureau 81"
+  ],
+  "pubs": [
+   "Bureau 81",
+   "indienova"
+  ],
+  "meta": 78,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": true
+  },
+  "desc": "Welcome to the FDI. As our newest Operator, your role is to use your detective skills to assist our field agents and investigate mysterious crimes. Use cutting-edge FDI software to",
+  "reviews": {
+   "total": 8777,
+   "pos": 8040,
+   "desc": "Very Positive"
+  }
+ },
+ {
+  "appid": "2676840",
+  "name": "No Case Should Remain Unsolved",
+  "release": "Jan 17, 2024",
+  "price": "$4.89",
+  "genres": [
+   "Adventure",
+   "Indie"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Steam Cloud",
+   "Family Sharing"
+  ],
+  "devs": [
+   "Somi"
+  ],
+  "pubs": [
+   "Somi"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": true,
+   "linux": false
+  },
+  "desc": "Twelve years after Senior Inspector Jeon Gyeong's retirement, she is visited by a young police officer: a woman who pleads with her to reexamine Seowon's case. But with each uncove",
+  "reviews": {
+   "total": 10485,
+   "pos": 10114,
+   "desc": "Overwhelmingly Positive"
+  }
+ },
+ {
+  "appid": "986130",
+  "name": "Shadows of Doubt",
+  "release": "Sep 26, 2024",
+  "price": "$24.99",
+  "genres": [
+   "Action",
+   "Adventure",
+   "Indie",
+   "RPG"
+  ],
+  "cats": [
+   "Single-player",
+   "Steam Achievements",
+   "Full controller support",
+   "DualShock Controller Support",
+   "DualShock Controller Support",
+   "DualSense Controller Support",
+   "DualSense Controller Support",
+   "Steam Cloud"
+  ],
+  "devs": [
+   "ColePowered Games"
+  ],
+  "pubs": [
+   "Fireshine Games"
+  ],
+  "meta": null,
+  "platforms": {
+   "windows": true,
+   "mac": false,
+   "linux": false
+  },
+  "desc": "Take on the role of a private investigator in this immersive detective simulator. Solve murders and other crimes in a procedurally generated and persistent city where every NPC liv",
+  "reviews": {
+   "total": 17669,
+   "pos": 14513,
+   "desc": "Very Positive"
+  }
+ }
+]

@@ -1,0 +1,48 @@
+# Unity
+unity/*/Library/
+unity/*/Temp/
+unity/*/Obj/
+unity/*/Build/
+unity/*/Builds/
+unity/*/Logs/
+unity/*/UserSettings/
+unity/*/MemoryCaptures/
+unity/*/Recordings/
+unity/*/[Aa]ssets/AssetStoreTools*
+unity/*/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Unity 生成的解决方案与工程文件
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# 构建产物
+/build/
+/artifacts/build/
+
+# 自动化产物：最终截图、自检报告与配平记录保留，中间过程不保留
+/artifacts/logs/
+/artifacts/tmp/
+/artifacts/tuning/iter_*.png
+/artifacts/tuning/run.log
+# 演练抓帧保留最后一张作为验证证据，中间帧不入库
+/artifacts/playtest/
+
+# 崩溃报告
+sysinfo.txt
+crashlytics-build.properties
+
+# 操作系统
+.DS_Store
+Thumbs.db
+*~
