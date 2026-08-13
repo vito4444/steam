@@ -675,7 +675,10 @@ namespace Decoder.EditorTools
             AddCylinder(root, "LampShade", new Vector3(-0.86f, 1.18f, -0.78f), new Vector3(0.11f, 0.09f, 0.11f),
                 Quaternion.Euler(64f, 104f, 0f), _steelOlive);
 
-            BuildDeskProps(root);
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-noProps") < 0)
+            {
+                BuildDeskProps(root);
+            }
         }
 
         /// <summary>
@@ -1047,11 +1050,18 @@ namespace Decoder.EditorTools
             else if (Mathf.Approximately(smallest, b)) { u = a; v = c; }
             else { u = a; v = b; }
 
-            var tileU = Mathf.Max(0.05f, u * tilesPerMeter);
-            var tileV = Mathf.Max(0.05f, v * tilesPerMeter);
+            // 平铺量量化到 0.25 的整数倍。
+            //
+            // 不量化的话，每个尺寸略有不同的物件都会生成一份独立网格。
+            // 补上桌面道具之后这个数量翻了上去，叠加可玩场景的那些组件，
+            // 构建出的 level0 就会损坏——运行时报 corrupted 直接崩溃，
+            // 而构建过程毫无提示。量化之后网格被大量复用，
+            // 视觉上的差别在这个尺度下看不出来。
+            const float step = 0.25f;
+            var tileU = Mathf.Max(step, Mathf.Round(u * tilesPerMeter / step) * step);
+            var tileV = Mathf.Max(step, Mathf.Round(v * tilesPerMeter / step) * step);
 
             var source = filter.sharedMesh;
-            // 按图元与平铺量缓存，否则每个物件一份网格会让场景文件失控。
             var key = $"{source.name}|{tileU:F2}|{tileV:F2}";
             if (!UvMeshCache.TryGetValue(key, out var mesh))
             {
