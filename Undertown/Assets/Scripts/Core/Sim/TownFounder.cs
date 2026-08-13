@@ -17,7 +17,7 @@ namespace Undertown.Core.Sim
         {
             var map = town.Map;
             int roadY = FindRoadRow(map);
-            int cx = map.Width / 2;
+            int cx = ChooseCentre(map, roadY);
 
             // Laid out over a roughly square block of cells rather than strung along the road.
             //
@@ -152,6 +152,37 @@ namespace Undertown.Core.Sim
             for (int y = 0; y < map.Height; y++)
                 if (map.Get(new Coord(map.Width / 2, y)) == TileKind.Road) return y;
             return map.Height / 2;
+        }
+
+        /// <summary>
+        /// Where the settlement sits east to west: far enough from the river that its bank is
+        /// in shot, and no nearer.
+        ///
+        /// A river the camera never reaches is worth nothing. The generated one wanders down
+        /// the map somewhere in the middle half, so on most seeds it sat outside the frame and
+        /// every mile of bank, shoal and boulder drawn for it went unseen.
+        ///
+        /// The distance is chosen to keep the two apart in the simulation as much as to get
+        /// the water on screen. Groundwater lies under the riverbed and floods any working dug
+        /// into it, so a town built against the bank is a town whose cellars flood; at this
+        /// separation the river is at the edge of the view and still further from the vaults
+        /// than anyone digs.
+        /// </summary>
+        private static int ChooseCentre(GridMap map, int roadY)
+        {
+            const int standOff = 14;
+
+            int water = -1;
+            for (int x = 0; x < map.Width && water < 0; x++)
+                if (map.Get(new Coord(x, roadY)) == TileKind.Water) water = x;
+
+            if (water < 0) return map.Width / 2;
+
+            int cx = water + standOff;
+            int limit = map.Width - 14;
+            if (cx > limit) cx = water - standOff;
+            if (cx < 14) cx = map.Width / 2;
+            return cx;
         }
 
         /// <summary>

@@ -67,8 +67,8 @@ namespace Undertown.Game.Presentation
         private static void Edge(Color32[] px, float u0, float v0, float u1, float v1, int seed,
             bool stony)
         {
-            var foam = new Color32(0xB6, 0xD2, 0xDE, 0xFF);
-            var foamSoft = new Color32(0x84, 0xB0, 0xC6, 0xFF);
+            var foam = new Color32(0x8E, 0xA0, 0xA4, 0xFF);
+            var foamSoft = new Color32(0x64, 0x7E, 0x86, 0xFF);
 
             const int steps = 64;
             for (int i = 0; i <= steps; i++)

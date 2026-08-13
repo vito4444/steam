@@ -29,14 +29,14 @@ namespace Undertown.Game.Presentation
             { TileKind.Grass,       new Color32(0x60, 0x54, 0x28, 0xFF) },
             { TileKind.Dirt,        new Color32(0x70, 0x57, 0x33, 0xFF) },
             { TileKind.Road,        new Color32(0x7E, 0x63, 0x39, 0xFF) },
-            { TileKind.Water,       new Color32(0x32, 0x68, 0x8E, 0xFF) },
+            { TileKind.Water,       new Color32(0x2C, 0x4C, 0x58, 0xFF) },
             // Woodland floor is grass. Even a few shades darker, a wooded cell drew its own
             // diamond outline on the map, and a wood came out as a run of tiles rather than a
             // stand of trees. What marks it as woodland is the trees standing on it; the litter
             // and shade underneath them are painted as scatter, which does not follow the cell
             // boundary and so does not advertise it.
             { TileKind.Forest,      new Color32(0x60, 0x54, 0x28, 0xFF) },
-            { TileKind.ClayDeposit, new Color32(0x8A, 0x54, 0x3A, 0xFF) },
+            { TileKind.ClayDeposit, new Color32(0x6C, 0x42, 0x2E, 0xFF) },
             { TileKind.Rock,        new Color32(0x64, 0x60, 0x54, 0xFF) },
             { TileKind.DisusedMine, new Color32(0x54, 0x44, 0x30, 0xFF) },
 
@@ -180,9 +180,9 @@ namespace Undertown.Game.Presentation
                     // Depth mottling first, then broken highlights on top. Three even stripes
                     // on flat blue read as a decorated tile; open water wants no repeating
                     // feature large enough for the eye to lock onto and start counting.
-                    var deep = new Color32(0x27, 0x53, 0x74, 0xFF);
-                    var mid = new Color32(0x3A, 0x74, 0x9A, 0xFF);
-                    var glint = new Color32(0x6E, 0xA4, 0xC2, 0xFF);
+                    var deep = new Color32(0x22, 0x3C, 0x46, 0xFF);
+                    var mid = new Color32(0x34, 0x58, 0x66, 0xFF);
+                    var glint = new Color32(0x54, 0x78, 0x84, 0xFF);
 
                     for (int i = 0; i < 46; i++)
                     {
