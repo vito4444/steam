@@ -275,25 +275,9 @@ namespace Worker.Game
         // ------------------------------------------------------------- primitives
 
         private static Transform Box(Transform parent, string name, Material material, Vector3 scale, Vector3 position)
-            => Primitive(PrimitiveType.Cube, parent, name, material, scale, position);
+            => MeshObjects.Box(name, parent, material, scale, position);
 
         private static Transform Cylinder(Transform parent, string name, Material material, Vector3 scale, Vector3 position)
-            => Primitive(PrimitiveType.Cylinder, parent, name, material, scale, position);
-
-        private static Transform Primitive(PrimitiveType type, Transform parent, string name,
-            Material material, Vector3 scale, Vector3 position)
-        {
-            var holder = GameObject.CreatePrimitive(type);
-            holder.name = name;
-            holder.transform.SetParent(parent, false);
-            holder.transform.localScale = scale;
-            holder.transform.localPosition = position;
-
-            var collider = holder.GetComponent<Collider>();
-            if (collider != null) UnityEngine.Object.Destroy(collider);
-
-            if (material != null) holder.GetComponent<Renderer>().sharedMaterial = material;
-            return holder.transform;
-        }
+            => MeshObjects.Cylinder(name, parent, material, scale, position);
     }
 }

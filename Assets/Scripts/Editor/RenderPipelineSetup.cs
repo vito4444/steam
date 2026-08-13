@@ -105,6 +105,15 @@ namespace Worker.Editor
             Debug.Log("[worker] added screen space ambient occlusion");
         }
 
+        private static void SetSerialized(SerializedObject serialized, string path, int value)
+        {
+            var property = serialized.FindProperty(path);
+            if (property == null) return;
+
+            if (property.propertyType == SerializedPropertyType.Boolean) property.boolValue = value != 0;
+            else property.intValue = value;
+        }
+
         private static void SetField(object target, System.Type type, string name, object value)
         {
             var field = type.GetField(name,
@@ -189,6 +198,15 @@ namespace Worker.Editor
             pipeline.shadowNormalBias = 0.6f;
             pipeline.msaaSampleCount = 2;
             pipeline.supportsHDR = true;
+
+            // Per-pixel additional lights. The scene leans on small warm point lights at
+            // machines and windows to carry mood; vertex lighting would smear them across
+            // whole faces and lose the effect entirely.
+            var serializedPipeline = new SerializedObject(pipeline);
+            SetSerialized(serializedPipeline, "m_AdditionalLightsRenderingMode", 1);
+            SetSerialized(serializedPipeline, "m_AdditionalLightsPerObjectLimit", 8);
+            SetSerialized(serializedPipeline, "m_AdditionalLightShadowsSupported", 0);
+            serializedPipeline.ApplyModifiedPropertiesWithoutUndo();
 
             // Soft shadows are exposed read-only on the asset, so the flag has to be set
             // through the serialised object instead.

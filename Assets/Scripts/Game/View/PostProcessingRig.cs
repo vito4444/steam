@@ -72,7 +72,10 @@ namespace Worker.Game
             // Lowered after the first pass blew out the middle of the floor: the floor
             // material had already been brightened for the 3D view, and exposure on top
             // of that pushed the centre of the image to near white.
-            color.postExposure.value = 0.12f;
+            // Zero, not positive. Raising exposure to "compensate" for a dusk lighting
+            // rig simply undoes it: the ambient reduction and the exposure lift cancel
+            // and the image comes back out looking like noon with longer shadows.
+            color.postExposure.value = 0.55f;
 
             color.contrast.overrideState = true;
             color.contrast.value = 11f;
@@ -90,10 +93,10 @@ namespace Worker.Game
             var bloom = profile.Add<Bloom>(true);
 
             bloom.threshold.overrideState = true;
-            bloom.threshold.value = 1.05f;
+            bloom.threshold.value = 0.75f;
 
             bloom.intensity.overrideState = true;
-            bloom.intensity.value = 0.42f;
+            bloom.intensity.value = 1.9f;
 
             bloom.scatter.overrideState = true;
             bloom.scatter.value = 0.62f;
@@ -107,7 +110,7 @@ namespace Worker.Game
             var vignette = profile.Add<Vignette>(true);
 
             vignette.intensity.overrideState = true;
-            vignette.intensity.value = 0.17f;
+            vignette.intensity.value = 0.30f;
 
             vignette.smoothness.overrideState = true;
             vignette.smoothness.value = 0.55f;

@@ -43,7 +43,7 @@ namespace Worker.Game
             _camera = GetComponent<Camera>();
             _camera.orthographic = true;
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = new Color(0.09f, 0.10f, 0.13f);
+            _camera.backgroundColor = new Color(0.06f, 0.07f, 0.11f);
             _camera.nearClipPlane = 0.1f;
             _camera.farClipPlane = 300f;
         }

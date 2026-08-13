@@ -49,6 +49,7 @@ namespace Worker.Game
         private readonly Dictionary<ItemId, Material> _itemMaterials = new Dictionary<ItemId, Material>();
         private readonly Dictionary<int, Material> _shadeMaterials = new Dictionary<int, Material>();
         private readonly Dictionary<int, Transform> _buildings = new Dictionary<int, Transform>();
+        private readonly Dictionary<int, BuildingRig> _rigs = new Dictionary<int, BuildingRig>();
         private readonly Dictionary<int, WorkerRig> _workers = new Dictionary<int, WorkerRig>();
         private readonly List<Transform> _itemPool = new List<Transform>();
         private int _itemsUsed;
@@ -64,6 +65,15 @@ namespace Worker.Game
         private Material _hazardMaterial;
         private Material _helmetMaterial;
         private IsometricBuildingBuilder _builder;
+
+        private sealed class BuildingRig
+        {
+            public Transform Root;
+            public MachineAnimator Spinner;
+            public Light Lamp;
+            public Renderer Indicator;
+            public Material IndicatorMaterial;
+        }
 
         private sealed class WorkerRig
         {
@@ -84,6 +94,8 @@ namespace Worker.Game
         private void OnDestroy()
         {
             if (_runner != null) _runner.WorldCreated -= OnWorldCreated;
+            ProceduralMesh.ClearCache();
+            ProceduralTextures.ClearCache();
         }
 
         private void OnWorldCreated(SimWorld world)
@@ -126,13 +138,22 @@ namespace Worker.Game
             return _litShader;
         }
 
-        private static Material CreateLit(Color color, float smoothness = 0.15f, float metallic = 0f)
+        private static Material CreateLit(Color color, float smoothness = 0.15f, float metallic = 0f,
+            Texture2D surface = null)
         {
             var shader = ResolveLitShader();
             if (shader == null) return null;
 
             var material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
             material.color = color;
+
+            // The texture multiplies the base colour, so one greyscale surface map can
+            // serve every hue instead of needing a variant per material.
+            if (surface != null)
+            {
+                if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", surface);
+                else if (material.HasProperty("_MainTex")) material.SetTexture("_MainTex", surface);
+            }
 
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
             if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", smoothness);
@@ -164,7 +185,8 @@ namespace Worker.Game
 
             var baseColor = Palette.ForBuilding(kind);
             var shade = CreateLit(
-                darkenPercent <= 0 ? baseColor.ToUnity() : baseColor.Darken(darkenPercent).ToUnity());
+                darkenPercent <= 0 ? baseColor.ToUnity() : baseColor.Darken(darkenPercent).ToUnity(),
+                surface: ProceduralTextures.PaintedPanel());
 
             _shadeMaterials[key] = shade;
             return shade;
@@ -186,6 +208,7 @@ namespace Worker.Game
             if (_root != null) Destroy(_root.gameObject);
 
             _buildings.Clear();
+            _rigs.Clear();
             _workers.Clear();
             _itemPool.Clear();
             _buildingMaterials.Clear();
@@ -200,7 +223,7 @@ namespace Worker.Game
             // a cold dark floor to sit under flat sprites; lit geometry standing on it
             // needs a surface that reflects the warm key, or the whole interior reads
             // colder than the grass outside it.
-            _floorMaterial = CreateLit(new Color(0.42f, 0.41f, 0.39f));
+            _floorMaterial = CreateLit(new Color(0.42f, 0.41f, 0.39f), surface: ProceduralTextures.Concrete());
             _floorLineMaterial = CreateLit(new Color(0.50f, 0.48f, 0.45f));
             _workerMaterial = CreateLit(Palette.WorkerBody.ToUnity(), smoothness: 0.2f);
             _workerTiredMaterial = CreateLit(Palette.WorkerTired.ToUnity(), smoothness: 0.2f);
@@ -210,13 +233,14 @@ namespace Worker.Game
             // hue, but bare metal, dark castings, lit glass and hazard paint appear on
             // several of them and reading as the same material each time is what makes
             // the factory look like one designed object rather than a kit of parts.
-            _metalMaterial = CreateLit(new Color(0.60f, 0.63f, 0.69f), smoothness: 0.45f, metallic: 0.45f);
-            _darkMetalMaterial = CreateLit(new Color(0.26f, 0.28f, 0.33f), smoothness: 0.42f, metallic: 0.55f);
+            _metalMaterial = CreateLit(new Color(0.60f, 0.63f, 0.69f), smoothness: 0.45f, metallic: 0.45f, surface: ProceduralTextures.BrushedMetal());
+            _darkMetalMaterial = CreateLit(new Color(0.26f, 0.28f, 0.33f), smoothness: 0.42f, metallic: 0.55f, surface: ProceduralTextures.BrushedMetal());
             _glassMaterial = CreateLit(new Color(1f, 0.90f, 0.66f), smoothness: 0.85f);
             if (_glassMaterial != null && _glassMaterial.HasProperty("_EmissionColor"))
             {
                 _glassMaterial.EnableKeyword("_EMISSION");
-                _glassMaterial.SetColor("_EmissionColor", new Color(1f, 0.78f, 0.42f) * 1.6f);
+                _glassMaterial.SetColor("_EmissionColor", new Color(1f, 0.74f, 0.38f) * 8f);
+                _glassMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
             }
             _hazardMaterial = CreateLit(new Color(0.92f, 0.72f, 0.18f), smoothness: 0.3f);
             _helmetMaterial = CreateLit(new Color(0.95f, 0.62f, 0.16f), smoothness: 0.4f);
@@ -241,7 +265,7 @@ namespace Worker.Game
 
             // A single slab for the yard, with the factory floor sitting slightly proud
             // of it. The lip catches the key light and reads as a raised concrete pad.
-            var yard = CreateBox("Yard", _root, CreateLit(new Color(0.30f, 0.29f, 0.28f)));
+            var yard = CreateBox("Yard", _root, CreateLit(new Color(0.30f, 0.29f, 0.28f), surface: ProceduralTextures.Concrete()));
             yard.localScale = new Vector3(map.Width + 8f, 0.4f, map.Height + 8f);
             yard.localPosition = new Vector3(map.Width * 0.5f, -0.2f, map.Height * 0.5f);
 
@@ -277,13 +301,13 @@ namespace Worker.Game
         {
             var dressing = new IsometricSceneDressing(
                 _root,
-                concrete: CreateLit(new Color(0.34f, 0.35f, 0.38f)),
+                concrete: CreateLit(new Color(0.34f, 0.35f, 0.38f), surface: ProceduralTextures.Concrete()),
                 paint: CreateLit(new Color(0.80f, 0.82f, 0.84f), smoothness: 0.05f),
                 hazard: _hazardMaterial,
-                timber: CreateLit(new Color(0.62f, 0.45f, 0.28f), smoothness: 0.1f),
-                drum: CreateLit(new Color(0.32f, 0.46f, 0.40f), smoothness: 0.35f, metallic: 0.3f),
-                grass: CreateLit(new Color(0.26f, 0.34f, 0.24f)),
-                foliage: CreateLit(new Color(0.22f, 0.36f, 0.24f)),
+                timber: CreateLit(new Color(0.62f, 0.45f, 0.28f), smoothness: 0.1f, surface: ProceduralTextures.Wood()),
+                drum: CreateLit(new Color(0.32f, 0.46f, 0.40f), smoothness: 0.35f, metallic: 0.3f, surface: ProceduralTextures.BrushedMetal()),
+                grass: CreateLit(new Color(0.11f, 0.15f, 0.11f), surface: ProceduralTextures.Ground()),
+                foliage: CreateLit(new Color(0.10f, 0.18f, 0.12f)),
                 trunk: CreateLit(new Color(0.28f, 0.22f, 0.17f)));
 
             dressing.Build(_world);
@@ -307,25 +331,47 @@ namespace Worker.Game
                 ConfigureKeyLight(holder.AddComponent<Light>());
             }
 
-            // Cool sky fill against the warm key. Raised well above the default: with a
-            // single directional light, ambient is the only thing keeping shadowed faces
-            // from going to solid black, and solid black reads as a hole in the image.
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.56f, 0.59f, 0.66f);
-            RenderSettings.ambientEquatorColor = new Color(0.44f, 0.45f, 0.48f);
-            RenderSettings.ambientGroundColor = new Color(0.30f, 0.28f, 0.26f);
-            RenderSettings.ambientIntensity = 1f;
+            // Flat ambient, and the skybox explicitly cleared.
+            //
+            // Trilight looked correct in code and did nothing in the build: the scene
+            // still had Unity's default skybox, which keeps contributing environment
+            // light, and RenderSettings.ambientIntensity only applies in Skybox mode.
+            // The result was a dusk rig that rendered at noon. Flat mode takes a single
+            // colour and cannot be quietly overridden by an asset nobody set.
+            RenderSettings.skybox = null;
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            RenderSettings.ambientLight = new Color(0.055f, 0.07f, 0.115f);
+            RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+            RenderSettings.customReflectionTexture = null;
+            // Dusk sky: cool and dim, so the warm key and the point lights own the image.
+            // ambientSkyColor aliases ambientLight in Flat mode, so it is set last and
+            // is the value that actually takes effect.
+            RenderSettings.ambientSkyColor = new Color(0.055f, 0.07f, 0.115f);
+
+            Debug.Log("[worker] lighting: ambientMode=" + RenderSettings.ambientMode
+                      + " ambientLight=" + RenderSettings.ambientLight
+                      + " skybox=" + (RenderSettings.skybox == null ? "none" : RenderSettings.skybox.name));
         }
 
+        /// <summary>
+        /// Late afternoon, low and warm.
+        ///
+        /// The scene was previously lit like noon, which is the worst possible choice
+        /// for it: a high white key flattens everything it touches and drowns out the
+        /// machine lamps and window glow entirely. Dropping the sun to a low angle gives
+        /// every object a long shadow and a bright rim, and darkening the ambient lets
+        /// the small warm lights actually read. It is the single biggest change to the
+        /// mood of the image, and it costs one rotation and three colours.
+        /// </summary>
         private static void ConfigureKeyLight(Light light)
         {
             light.type = LightType.Directional;
-            light.color = new Color(1f, 0.95f, 0.86f);
-            light.intensity = 2.55f;
-            light.transform.rotation = Quaternion.Euler(52f, -38f, 0f);
+            light.color = new Color(1f, 0.70f, 0.44f);
+            light.intensity = 0.82f;
+            light.transform.rotation = Quaternion.Euler(24f, -42f, 0f);
 
             light.shadows = LightShadows.Soft;
-            light.shadowStrength = 0.78f;
+            light.shadowStrength = 0.85f;
 
             // Generous bias. Under an orthographic camera with a single cascade the
             // shadow map is coarse relative to these small objects, and the default bias
@@ -334,6 +380,10 @@ namespace Worker.Game
             light.shadowBias = 0.15f;
             light.shadowNormalBias = 0.9f;
             light.shadowNearPlane = 0.2f;
+
+            Debug.Log("[worker] key light: intensity=" + light.intensity
+                      + " colour=" + light.color
+                      + " rotation=" + light.transform.rotation.eulerAngles);
         }
 
         // ------------------------------------------------------------------ tick
@@ -343,6 +393,7 @@ namespace Worker.Game
             if (_world == null) return;
 
             SyncBuildings();
+            UpdateLifeSigns();
             SyncWorkers();
             SyncBeltItems();
         }
@@ -391,6 +442,7 @@ namespace Worker.Game
             // Belts rotate; everything else is authored facing the camera so the machine
             // details stay legible from this fixed angle.
             _builder.Build(holder.transform, building);
+            AttachLifeSigns(holder.transform, building);
             return holder.transform;
         }
 
@@ -409,7 +461,13 @@ namespace Worker.Game
                     : new Vector3(0f, height * 0.5f, side * 0.34f);
             }
 
-            var bed = CreateBox("Bed", parent, CreateLit(Palette.ConveyorBed.Darken(12).ToUnity(), smoothness: 0.18f, metallic: 0.1f));
+            var bed = CreateBox("Bed", parent, CreateLit(Palette.ConveyorBed.Darken(12).ToUnity(),
+                smoothness: 0.18f, metallic: 0.1f, surface: ProceduralTextures.BrushedMetal()));
+
+            // Scrolling the belt surface is what stops cargo looking like it floats.
+            var scroller = bed.gameObject.AddComponent<BeltScroller>();
+            scroller.Speed = 0.55f;
+            scroller.Direction = horizontal ? Vector2.right : Vector2.up;
             bed.localScale = horizontal
                 ? new Vector3(1.0f, 0.08f, 0.66f)
                 : new Vector3(0.66f, 0.08f, 1.0f);
@@ -438,6 +496,142 @@ namespace Worker.Game
                 roller.localRotation = horizontal
                     ? Quaternion.Euler(90f, 0f, 0f)
                     : Quaternion.Euler(0f, 0f, 90f);
+            }
+        }
+
+        /// <summary>
+        /// Adds the parts that make a machine look alive: a warm working light, a status
+        /// lamp, and whatever spins.
+        ///
+        /// These read from a distance in a way that geometry does not. A player scanning
+        /// the floor sees which benches are lit and which have gone dark long before
+        /// they could read a progress bar, and bloom turns the emissive parts into the
+        /// brightest thing in frame, which is what gives the image a focal point.
+        /// </summary>
+        private void AttachLifeSigns(Transform holder, BuildingInstance building)
+        {
+            var rig = new BuildingRig { Root = holder };
+
+            if (building.Def.IsStation)
+            {
+                // Status lamp on a short post, its own material so it can change colour.
+                rig.IndicatorMaterial = CreateLit(new Color(0.2f, 0.9f, 0.35f), smoothness: 0.7f);
+                SetEmission(rig.IndicatorMaterial, new Color(0.25f, 1f, 0.4f), 9f);
+
+                var lamp = CreateBox("StatusLamp", holder, rig.IndicatorMaterial);
+                lamp.localScale = new Vector3(0.13f, 0.13f, 0.13f);
+                lamp.localPosition = new Vector3(building.Width * 0.5f - 0.22f, 1.24f, -building.Height * 0.5f + 0.22f);
+                rig.Indicator = lamp.GetComponent<Renderer>();
+
+                var post = CreateCylinder("LampPost", holder, _darkMetalMaterial);
+                post.localScale = new Vector3(0.05f, 0.28f, 0.05f);
+                post.localPosition = lamp.localPosition + new Vector3(0f, -0.28f, 0f);
+
+                var light = new GameObject("WorkLight");
+                light.transform.SetParent(holder, false);
+                light.transform.localPosition = new Vector3(0f, 1.5f, 0f);
+
+                rig.Lamp = light.AddComponent<Light>();
+                rig.Lamp.type = LightType.Point;
+                rig.Lamp.color = new Color(1f, 0.80f, 0.50f);
+                rig.Lamp.range = 7f;
+                rig.Lamp.intensity = 13f;
+                rig.Lamp.shadows = LightShadows.None;
+
+                rig.Spinner = FindSpinner(holder, building);
+            }
+            else if (building.Kind == BuildingKind.BreakRoom)
+            {
+                var light = new GameObject("RoomLight");
+                light.transform.SetParent(holder, false);
+                light.transform.localPosition = new Vector3(0f, 0.9f, 0f);
+
+                rig.Lamp = light.AddComponent<Light>();
+                rig.Lamp.type = LightType.Point;
+                rig.Lamp.color = new Color(1f, 0.72f, 0.40f);
+                rig.Lamp.range = 8f;
+                rig.Lamp.intensity = 18f;
+                rig.Lamp.shadows = LightShadows.None;
+            }
+            else if (building.Kind == BuildingKind.Intake || building.Kind == BuildingKind.Shipping)
+            {
+                var floodMaterial = CreateLit(new Color(0.95f, 0.95f, 0.9f), smoothness: 0.6f);
+                SetEmission(floodMaterial, new Color(1f, 0.95f, 0.82f), 10f);
+
+                var flood = CreateBox("Floodlight", holder, floodMaterial);
+                flood.localScale = new Vector3(0.4f, 0.1f, 0.16f);
+                flood.localPosition = new Vector3(0f, 1.42f, -0.5f);
+
+                var light = new GameObject("DockLight");
+                light.transform.SetParent(holder, false);
+                light.transform.localPosition = new Vector3(0f, 1.3f, 0.4f);
+
+                rig.Lamp = light.AddComponent<Light>();
+                rig.Lamp.type = LightType.Point;
+                rig.Lamp.color = new Color(1f, 0.92f, 0.78f);
+                rig.Lamp.range = 7f;
+                rig.Lamp.intensity = 15f;
+                rig.Lamp.shadows = LightShadows.None;
+            }
+
+            _rigs[building.Id] = rig;
+        }
+
+        /// <summary>The part that should turn: the sawbench blade or the lathe spindle.</summary>
+        private static MachineAnimator FindSpinner(Transform holder, BuildingInstance building)
+        {
+            string wanted = building.Kind == BuildingKind.Sawbench ? "Blade"
+                : building.Kind == BuildingKind.Lathe ? "Spindle"
+                : null;
+
+            if (wanted == null) return null;
+
+            var part = holder.Find(wanted);
+            if (part == null) return null;
+
+            var animator = part.gameObject.AddComponent<MachineAnimator>();
+
+            // Both parts are cylinders laid on their side, so their local Y is the
+            // rotation axis in both cases.
+            animator.AxisLocal = Vector3.up;
+            animator.DegreesPerSecond = building.Kind == BuildingKind.Sawbench ? 900f : 420f;
+            return animator;
+        }
+
+        private static void SetEmission(Material material, Color color, float intensity)
+        {
+            if (material == null || !material.HasProperty("_EmissionColor")) return;
+
+            material.EnableKeyword("_EMISSION");
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            material.SetColor("_EmissionColor", color * intensity);
+        }
+
+        /// <summary>Drives the lights and moving parts from simulation state each frame.</summary>
+        private void UpdateLifeSigns()
+        {
+            for (int i = 0; i < _world.Buildings.Count; i++)
+            {
+                var building = _world.Buildings[i];
+                if (!_rigs.TryGetValue(building.Id, out var rig)) continue;
+
+                bool working = building.Def.IsStation && building.WorkProgress > 0;
+
+                if (rig.Spinner != null) rig.Spinner.Active = working;
+
+                if (rig.Lamp != null && building.Def.IsStation)
+                {
+                    // Idle benches dim rather than switch off, so a dark machine reads as
+                    // stalled instead of as missing.
+                    rig.Lamp.intensity = working ? 16f : 5f;
+                }
+
+                if (rig.IndicatorMaterial == null) continue;
+
+                bool starved = building.Def.IsStation && !working && !building.CanStartWork();
+                var color = starved ? new Color(1f, 0.45f, 0.2f) : new Color(0.25f, 1f, 0.4f);
+                rig.IndicatorMaterial.color = color;
+                SetEmission(rig.IndicatorMaterial, color, starved ? 8f : 9f);
             }
         }
 
@@ -603,30 +797,15 @@ namespace Worker.Game
         // ------------------------------------------------------------- primitives
 
         private static Transform CreateBox(string name, Transform parent, Material material)
-            => CreatePrimitive(PrimitiveType.Cube, name, parent, material);
+            => MeshObjects.Box(name, parent, material);
 
         private static Transform CreateCylinder(string name, Transform parent, Material material)
-            => CreatePrimitive(PrimitiveType.Cylinder, name, parent, material);
+            => MeshObjects.Cylinder(name, parent, material);
 
         private static Transform CreateCapsule(string name, Transform parent, Material material)
-            => CreatePrimitive(PrimitiveType.Capsule, name, parent, material);
+            => MeshObjects.Capsule(name, parent, material);
 
         private static Transform CreateSphere(string name, Transform parent, Material material)
-            => CreatePrimitive(PrimitiveType.Sphere, name, parent, material);
-
-        private static Transform CreatePrimitive(PrimitiveType type, string name, Transform parent, Material material)
-        {
-            var holder = GameObject.CreatePrimitive(type);
-            holder.name = name;
-            holder.transform.SetParent(parent, false);
-
-            // Colliders cost memory and CPU and nothing here is ever raycast: selection
-            // works off the simulation grid, not physics.
-            var collider = holder.GetComponent<Collider>();
-            if (collider != null) Destroy(collider);
-
-            holder.GetComponent<Renderer>().sharedMaterial = material;
-            return holder.transform;
-        }
+            => MeshObjects.Sphere(name, parent, material);
     }
 }
