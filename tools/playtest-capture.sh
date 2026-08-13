@@ -23,15 +23,22 @@ DISPLAY_NUM=":91"
 mkdir -p "${OUT_DIR}"
 rm -f "${OUT_DIR}"/*.png
 
-echo "生成可玩场景并构建 Linux x64（同一编辑器进程内完成）"
+# 场景生成与构建必须分成两个编辑器进程。同进程连着做会让构建读到内存里
+# 尚未与磁盘对齐的场景状态，产出的 level0 在运行时报 corrupted 直接崩溃，
+# 而构建过程一句警告都不给。
+echo "生成可玩场景"
+"$(dirname "$0")/build-station-scene.sh" > /dev/null
+
+echo "构建 Linux x64"
 rm -rf "${BUILD_DIR}"
 set +e
 run_unity_headless \
     -batchmode -quit \
     -projectPath "${PROJECT_PATH}" \
     -buildTarget Linux64 \
-    -executeMethod Decoder.EditorTools.BuildScript.BuildStationLinux64 \
+    -executeMethod Decoder.EditorTools.BuildScript.BuildLinux64 \
     -buildOutput "${BUILD_DIR}" \
+    -buildScenes "${SCENE}" \
     -logFile "${LOG}"
 STATUS=$?
 set -e

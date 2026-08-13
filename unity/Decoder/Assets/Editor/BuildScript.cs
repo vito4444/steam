@@ -21,23 +21,24 @@ namespace Decoder.EditorTools
         }
 
         /// <summary>
-        /// 先生成可玩场景再构建，全程在同一个编辑器进程内完成。
+        /// 构建可玩场景。
         ///
-        /// 必须连着做：分两次进程跑会让场景引用的材质处于"已写盘但未导入"的状态，
-        /// 构建出的 level0 会损坏，而构建过程不报任何错，只有运行时才崩。
+        /// 场景必须由前一个编辑器进程生成好，这里只负责构建。曾经试过在同一进程里
+        /// 先生成场景再构建，结果构建出的 level0 在运行时报 corrupted 直接崩溃：
+        /// 生成期在内存里新建的网格与刚写盘的场景文件之间状态不一致，
+        /// 而 BuildPlayer 读的是内存里那一份。构建过程不会报任何错。
+        /// 拆成两个进程，第二个进程从磁盘干净地加载场景，问题消失。
         /// </summary>
         public static void BuildStationWindows64()
         {
-            var scene = ProbeSceneBuilder.GenerateScene(playable: true,
-                ProbeSceneBuilder.StationScenePath);
-            Build(BuildTarget.StandaloneWindows64, "Decoder.exe", new[] { scene });
+            Build(BuildTarget.StandaloneWindows64, "Decoder.exe",
+                new[] { ProbeSceneBuilder.StationScenePath });
         }
 
         public static void BuildStationLinux64()
         {
-            var scene = ProbeSceneBuilder.GenerateScene(playable: true,
-                ProbeSceneBuilder.StationScenePath);
-            Build(BuildTarget.StandaloneLinux64, "Decoder", new[] { scene });
+            Build(BuildTarget.StandaloneLinux64, "Decoder",
+                new[] { ProbeSceneBuilder.StationScenePath });
         }
 
         public static void BuildLinux64()

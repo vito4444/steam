@@ -9,11 +9,18 @@ source "$(dirname "$0")/unity-env.sh"
 
 OUT_DIR="${1:-${ARTIFACTS}/build/StandaloneWindows64}"
 # 默认构建可玩工位场景。传 probe 则构建纯美术探针场景。
-TARGET_METHOD="Decoder.EditorTools.BuildScript.BuildStationWindows64"
+TARGET_METHOD="Decoder.EditorTools.BuildScript.BuildWindows64"
+SCENE_ARGS=(-buildScenes "Assets/Scenes/Station.unity")
 if [[ "${2:-station}" == "probe" ]]; then
-    TARGET_METHOD="Decoder.EditorTools.BuildScript.BuildWindows64"
+    SCENE_ARGS=(-buildScenes "Assets/Scenes/ArtProbe.unity")
 fi
 LOG="${LOG_DIR}/build-windows.log"
+
+if [[ "${2:-station}" != "probe" ]]; then
+    # 场景生成必须在独立的编辑器进程里先做完，原因见 BuildScript.BuildStationWindows64 的注释。
+    echo "生成可玩场景"
+    "$(dirname "$0")/build-station-scene.sh" > /dev/null
+fi
 
 echo "构建 Windows x64 -> ${OUT_DIR}"
 rm -rf "${OUT_DIR}"
@@ -26,6 +33,7 @@ run_unity_headless \
     -projectPath "${PROJECT_PATH}" \
     -buildTarget Win64 \
     -executeMethod "${TARGET_METHOD}" \
+    "${SCENE_ARGS[@]}" \
     -buildOutput "${OUT_DIR}" \
     -logFile "${LOG}"
 STATUS=$?

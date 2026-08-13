@@ -346,13 +346,13 @@ namespace Decoder.UI
 
             var root = canvasGo.transform;
 
-            // 顶部横幅：班次标题，自动演练时显示当前步骤
+            // 班次横幅贴着左上角的接收机面板放，不占画面中央——
+            // 那块要留给 CRT 示波器，它是玩家读电码的地方，任何东西挡住都不行。
             var bannerPanel = Panel(root, "BannerPanel",
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(900f, 52f),
-                pivot: new Vector2(0.5f, 1f));
-            _bannerText = Label(bannerPanel, "", 26, Amber, TextAnchor.MiddleCenter,
-                new Vector2(450f, -26f), new Vector2(880f, 44f));
-            _bannerText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -32f), new Vector2(470f, 46f));
+            _bannerText = Label(bannerPanel, "", 24, Amber, TextAnchor.MiddleLeft,
+                new Vector2(20f, -23f), new Vector2(430f, 40f));
+            _bannerText.rectTransform.pivot = new Vector2(0f, 0.5f);
 
             // 左上：接收机读数
             var receiverPanel = Panel(root, "ReceiverPanel",

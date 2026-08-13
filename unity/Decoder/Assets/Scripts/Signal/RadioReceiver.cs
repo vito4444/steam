@@ -103,6 +103,7 @@ namespace Decoder.Signal
             // 每帧在主线程重算一次接收状态。不能等音频线程去更新它：
             // 玩家可能静音，音频设备也可能起不来，而仪表必须照常动。
             synth.EvaluateReception();
+            synth.AdvanceIfAudioStalled(Time.unscaledDeltaTime);
         }
 
         /// <summary>把频率移动指定的千赫数，并夹在频段范围内。</summary>

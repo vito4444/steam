@@ -34,6 +34,7 @@ namespace Decoder.Signal
         private double _carrierPhase;
         private float _keyEnvelope;
         private double _elapsedSeconds;
+        private double _lastSeenByMainThread;
 
         public SignalSynthesizer(int sampleRate, int noiseSeed)
         {
@@ -74,6 +75,53 @@ namespace Decoder.Signal
 
         /// <summary>当前收到的电台，没有则为 null。</summary>
         public Station CurrentStation { get; private set; }
+
+        /// <summary>发报时钟。电台的键控时序都以它为准。</summary>
+        public double ElapsedSeconds => _elapsedSeconds;
+
+        /// <summary>
+        /// 在音频线程停摆时由主线程接管推进发报时钟。
+        ///
+        /// 时钟正常情况下由音频渲染推进，一个采样一个采样地走，这样声音和时序严格同步。
+        /// 但音频设备可能起不来，玩家也可能把音量关到零，此时渲染不再发生，
+        /// 时钟就会冻住——电台不再发报，示波器画出一条直线，游戏看上去像卡死了。
+        ///
+        /// 每帧调用一次。只有确认音频线程这一帧没有推进过时钟，主线程才接手，
+        /// 两者不会重复累加。
+        /// </summary>
+        public void AdvanceIfAudioStalled(double deltaSeconds)
+        {
+            if (_elapsedSeconds > _lastSeenByMainThread + 1e-9)
+            {
+                _lastSeenByMainThread = _elapsedSeconds;
+                return;
+            }
+
+            if (deltaSeconds > 0d)
+            {
+                _elapsedSeconds += deltaSeconds;
+            }
+
+            _lastSeenByMainThread = _elapsedSeconds;
+        }
+
+        /// <summary>
+        /// 当前调谐点上、指定时刻的解调包络，0 到 1。
+        ///
+        /// 这是示波器画的东西，也是听障玩家读电码的唯一途径：
+        /// 包络的宽窄就是点和划的区别，所以它必须和耳朵听到的严格一致，
+        /// 不能是一个"看起来差不多"的装饰动画。
+        /// </summary>
+        public float EnvelopeAt(double timeSeconds)
+        {
+            var station = CurrentStation;
+            if (station == null || !station.IsKeyDown(timeSeconds))
+            {
+                return 0f;
+            }
+
+            return CurrentSignalLevel;
+        }
 
         /// <summary>
         /// 计算当前调谐点上收到了什么。纯计算，不产生音频，可以在主线程按帧调用。
@@ -122,6 +170,7 @@ namespace Decoder.Signal
         public void ResetTime()
         {
             _elapsedSeconds = 0d;
+            _lastSeenByMainThread = 0d;
             _carrierPhase = 0d;
             _keyEnvelope = 0f;
             foreach (var station in _stations)

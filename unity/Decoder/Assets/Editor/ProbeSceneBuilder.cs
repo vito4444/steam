@@ -47,6 +47,8 @@ namespace Decoder.EditorTools
             public LightCfg rimColdWindow = new();
             public LightCfg bounceDeskWarm = new();
             public LightCfg practicalNeon = new();
+            public LightCfg panelWorkLight = new() { intensity = 5.5f, range = 3.4f, spotAngle = 104f };
+            public LightCfg grazingSide = new() { intensity = 3.0f, range = 3.2f, spotAngle = 62f };
         }
 
         [Serializable]
@@ -149,6 +151,7 @@ namespace Decoder.EditorTools
         public static string GenerateScene(bool playable, string scenePath)
         {
             Random.InitState(20260813);
+            UvMeshCache.Clear();
             LoadConfig();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -201,6 +204,20 @@ namespace Decoder.EditorTools
             driver.receiver = receiver;
             driver.hud = hud;
 
+            // CRT 示波器。它是房间里最亮的东西，也是听障玩家读电码的唯一途径。
+            var crtScreen = GameObject.Find("CrtScreen");
+            if (crtScreen == null)
+            {
+                throw new InvalidOperationException("未找到 CRT 屏幕物件 CrtScreen");
+            }
+
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-noScope") < 0)
+            {
+                var scope = crtScreen.AddComponent<OscilloscopeDisplay>();
+                scope.receiver = receiver;
+                scope.targetRenderer = crtScreen.GetComponent<Renderer>();
+            }
+
             // 主调频旋钮：恢复被布景流程删掉的碰撞体，并放大成便于点中的尺寸。
             var knob = GameObject.Find(TuningKnobName);
             if (knob == null)
@@ -251,17 +268,45 @@ namespace Decoder.EditorTools
 
         // ---------- 材质 ----------
 
+        private const string BakedMaterialDir = "Assets/Materials/Procedural";
+
         private static void CreateMaterials()
         {
             const string dir = "Assets/Materials/Probe";
             Directory.CreateDirectory(dir);
 
-            _steelDark = MakeMaterial(dir, "SteelDark", new Color(0.10f, 0.11f, 0.11f), 0.55f, 0.45f);
-            _steelOlive = MakeMaterial(dir, "SteelOlive", new Color(0.19f, 0.21f, 0.16f), 0.35f, 0.60f);
-            _bakelite = MakeMaterial(dir, "Bakelite", new Color(0.045f, 0.045f, 0.05f), 0.05f, 0.35f);
-            _concrete = MakeMaterial(dir, "Concrete", new Color(0.17f, 0.17f, 0.16f), 0.0f, 0.92f);
-            _paper = MakeMaterial(dir, "Paper", new Color(0.80f, 0.75f, 0.62f), 0.0f, 0.85f);
-            _brassKnob = MakeMaterial(dir, "Brass", new Color(0.52f, 0.40f, 0.16f), 0.85f, 0.32f);
+            // 优先用烘焙好的程序化 PBR 材质。它们带法线、粗糙度变化、磨损和污渍，
+            // 是画面细节密度的主要来源。找不到时回落到纯色材质，
+            // 这样在没跑过烘焙的干净检出上场景生成仍然能跑通，只是画面朴素一些。
+            _steelDark = LoadBaked("SteelPanel")
+                         ?? MakeMaterial(dir, "SteelDark", new Color(0.10f, 0.11f, 0.11f), 0.55f, 0.45f);
+            _steelOlive = LoadBaked("OlivePaint")
+                          ?? MakeMaterial(dir, "SteelOlive", new Color(0.19f, 0.21f, 0.16f), 0.35f, 0.60f);
+            _bakelite = LoadBaked("Bakelite")
+                        ?? MakeMaterial(dir, "Bakelite", new Color(0.045f, 0.045f, 0.05f), 0.05f, 0.35f);
+            _concrete = LoadBaked("Concrete")
+                        ?? MakeMaterial(dir, "Concrete", new Color(0.17f, 0.17f, 0.16f), 0.0f, 0.92f);
+            _paper = LoadBaked("Paper")
+                     ?? MakeMaterial(dir, "Paper", new Color(0.80f, 0.75f, 0.62f), 0.0f, 0.85f);
+            _brassKnob = LoadBaked("Brass")
+                         ?? MakeMaterial(dir, "Brass", new Color(0.52f, 0.40f, 0.16f), 0.85f, 0.32f);
+        }
+
+        private static Material LoadBaked(string name)
+        {
+            return AssetDatabase.LoadAssetAtPath<Material>($"{BakedMaterialDir}/{name}.mat");
+        }
+
+        /// <summary>不同材质的贴图密度不一样：墙面要疏，旋钮的滚花要密。</summary>
+        private static float TilesPerMeterFor(Material material)
+        {
+            if (material == _concrete) return 0.55f;
+            if (material == _steelOlive) return 1.0f;
+            if (material == _steelDark) return 1.6f;
+            if (material == _bakelite) return 7.0f;
+            if (material == _brassKnob) return 4.0f;
+            if (material == _paper) return 1.8f;
+            return 1.2f;
         }
 
         private static Material MakeMaterial(string dir, string name, Color albedo, float metallic, float smoothnessInverse)
@@ -347,31 +392,91 @@ namespace Decoder.EditorTools
             var lampGreen = MakeEmissive("LampGreenSmall", new Color(0.35f, 1.0f, 0.40f), _cfg.emission.indicatorLamp * 0.9f);
             var indicatorMats = new[] { lampRed, lampAmber, lampGreen };
 
-            // 主机架：三层堆叠的设备箱。每层都做面板缝、螺丝、标签牌和指示灯，
-            // 因为自检显示细节密度是与目标差距最大的维度之一。
+            // 主机架：三层堆叠的设备箱。
+            //
+            // 每一层都按真实机柜的做法分成三个深度层：机箱本体最深，
+            // 前面板凹进去，四周边框再凸出来。这个高低差是画面里绝大部分
+            // 硬边缘和自阴影的来源——把它做成一块平板，无论贴图多细
+            // 画面都还是平的。
+            // 三个深度层的 Z 必须自前向后排开，否则后面的层会把前面的埋掉。
+            // 之前机箱是一整块实心方块，前表面比面板还靠前，
+            // 于是玩家看到的一直是机箱侧壁的材质，军绿面板根本没露出来过。
+            const float boxDepth = 0.30f;
+            const float boxCenterZ = 0.08f;      // 机箱前表面 0.23
+            const float panelThickness = 0.030f;
+            const float panelCenterZ = 0.245f;   // 面板前表面 0.26
+            const float frameProud = 0.016f;
+            const float frameCenterZ = 0.268f;   // 边框前表面 0.276，比面板高出一截
+            const float frameWidth = 0.032f;
+
             for (var row = 0; row < 3; row++)
             {
                 var y = 0.95f + row * 0.52f;
-                AddBox(root, $"Rack_{row}", new Vector3(0, y, 0.12f),
-                    new Vector3(2.60f, 0.48f, 0.34f), _steelOlive);
+                var frameZ = frameCenterZ;
+                var panelZ = panelCenterZ + panelThickness * 0.5f;
 
-                // 面板上下缘的凹缝：制造硬边缘，是提升可读结构最便宜的手段
-                AddBox(root, $"RackSeamTop_{row}", new Vector3(0, y + 0.235f, 0.292f),
-                    new Vector3(2.58f, 0.012f, 0.010f), _bakelite);
-                AddBox(root, $"RackSeamBottom_{row}", new Vector3(0, y - 0.235f, 0.292f),
-                    new Vector3(2.58f, 0.012f, 0.010f), _bakelite);
+                // 机箱本体，退到最后面
+                AddBox(root, $"Rack_{row}", new Vector3(0, y, boxCenterZ),
+                    new Vector3(2.60f, 0.48f, boxDepth), _steelDark);
 
-                // 面板固定螺丝
+                // 前面板。它比四周的边框矮一截，视觉上就成了凹进去的。
+                AddBox(root, $"Panel_{row}", new Vector3(0, y, panelCenterZ),
+                    new Vector3(2.52f, 0.42f, panelThickness), _steelOlive);
+
+                // 四周凸出的边框。上下两条更宽，模仿机柜的安装耳。
+                AddBox(root, $"FrameTop_{row}", new Vector3(0, y + 0.225f, frameZ),
+                    new Vector3(2.60f, frameWidth, frameProud), _steelOlive);
+                AddBox(root, $"FrameBottom_{row}", new Vector3(0, y - 0.225f, frameZ),
+                    new Vector3(2.60f, frameWidth, frameProud), _steelOlive);
+                AddBox(root, $"FrameLeft_{row}", new Vector3(-1.285f, y, frameZ),
+                    new Vector3(frameWidth, 0.48f, frameProud), _steelOlive);
+                AddBox(root, $"FrameRight_{row}", new Vector3(1.285f, y, frameZ),
+                    new Vector3(frameWidth, 0.48f, frameProud), _steelOlive);
+
+                // 层与层之间的缝。留出黑缝比画一条黑线有效得多，
+                // 因为它是真的没有光进得去。
+                if (row < 2)
+                {
+                    AddBox(root, $"RackGap_{row}", new Vector3(0, y + 0.26f, boxCenterZ),
+                        new Vector3(2.56f, 0.035f, boxDepth * 0.9f), _bakelite);
+                }
+
+                // 面板固定螺丝：沉头螺丝有一圈凹陷的座
                 for (var sx = 0; sx < 6; sx++)
                 {
                     for (var sy = 0; sy < 2; sy++)
                     {
+                        var sxPos = -1.24f + sx * 0.496f;
+                        var syPos = y - 0.185f + sy * 0.37f;
+                        AddCylinder(root, $"ScrewSeat_{row}_{sx}_{sy}",
+                            new Vector3(sxPos, syPos, panelZ - 0.002f),
+                            new Vector3(0.020f, 0.003f, 0.020f),
+                            Quaternion.Euler(90, 0, 0), _bakelite);
                         AddCylinder(root, $"Screw_{row}_{sx}_{sy}",
-                            new Vector3(-1.24f + sx * 0.496f, y - 0.205f + sy * 0.41f, 0.293f),
-                            new Vector3(0.011f, 0.004f, 0.011f),
+                            new Vector3(sxPos, syPos, panelZ + 0.002f),
+                            new Vector3(0.012f, 0.003f, 0.012f),
                             Quaternion.Euler(90, 0, 0), _brassKnob);
                     }
                 }
+
+                // 两侧提手：真实机架设备都有，凸出面板一截，能投下明确的阴影
+                foreach (var side in new[] { -1f, 1f })
+                {
+                    var hx = side * 1.16f;
+                    AddBox(root, $"HandleBracket_{row}_{(side < 0 ? "L" : "R")}_a",
+                        new Vector3(hx, y + 0.10f, panelZ + 0.018f),
+                        new Vector3(0.026f, 0.030f, 0.045f), _steelDark);
+                    AddBox(root, $"HandleBracket_{row}_{(side < 0 ? "L" : "R")}_b",
+                        new Vector3(hx, y - 0.10f, panelZ + 0.018f),
+                        new Vector3(0.026f, 0.030f, 0.045f), _steelDark);
+                    AddBox(root, $"HandleBar_{row}_{(side < 0 ? "L" : "R")}",
+                        new Vector3(hx, y, panelZ + 0.038f),
+                        new Vector3(0.022f, 0.22f, 0.018f), _brassKnob);
+                }
+
+                // 铭牌：每台设备的型号牌
+                AddBox(root, $"NamePlate_{row}", new Vector3(-0.90f, y + 0.168f, panelZ + 0.003f),
+                    new Vector3(0.30f, 0.042f, 0.003f), _brassKnob);
 
                 // 每层面板上的旋钮阵列
                 var knobCount = row == 1 ? 7 : 5;
@@ -380,19 +485,19 @@ namespace Decoder.EditorTools
                     var x = Mathf.Lerp(-1.12f, 1.12f, knobCount == 1 ? 0.5f : i / (float)(knobCount - 1));
                     // 旋钮底座刻度环
                     AddCylinder(root, $"KnobRing_{row}_{i}",
-                        new Vector3(x, y - 0.13f, 0.291f),
+                        new Vector3(x, y - 0.13f, 0.269f),
                         new Vector3(0.072f, 0.004f, 0.072f),
                         Quaternion.Euler(90, 0, 0), _steelDark);
                     AddCylinder(root, $"Knob_{row}_{i}",
-                        new Vector3(x, y - 0.13f, 0.297f),
+                        new Vector3(x, y - 0.13f, 0.275f),
                         new Vector3(0.052f, 0.022f, 0.052f),
                         Quaternion.Euler(90, 0, 0), _bakelite);
                     AddBox(root, $"KnobMark_{row}_{i}",
-                        new Vector3(x, y - 0.09f, 0.320f),
+                        new Vector3(x, y - 0.09f, 0.298f),
                         new Vector3(0.006f, 0.028f, 0.004f), _brassKnob);
                     // 旋钮下方的标签牌
                     AddBox(root, $"KnobLabel_{row}_{i}",
-                        new Vector3(x, y - 0.196f, 0.293f),
+                        new Vector3(x, y - 0.196f, 0.271f),
                         new Vector3(0.088f, 0.020f, 0.003f), labelMat);
                 }
 
@@ -400,14 +505,14 @@ namespace Decoder.EditorTools
                 for (var i = 0; i < 8; i++)
                 {
                     var x = -1.18f + i * 0.338f;
-                    AddBox(root, $"ToggleBase_{row}_{i}", new Vector3(x, y + 0.115f, 0.293f),
+                    AddBox(root, $"ToggleBase_{row}_{i}", new Vector3(x, y + 0.115f, 0.271f),
                         new Vector3(0.030f, 0.030f, 0.006f), _steelDark);
                     AddCylinder(root, $"ToggleStick_{row}_{i}",
-                        new Vector3(x, y + 0.132f, 0.305f),
+                        new Vector3(x, y + 0.132f, 0.283f),
                         new Vector3(0.006f, 0.020f, 0.006f),
                         Quaternion.Euler(i % 3 == 0 ? -28f : 22f, 0, 0), _brassKnob);
                     AddSphere(root, $"Indicator_{row}_{i}",
-                        new Vector3(x + 0.052f, y + 0.115f, 0.300f),
+                        new Vector3(x + 0.052f, y + 0.115f, 0.278f),
                         Vector3.one * 0.017f, indicatorMats[(row * 3 + i) % indicatorMats.Length]);
                 }
 
@@ -415,7 +520,7 @@ namespace Decoder.EditorTools
                 for (var g = 0; g < 9; g++)
                 {
                     AddBox(root, $"Vent_{row}_{g}",
-                        new Vector3(1.14f, y - 0.09f + g * 0.019f, 0.292f),
+                        new Vector3(1.14f, y - 0.09f + g * 0.019f, 0.270f),
                         new Vector3(0.30f, 0.008f, 0.008f), _bakelite);
                 }
             }
@@ -425,24 +530,69 @@ namespace Decoder.EditorTools
             {
                 var x = -0.95f + c * 0.48f;
                 AddCylinder(root, $"Cable_{c}",
-                    new Vector3(x, 0.55f + (c % 2) * 0.12f, 0.30f),
+                    new Vector3(x, 0.55f + (c % 2) * 0.12f, 0.28f),
                     new Vector3(0.010f, 0.22f + (c % 3) * 0.05f, 0.010f),
                     Quaternion.Euler(0, 0, (c - 2) * 5f), _bakelite);
             }
 
+            // 顶部横贯管道。它悬在仪表墙前方，是画面里最有效的一个投影体：
+            // 一根管子能在整面墙上拉出一条贯穿的暗带，把大片均匀的亮面切开。
+            AddCylinder(root, "OverheadConduit",
+                new Vector3(0f, 2.56f, 0.40f), new Vector3(0.042f, 1.45f, 0.042f),
+                Quaternion.Euler(0, 0, 90f), _steelDark);
+            for (var b = 0; b < 5; b++)
+            {
+                AddBox(root, $"ConduitClamp_{b}",
+                    new Vector3(-1.05f + b * 0.525f, 2.56f, 0.40f),
+                    new Vector3(0.052f, 0.052f, 0.020f), _brassKnob);
+                AddCylinder(root, $"ConduitDrop_{b}",
+                    new Vector3(-1.05f + b * 0.525f, 2.66f, 0.40f),
+                    new Vector3(0.012f, 0.10f, 0.012f), Quaternion.identity, _steelDark);
+            }
+
+            // 同轴接头排。小而密的金属件，凑近看每个都有独立的轮廓。
+            for (var j = 0; j < 6; j++)
+            {
+                var jx = -1.16f + j * 0.088f;
+                AddCylinder(root, $"CoaxBody_{j}", new Vector3(jx, 0.80f, 0.276f),
+                    new Vector3(0.026f, 0.014f, 0.026f), Quaternion.Euler(90, 0, 0), _brassKnob);
+                AddCylinder(root, $"CoaxPin_{j}", new Vector3(jx, 0.80f, 0.292f),
+                    new Vector3(0.010f, 0.008f, 0.010f), Quaternion.Euler(90, 0, 0), _steelDark);
+            }
+
+            // 保险丝座与总电源开关
+            for (var f = 0; f < 3; f++)
+            {
+                AddCylinder(root, $"FuseHolder_{f}", new Vector3(0.86f + f * 0.075f, 0.80f, 0.278f),
+                    new Vector3(0.030f, 0.018f, 0.030f), Quaternion.Euler(90, 0, 0), _bakelite);
+                AddCylinder(root, $"FuseCap_{f}", new Vector3(0.86f + f * 0.075f, 0.80f, 0.298f),
+                    new Vector3(0.022f, 0.006f, 0.022f), Quaternion.Euler(90, 0, 0), _brassKnob);
+            }
+
             // 中央 CRT 示波器：画面的绿色光源本体
             AddBox(root, "CrtBezel", new Vector3(0, 1.98f, 0.14f), new Vector3(0.74f, 0.60f, 0.30f), _steelDark);
-            AddBox(root, "CrtScreen", new Vector3(0, 1.98f, 0.295f), new Vector3(0.58f, 0.44f, 0.012f), crtMat);
+
+            // 遮光罩：真实示波器都带一个，挡住环境光让屏幕可读。
+            // 对画面而言它更重要的作用是在面板上投下一圈硬阴影。
+            AddBox(root, "CrtHoodTop", new Vector3(0, 2.262f, 0.312f),
+                new Vector3(0.80f, 0.014f, 0.072f), _steelDark, Quaternion.Euler(-26f, 0, 0));
+            AddBox(root, "CrtHoodBottom", new Vector3(0, 1.698f, 0.312f),
+                new Vector3(0.80f, 0.014f, 0.072f), _steelDark, Quaternion.Euler(26f, 0, 0));
+            AddBox(root, "CrtHoodLeft", new Vector3(-0.422f, 1.98f, 0.312f),
+                new Vector3(0.014f, 0.58f, 0.072f), _steelDark, Quaternion.Euler(0, 26f, 0));
+            AddBox(root, "CrtHoodRight", new Vector3(0.422f, 1.98f, 0.312f),
+                new Vector3(0.014f, 0.58f, 0.072f), _steelDark, Quaternion.Euler(0, -26f, 0));
+            AddBox(root, "CrtScreen", new Vector3(0, 1.98f, 0.273f), new Vector3(0.58f, 0.44f, 0.012f), crtMat);
 
             // 两侧模拟表盘
             for (var i = 0; i < 4; i++)
             {
                 var x = i < 2 ? -1.02f + i * 0.42f : 0.60f + (i - 2) * 0.42f;
-                AddCylinder(root, $"Gauge_{i}", new Vector3(x, 1.98f, 0.295f),
+                AddCylinder(root, $"Gauge_{i}", new Vector3(x, 1.98f, 0.273f),
                     new Vector3(0.15f, 0.012f, 0.15f), Quaternion.Euler(90, 0, 0), _steelDark);
-                AddCylinder(root, $"GaugeFace_{i}", new Vector3(x, 1.98f, 0.310f),
+                AddCylinder(root, $"GaugeFace_{i}", new Vector3(x, 1.98f, 0.288f),
                     new Vector3(0.125f, 0.008f, 0.125f), Quaternion.Euler(90, 0, 0), meterMat);
-                AddBox(root, $"GaugeNeedle_{i}", new Vector3(x, 2.02f, 0.320f),
+                AddBox(root, $"GaugeNeedle_{i}", new Vector3(x, 2.02f, 0.298f),
                     new Vector3(0.006f, 0.075f, 0.003f), _brassKnob);
             }
 
@@ -455,9 +605,9 @@ namespace Decoder.EditorTools
             }
 
             // 频率刻度盘：横贯机架的长条
-            AddBox(root, "DialStrip", new Vector3(0, 1.62f, 0.298f), new Vector3(1.90f, 0.10f, 0.010f),
+            AddBox(root, "DialStrip", new Vector3(0, 1.62f, 0.276f), new Vector3(1.90f, 0.10f, 0.010f),
                 MakeEmissive("DialStripFace", new Color(0.85f, 0.78f, 0.45f), _cfg.emission.dialStrip));
-            AddBox(root, "DialCursor", new Vector3(0.24f, 1.62f, 0.312f), new Vector3(0.008f, 0.13f, 0.004f), _brassKnob);
+            AddBox(root, "DialCursor", new Vector3(0.24f, 1.62f, 0.290f), new Vector3(0.008f, 0.13f, 0.004f), _brassKnob);
         }
 
         // ---------- 桌面 ----------
@@ -466,7 +616,7 @@ namespace Decoder.EditorTools
         {
             var root = new GameObject("Desk").transform;
 
-            AddBox(root, "DeskTop", new Vector3(0, 0.74f, -0.95f), new Vector3(2.30f, 0.05f, 0.80f), _steelOlive);
+            AddBox(root, "DeskTop", new Vector3(0, 0.74f, -0.95f), new Vector3(2.30f, 0.05f, 0.80f), _steelDark);
             AddBox(root, "DeskLegL", new Vector3(-1.05f, 0.37f, -0.95f), new Vector3(0.06f, 0.74f, 0.70f), _steelDark);
             AddBox(root, "DeskLegR", new Vector3(1.05f, 0.37f, -0.95f), new Vector3(0.06f, 0.74f, 0.70f), _steelDark);
 
@@ -503,7 +653,7 @@ namespace Decoder.EditorTools
             AddCylinder(root, "LampArm", new Vector3(-0.96f, 0.98f, -0.75f), new Vector3(0.012f, 0.20f, 0.012f),
                 Quaternion.Euler(0, 0, 12f), _steelDark);
             AddCylinder(root, "LampShade", new Vector3(-0.86f, 1.18f, -0.78f), new Vector3(0.11f, 0.09f, 0.11f),
-                Quaternion.Euler(28f, 0, 22f), _steelOlive);
+                Quaternion.Euler(64f, 104f, 0f), _steelOlive);
         }
 
         // ---------- 右侧窗墙 ----------
@@ -559,7 +709,7 @@ namespace Decoder.EditorTools
             var lampCfg = _cfg.lights.keyLampWarm;
             var lamp = NewLight(root, "KeyLamp_Warm", LightType.Spot, WarmLamp, lampCfg.intensity, lampCfg.range);
             lamp.transform.localPosition = new Vector3(-0.84f, 1.16f, -0.78f);
-            lamp.transform.localRotation = Quaternion.Euler(58f, 202f, 0f);
+            lamp.transform.localRotation = Quaternion.Euler(26f, 104f, 0f);
             lamp.spotAngle = lampCfg.spotAngle;
             lamp.innerSpotAngle = 26f;
             lamp.shadows = LightShadows.Soft;
@@ -568,8 +718,10 @@ namespace Decoder.EditorTools
             //    否则整间混凝土房都会被染绿，失去三色分区。
             var crtCfg = _cfg.lights.fillCrtGreen;
             var crt = NewLight(root, "FillLight_CrtGreen", LightType.Point, CrtGreen, crtCfg.intensity, crtCfg.range);
-            crt.transform.localPosition = new Vector3(0f, 1.94f, -1.30f);
-            crt.shadows = LightShadows.None;
+            crt.transform.localPosition = new Vector3(0f, 1.96f, -1.36f);
+            crt.shadows = LightShadows.Soft;
+            crt.shadowBias = 0.02f;
+            crt.shadowNormalBias = 0.12f;
 
             // 3. 窗光：冷蓝，从右侧斜入，负责把右半边从死黑里拉出来
             var winCfg = _cfg.lights.rimColdWindow;
@@ -590,11 +742,42 @@ namespace Decoder.EditorTools
             bounce.innerSpotAngle = 40f;
             bounce.shadows = LightShadows.None;
 
+            // 顶部面板工作灯。真实机房的机柜上方都装检修灯，
+            // 没有它整面仪表墙只剩 CRT 的余光，刻度和标签都读不出来。
+            // 它还负责让顶部管道在墙上投出一条贯穿的暗带。
+            var workCfg = _cfg.lights.panelWorkLight;
+            var work = NewLight(root, "Practical_PanelWork", LightType.Spot,
+                new Color(1f, 0.88f, 0.70f), workCfg.intensity, workCfg.range);
+            work.transform.localPosition = new Vector3(0f, 2.60f, -1.02f);
+            work.transform.localRotation = Quaternion.Euler(56f, 180f, 0f);
+            work.spotAngle = workCfg.spotAngle;
+            work.innerSpotAngle = workCfg.spotAngle * 0.45f;
+            work.shadows = LightShadows.Soft;
+            work.shadowBias = 0.015f;
+            work.shadowNormalBias = 0.10f;
+
+            // 掠射侧光。这是让面板上的凸起物显形最有效的一招：
+            // 光几乎贴着面板扫过去，每个旋钮、螺丝、提手、接头都会拖出一道长影，
+            // 参考作品里那种"一屏全是可读机械结构"的观感主要就来自这个。
+            // 正面来光反而会把所有起伏抹平。
+            var grazeCfg = _cfg.lights.grazingSide;
+            var graze = NewLight(root, "Practical_GrazingSide", LightType.Spot,
+                new Color(0.98f, 0.86f, 0.62f), grazeCfg.intensity, grazeCfg.range);
+            graze.transform.localPosition = new Vector3(1.42f, 1.72f, -1.42f);
+            graze.transform.localRotation = Quaternion.Euler(4f, -104f, 0f);
+            graze.spotAngle = grazeCfg.spotAngle;
+            graze.innerSpotAngle = grazeCfg.spotAngle * 0.3f;
+            graze.shadows = LightShadows.Soft;
+            graze.shadowBias = 0.012f;
+            graze.shadowNormalBias = 0.06f;
+
             // 补：氖灯排的余光，避免机架上沿死黑
             var neonCfg = _cfg.lights.practicalNeon;
             var neon = NewLight(root, "Practical_NeonSpill", LightType.Point, NeonAmber, neonCfg.intensity, neonCfg.range);
             neon.transform.localPosition = new Vector3(0f, 2.40f, -1.32f);
-            neon.shadows = LightShadows.None;
+            neon.shadows = LightShadows.Soft;
+            neon.shadowBias = 0.02f;
+            neon.shadowNormalBias = 0.12f;
         }
 
         private static Light NewLight(Transform parent, string name, LightType type, Color color,
@@ -621,7 +804,7 @@ namespace Decoder.EditorTools
             // Unity 相机默认朝 +Z，所以主视角的 yaw 是 180。
             var seat = new Vector3(0f, 1.24f, -0.16f);
 
-            AddShot(root, "probe_front", seat, new Vector3(2f, 180f, 0f), 68f,
+            AddShot(root, "probe_front", seat, new Vector3(-7f, 180f, 0f), 74f,
                 "docs/research/refshots/iron_nest_heavy_turret_simulator_0.jpg", isMain: true);
             AddShot(root, "probe_desk", seat, new Vector3(42f, 180f, 0f), 62f,
                 "docs/research/refshots/papers_please_0.jpg");
@@ -689,6 +872,69 @@ namespace Decoder.EditorTools
             go.transform.localScale = size;
             go.GetComponent<Renderer>().sharedMaterial = mat;
             UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+
+            // 自发光件（屏幕、指示灯、标签）是纯色的，铺贴图只会把它们弄脏。
+            if (mat != null && !mat.IsKeywordEnabled("_EMISSION"))
+            {
+                ApplyUvTiling(go, size, TilesPerMeterFor(mat));
+            }
+        }
+
+        private static readonly Dictionary<string, Mesh> UvMeshCache = new Dictionary<string, Mesh>();
+
+        /// <summary>
+        /// 把贴图平铺次数直接烘进网格的 UV。
+        ///
+        /// 场景里的几何全是缩放过的图元，UV 一律 0 到 1。直接贴图的话，
+        /// 一块两米多宽的面板和一个五厘米的旋钮会各自铺满一整张贴图，
+        /// 前者糊成一片，后者细到看不见。必须按世界尺寸换算平铺次数。
+        ///
+        /// 早先的做法是挂一个 ExecuteAlways 组件在编辑器里改 Renderer 的
+        /// MaterialPropertyBlock，结果保存出来的场景在运行时报 level0 corrupted
+        /// 直接崩溃。改成生成期烘进网格之后，运行时不再有任何组件参与，
+        /// 编辑器截图和实际运行看到的也保证是同一套 UV。
+        /// </summary>
+        private static void ApplyUvTiling(GameObject go, Vector3 size, float tilesPerMeter)
+        {
+            var filter = go.GetComponent<MeshFilter>();
+            if (filter == null || filter.sharedMesh == null)
+            {
+                return;
+            }
+
+            // 取最薄的那一维作为厚度方向，另外两维决定贴图铺开的比例。
+            var a = Mathf.Abs(size.x);
+            var b = Mathf.Abs(size.y);
+            var c = Mathf.Abs(size.z);
+            var smallest = Mathf.Min(a, Mathf.Min(b, c));
+
+            float u, v;
+            if (Mathf.Approximately(smallest, a)) { u = c; v = b; }
+            else if (Mathf.Approximately(smallest, b)) { u = a; v = c; }
+            else { u = a; v = b; }
+
+            var tileU = Mathf.Max(0.05f, u * tilesPerMeter);
+            var tileV = Mathf.Max(0.05f, v * tilesPerMeter);
+
+            var source = filter.sharedMesh;
+            // 按图元与平铺量缓存，否则每个物件一份网格会让场景文件失控。
+            var key = $"{source.name}|{tileU:F2}|{tileV:F2}";
+            if (!UvMeshCache.TryGetValue(key, out var mesh))
+            {
+                mesh = UnityEngine.Object.Instantiate(source);
+                mesh.name = $"{source.name}_UV{tileU:F2}x{tileV:F2}";
+                var uvs = mesh.uv;
+                for (var i = 0; i < uvs.Length; i++)
+                {
+                    uvs[i] = new Vector2(uvs[i].x * tileU, uvs[i].y * tileV);
+                }
+
+                mesh.uv = uvs;
+                mesh.UploadMeshData(false);
+                UvMeshCache[key] = mesh;
+            }
+
+            filter.sharedMesh = mesh;
         }
 
         private static void Log(string message)
