@@ -77,8 +77,11 @@ Each of these came from looking at a screenshot and naming what was wrong with i
    The green was drowning everything.
 2. **Desk lamp moved into frame and aimed explicitly** with `Quaternion.LookRotation` at the
    paperwork, instead of an angle guessed in Euler degrees that missed the desk entirely.
-3. **Bloom threshold raised from 0.85 to 1.15** and intensity cut from 0.55 to 0.34. The
-   monitor faces had been blooming into flat white blobs.
+3. ~~**Bloom threshold raised from 0.85 to 1.15** and intensity cut from 0.55 to 0.34.~~
+   **Correction, found in M2:** this had no effect. The post-process profile was being
+   saved with zero components, so none of the grading in this milestone was ever applied.
+   Every visual change listed here came from the scene, lighting and materials. See
+   `docs/progress/m2/`.
 4. **Fog colour lifted from 0.105 to 0.150 and a far haze backdrop added**, because a
    silhouette is only a silhouette when what is behind it is brighter than it is. Before this,
    the subject in the window was black on black and simply invisible.
@@ -101,7 +104,8 @@ Each of these came from looking at a screenshot and naming what was wrong with i
 13. **Desk relaid out** to match the concept's composition: telephone anchoring the lower
     left, ruled form centre, classification dial centre under the monitors, binder and coffee
     to the right.
-14. **Exposure dropped from +0.15 to −0.40** and saturation from −14 to −20.
+14. ~~**Exposure dropped from +0.15 to −0.40** and saturation from −14 to −20.~~
+    **Correction, found in M2:** also had no effect, for the same reason as item 3.
 
 ---
 

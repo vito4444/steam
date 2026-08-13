@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -36,6 +37,35 @@ namespace Monster.EditorTools
 
             var rendererData = ScriptableObject.CreateInstance<UniversalRendererData>();
             AssetDatabase.CreateAsset(rendererData, RendererAssetPath);
+
+            // A renderer created in code has a null postProcessData, and URP then silently
+            // skips the entire post-processing stack. The editor's own asset-creation menu
+            // wires this up; ScriptableObject.CreateInstance does not. Written through
+            // SerializedObject so the field's accessibility cannot break this across URP
+            // versions.
+            const string postProcessDataPath =
+                "Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset";
+            var postProcessData = AssetDatabase.LoadAssetAtPath<Object>(postProcessDataPath);
+            if (postProcessData == null)
+            {
+                Debug.LogError($"[MonsterSetup] PostProcessData not found at {postProcessDataPath}; " +
+                               "post-processing will not run");
+            }
+            else
+            {
+                var serializedRenderer = new SerializedObject(rendererData);
+                var property = serializedRenderer.FindProperty("postProcessData");
+                if (property == null)
+                {
+                    Debug.LogError("[MonsterSetup] UniversalRendererData has no postProcessData field");
+                }
+                else
+                {
+                    property.objectReferenceValue = postProcessData;
+                    serializedRenderer.ApplyModifiedPropertiesWithoutUndo();
+                    Debug.Log("[MonsterSetup] postProcessData assigned to the renderer");
+                }
+            }
 
             var pipeline = UniversalRenderPipelineAsset.Create(rendererData);
             AssetDatabase.CreateAsset(pipeline, PipelineAssetPath);
@@ -86,51 +116,79 @@ namespace Monster.EditorTools
         {
             EnsureFolder(SettingsFolder);
 
-            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(VolumeProfilePath);
-            if (profile == null)
+            // Recreated from scratch, for the same reason the pipeline asset is.
+            AssetDatabase.DeleteAsset(VolumeProfilePath);
+            var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            AssetDatabase.CreateAsset(profile, VolumeProfilePath);
+
+            // VolumeProfile.Add creates the component but does not attach it to the profile's
+            // asset file. Without AddObjectToAsset the references dangle the moment the asset
+            // is serialised and every override is silently dropped -- which is exactly what
+            // happened here: the profile shipped with zero components and none of the grading
+            // was ever applied. Anything added must go through this helper.
+            T Add<T>() where T : VolumeComponent
             {
-                profile = ScriptableObject.CreateInstance<VolumeProfile>();
-                AssetDatabase.CreateAsset(profile, VolumeProfilePath);
+                var component = profile.Add<T>(true);
+                component.hideFlags = HideFlags.HideInHierarchy;
+                AssetDatabase.AddObjectToAsset(component, profile);
+                return component;
             }
 
-            profile.components.Clear();
-
-            var tonemapping = profile.Add<Tonemapping>(true);
+            var tonemapping = Add<Tonemapping>();
             tonemapping.mode.Override(TonemappingMode.Neutral);
 
-            var colorAdjustments = profile.Add<ColorAdjustments>(true);
-            colorAdjustments.postExposure.Override(-0.40f);
-            colorAdjustments.contrast.Override(26f);
-            colorAdjustments.saturation.Override(-20f);
-            colorAdjustments.colorFilter.Override(new Color(1.0f, 0.95f, 0.86f));
+            var colorAdjustments = Add<ColorAdjustments>();
+            colorAdjustments.postExposure.Override(-0.30f);
+            colorAdjustments.contrast.Override(5f);
+            colorAdjustments.saturation.Override(-9f);
+            colorAdjustments.colorFilter.Override(new Color(1.0f, 0.97f, 0.93f));
 
-            var whiteBalance = profile.Add<WhiteBalance>(true);
-            whiteBalance.temperature.Override(8f);
+            var whiteBalance = Add<WhiteBalance>();
+            whiteBalance.temperature.Override(-5f);
             whiteBalance.tint.Override(-6f);
 
             // Bloom is kept tight. At the first pass's settings the CRT faces bloomed into
             // flat white blobs and took the rest of the frame's contrast with them.
-            var bloom = profile.Add<Bloom>(true);
+            var shadows = Add<ShadowsMidtonesHighlights>();
+            shadows.shadows.Override(new Vector4(1.06f, 1.05f, 1.10f, 0.035f));
+            shadows.midtones.Override(new Vector4(1.0f, 1.0f, 1.0f, 0f));
+            shadows.highlights.Override(new Vector4(1.0f, 0.99f, 0.97f, -0.02f));
+
+            var bloom = Add<Bloom>();
             bloom.threshold.Override(1.15f);
             bloom.intensity.Override(0.34f);
             bloom.scatter.Override(0.55f);
             bloom.tint.Override(new Color(1f, 0.90f, 0.76f));
 
-            var vignette = profile.Add<Vignette>(true);
-            vignette.intensity.Override(0.60f);
-            vignette.smoothness.Override(0.40f);
+            var vignette = Add<Vignette>();
+            vignette.intensity.Override(0.36f);
+            vignette.smoothness.Override(0.52f);
             vignette.color.Override(new Color(0.015f, 0.015f, 0.022f));
 
-            var grain = profile.Add<FilmGrain>(true);
-            grain.type.Override(FilmGrainLookup.Medium3);
-            grain.intensity.Override(0.72f);
+            var grain = Add<FilmGrain>();
+            grain.type.Override(FilmGrainLookup.Medium1);
+            grain.intensity.Override(0.42f);
             grain.response.Override(0.80f);
 
-            var aberration = profile.Add<ChromaticAberration>(true);
-            aberration.intensity.Override(0.14f);
+            var aberration = Add<ChromaticAberration>();
+            aberration.intensity.Override(0.09f);
 
             EditorUtility.SetDirty(profile);
             AssetDatabase.SaveAssets();
+            AssetDatabase.ImportAsset(VolumeProfilePath, ImportAssetOptions.ForceUpdate);
+
+            var written = AssetDatabase.LoadAllAssetsAtPath(VolumeProfilePath)
+                .OfType<VolumeComponent>().Count();
+            if (written != profile.components.Count)
+            {
+                Debug.LogError($"[MonsterSetup] post-process profile saved {written} of " +
+                               $"{profile.components.Count} components; grading will not apply");
+            }
+            else
+            {
+                Debug.Log($"[MonsterSetup] post-process profile written with {written} components");
+            }
+
             return profile;
         }
 

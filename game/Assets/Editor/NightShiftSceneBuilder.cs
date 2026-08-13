@@ -95,9 +95,9 @@ namespace Monster.EditorTools
         private static void BuildEnvironmentSettings()
         {
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.035f, 0.042f, 0.060f);
-            RenderSettings.ambientEquatorColor = new Color(0.022f, 0.026f, 0.035f);
-            RenderSettings.ambientGroundColor = new Color(0.012f, 0.013f, 0.016f);
+            RenderSettings.ambientSkyColor = new Color(0.052f, 0.060f, 0.082f);
+            RenderSettings.ambientEquatorColor = new Color(0.036f, 0.041f, 0.052f);
+            RenderSettings.ambientGroundColor = new Color(0.022f, 0.024f, 0.029f);
             RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
             RenderSettings.customReflectionTexture = null;
 
