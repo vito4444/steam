@@ -180,9 +180,12 @@ Unity -runTests -batchmode -projectPath . -testPlatform EditMode -testResults re
 | 市场调研 | 已完成，见 `docs/00-market-research.md` |
 | 五个方案 | 已完成，见 `docs/01-game-concepts.md` |
 | 概念图 | 已完成 5 张，见 `concepts/` |
-| Unity 编辑器安装 | 进行中（4.2 GB 已下载完，解压中） |
-| Windows 构建模块 | 待安装（安装脚本已包含） |
-| 许可证激活 | 待执行 |
-| 无头渲染与截图链路验证 | 待执行 |
+| Unity 编辑器安装 | 已完成，`/opt/unity/6000.0.81f1`，7.9 GB |
+| Windows 构建模块 | 已完成，从 Mac pkg 提取 PlaybackEngine，811 MB |
+| 许可证激活 | 已完成，entitlement 已解析 |
+| 无头渲染与截图链路验证 | 已完成，三轮迭代实测，见 `docs/03-milestone-M0.md` |
+| Windows x64 构建验证 | 已完成，产物为 PE32+ 可执行文件 |
 | 方案选型 | **等待用户决策** |
 | Steamworks 账号 | **需要用户处理，硬阻塞项** |
+
+M0 验证的完整证据与差距分析见 [`docs/03-milestone-M0.md`](03-milestone-M0.md)。

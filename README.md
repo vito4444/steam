@@ -13,6 +13,7 @@
 | [`docs/00-market-research.md`](docs/00-market-research.md) | Steam 市场调研：周销榜实况、标签收入中位数、类型饱和度、五款可对标竞品的逐项拆解 |
 | [`docs/01-game-concepts.md`](docs/01-game-concepts.md) | 五个游戏方案，含视角相机参数、Steam 画面参考、美术方向、商业定位、技术路径、可行性评估 |
 | [`docs/02-technical-constraints.md`](docs/02-technical-constraints.md) | 开发环境实况、Unity 配置、Windows 构建链路、自检与截图方案 |
+| [`docs/03-milestone-M0.md`](docs/03-milestone-M0.md) | 开发链路验证实录：Windows 构建产物校验、三轮自检截图迭代、与概念图的差距清单 |
 
 ## 五个候选方案速览
 
@@ -35,10 +36,13 @@ screenshots/   各里程碑实机截图（与概念图对比用）
 tools/         环境安装与构建脚本
 ```
 
-## 环境
+## 环境（已验证可用）
 
-- 引擎：Unity 6000.0.81f1（Unity 6.0 LTS）
-- 目标平台：Windows x64
-- 开发机：Linux，无 GPU，通过 Xvfb + Mesa 软件渲染做无头运行与截图
+- 引擎：Unity 6000.0.81f1（Unity 6.0 LTS），已安装并激活许可证
+- 目标平台：Windows x64。已实测从这台 Linux 机器构建出 `PE32+ executable (GUI) x86-64, for MS Windows`
+- 开发机：Linux，无 GPU，通过 Xvfb + Mesa 软件渲染做无头运行与截图。单次「改场景 → 截图」循环约 15 秒，Windows 完整构建 33 秒
 
-安装脚本：`tools/install_unity.sh`
+```bash
+tools/install_unity.sh    # 安装 Unity 编辑器与 Windows 构建模块
+tools/probe/run_probe.sh  # 验证完整链路：URP 场景 → 无头截图 → Windows 构建
+```
