@@ -313,7 +313,10 @@ namespace Undertown.Game.Presentation
             // backdrop rather than standing in a landscape. These are decoration only: they
             // come from the cell coordinate, never from the map, so nothing the simulation
             // cares about - timber, clay, room to build - changes because of them.
-            if (!country || h % 3 != 0) return null;
+            // Half the open cells carry something, up from a third. The camera now shows about
+            // thirty cells across instead of eighteen, and at the old density the country
+            // between the town and the frame edge came out as bare sward.
+            if (!country || h % 2 != 0) return null;
             return IsoPropArt.ForClutter(CountryClutter[(h / 3) % CountryClutter.Length], (h / 31) & 3);
         }
 
