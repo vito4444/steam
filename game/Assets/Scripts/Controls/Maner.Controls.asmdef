@@ -1,0 +1,16 @@
+{
+    "name": "Maner.Controls",
+    "rootNamespace": "Maner.Controls",
+    "references": [
+        "Maner.Sim"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

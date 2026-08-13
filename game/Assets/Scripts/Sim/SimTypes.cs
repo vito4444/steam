@@ -1,10 +1,12 @@
+using System;
+
 namespace Maner.Sim
 {
     /// <summary>
     /// 玩家通过控制台施加给仿真的持续状态。所有字段都是「控件当前所处的物理位置」，
     /// 而不是「玩家想做什么」——这是本作的核心设计：你操作的是机器，不是菜单。
     /// </summary>
-    public struct SimInputs
+    public struct SimInputs : IEquatable<SimInputs>
     {
         // —— 供电盘 ——
         public bool GeneratorMaster;      // 主机组闸刀
@@ -45,6 +47,49 @@ namespace Maner.Sim
             RopeSpeedTrim = 0.5,
             Direction = 0,
         };
+
+        public bool Equals(SimInputs o) =>
+            GeneratorMaster == o.GeneratorMaster &&
+            FuelValve.Equals(o.FuelValve) &&
+            CoolantPump == o.CoolantPump &&
+            Excitation.Equals(o.Excitation) &&
+            BreakerHoist == o.BreakerHoist &&
+            BreakerVentilation == o.BreakerVentilation &&
+            BreakerLighting == o.BreakerLighting &&
+            BreakerAuxiliary == o.BreakerAuxiliary &&
+            BatteryTie == o.BatteryTie &&
+            MainFanSwitch == o.MainFanSwitch &&
+            FanSpeedWheel.Equals(o.FanSpeedWheel) &&
+            Damper1.Equals(o.Damper1) &&
+            Damper2.Equals(o.Damper2) &&
+            Damper3.Equals(o.Damper3) &&
+            GasDrainagePump == o.GasDrainagePump &&
+            ReverseAirflow == o.ReverseAirflow &&
+            HoistPower == o.HoistPower &&
+            Throttle.Equals(o.Throttle) &&
+            Brake.Equals(o.Brake) &&
+            CageLock == o.CageLock &&
+            Direction == o.Direction &&
+            CageLight == o.CageLight &&
+            RopeSpeedTrim.Equals(o.RopeSpeedTrim);
+
+        public override bool Equals(object obj) => obj is SimInputs other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int h = 17;
+                h = h * 31 + GeneratorMaster.GetHashCode();
+                h = h * 31 + FuelValve.GetHashCode();
+                h = h * 31 + Excitation.GetHashCode();
+                h = h * 31 + FanSpeedWheel.GetHashCode();
+                h = h * 31 + Throttle.GetHashCode();
+                h = h * 31 + Brake.GetHashCode();
+                h = h * 31 + Direction;
+                return h;
+            }
+        }
     }
 
     /// <summary>瞬时按钮事件。与持续状态分开，因为按钮是一次性动作而非位置。</summary>
