@@ -321,7 +321,20 @@ namespace Undertown.Game.Bootstrap
             float aspect = cam.aspect > 0.1f ? cam.aspect : 16f / 9f;
             float sizeForHeight = spanY / (2f * (1f - hudFraction));
             float sizeForWidth = spanX / (2f * aspect);
-            cam.orthographicSize = Mathf.Max(3.5f, Mathf.Max(sizeForHeight, sizeForWidth));
+
+            // Fitting the whole settlement with room to spare leaves it as an island in the
+            // middle of empty country, which is not how the reference is framed - its town runs
+            // off all four edges. Under this projection that gap cannot be closed by zooming
+            // alone: any rectangle of cells projects to a fixed two-to-one shape on screen, so
+            // a frame wider than that always has slack at the sides whatever the town's
+            // proportions. Filling it properly would mean laying the town out along the screen
+            // horizontal, which is the north-west to south-east diagonal in cell coordinates.
+            //
+            // Short of that, the frame is allowed to crop: north and south edges may run a
+            // little past the viewport, which buys a closer view and costs nothing the player
+            // cannot scroll to.
+            const float verticalCrop = 0.88f;
+            cam.orthographicSize = Mathf.Max(3.5f, Mathf.Max(sizeForHeight * verticalCrop, sizeForWidth));
 
             // The HUD covers the bottom band of the viewport, so the visible area's centre sits
             // above the camera's. Putting the town in the middle of what can actually be seen

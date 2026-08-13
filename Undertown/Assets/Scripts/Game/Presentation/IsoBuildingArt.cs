@@ -46,6 +46,9 @@ namespace Undertown.Game.Presentation
 
             /// <summary>A single-pitch outshot along the east wall, or none.</summary>
             public bool LeanTo;
+
+            /// <summary>A covered porch on posts over the south doorway, or none.</summary>
+            public bool Porch;
         }
 
         /// <summary>
@@ -75,7 +78,7 @@ namespace Undertown.Game.Presentation
             int peak = across * Iso.HalfHeight / 2 + scheme.Pitch;
 
             // Enough room for the eaves, and for an outshot standing clear of the east wall.
-            int marginX = Mathf.CeilToInt(Overhang * Iso.TileWidth) + (scheme.LeanTo ? 30 : 4);
+            int marginX = Mathf.CeilToInt(Overhang * Iso.TileWidth) + (scheme.LeanTo || scheme.Porch ? 30 : 4);
             int footW = Iso.FootprintWidth(cw, ch) + marginX * 2;
             int footH = Iso.FootprintHeight(cw, ch);
             int total = footH + scheme.WallHeight + peak + marginX + 12;
@@ -111,6 +114,7 @@ namespace Undertown.Game.Presentation
             Brackets(px, w, h, cw, ch, ox, oy, scheme);
             Roof(px, w, h, cw, ch, ox, oy, scheme, ridgeAlongX, peak);
             if (scheme.LeanTo) LeanTo(px, w, h, cw, ch, ox, oy, scheme);
+            if (scheme.Porch) Porch(px, w, h, cw, ch, ox, oy, scheme);
             if (scheme.Chimney) Chimney(px, w, h, cw, ch, ox, oy, scheme, peak);
 
             // Landmarks last, over the roof they stand on.
@@ -336,6 +340,73 @@ namespace Undertown.Game.Presentation
                 var tone = across < 0.12f ? Darken(roof, 20) : across > 0.94f ? Darken(roof, 30) : roof;
                 if (scheme.Thatch && (i + j) % 9 == 0) tone = roofLit;
                 if (!scheme.Thatch && Mathf.RoundToInt(across * 40f) % 5 == 0) tone = Darken(tone, 14);
+                Plot(px, w, h, p.x, p.y + lift, tone);
+            }
+        }
+
+        /// <summary>
+        /// A porch over the south door: a small pitched hood on two posts, standing out from
+        /// the wall the door is in.
+        ///
+        /// Where the outshot changes a building's plan, this changes its face. Both matter
+        /// because the reference has no two buildings alike, and a row of identical frontages
+        /// is as much of a tell as a row of identical roofs.
+        /// </summary>
+        private static void Porch(Color32[] px, int w, int h, int cw, int ch, int ox, int oy,
+            Scheme scheme)
+        {
+            var roof = Darken(scheme.Roof, 12);
+            var roofLit = Lighten(scheme.Roof, 10);
+            var post = scheme.Timber;
+            var postLit = Lighten(scheme.Timber, 28);
+            var floor = Darken(scheme.Plinth, 8);
+
+            // Narrow and high enough to stand over the door rather than across the frontage:
+            // a hood the width of the wall hides the door it is supposed to shelter, along
+            // with the windows either side of it.
+            const float depth = 0.42f;
+            float mid = cw / 2f;
+            float from = Mathf.Max(0.1f, mid - 0.42f);
+            float to = Mathf.Min(cw - 0.1f, mid + 0.42f);
+
+            int head = scheme.WallHeight - 2;
+            int eave = head - 6;
+            int steps = 150;
+
+            // The south wall is the one the door is in, and south is v at its largest: the
+            // sprite's v axis runs opposite the world's y, because the projection negates the
+            // sum of the two. Built at small v the porch comes out on the far side of the
+            // house, hanging off the back wall.
+            for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
+            {
+                float u = Mathf.Lerp(from, to, i / (float)steps);
+                float v = ch + (j / (float)steps) * depth;
+                var p = Iso.Project(u, v, ox, oy);
+                Plot(px, w, h, p.x, p.y + 1, floor);
+            }
+
+            for (int end = 0; end < 2; end++)
+            {
+                var p = Iso.Project(end == 0 ? from : to, ch + depth, ox, oy);
+                for (int lift = 0; lift < eave; lift++)
+                {
+                    Plot(px, w, h, p.x, p.y + lift, postLit);
+                    Plot(px, w, h, p.x + 1, p.y + lift, post);
+                }
+            }
+
+            for (int j = 0; j <= steps; j++)
+            for (int i = 0; i <= steps; i++)
+            {
+                float out01 = j / (float)steps;
+                float u = Mathf.Lerp(from - 0.12f, to + 0.12f, i / (float)steps);
+                float v = ch - 0.06f + out01 * (depth + 0.18f);
+                int lift = Mathf.RoundToInt(Mathf.Lerp(head, eave, out01));
+
+                var p = Iso.Project(u, v, ox, oy);
+                var tone = out01 > 0.93f ? Darken(roof, 26) : out01 < 0.1f ? Darken(roof, 12) : roof;
+                if (scheme.Thatch && (i + j) % 11 == 0) tone = roofLit;
                 Plot(px, w, h, p.x, p.y + lift, tone);
             }
         }
@@ -775,11 +846,13 @@ namespace Undertown.Game.Presentation
                         WallHeight = 24 + variant * 2, Pitch = 13 + (variant & 1) * 3,
                         Thatch = true, HalfTimbered = true, Chimney = true,
                         LeanTo = variant == 1 || variant == 2,
+                        Porch = variant == 0 || variant == 3,
                     };
                 }
                 case BuildingKind.TownHall:
                     return new Scheme
                     {
+                        Porch = true,
                         Wall = C(0xA4, 0x98, 0x80), Roof = C(0x82, 0x38, 0x28),
                         Timber = C(0x53, 0x3A, 0x26), Plinth = C(0x6E, 0x6A, 0x62),
                         WallHeight = 34, Pitch = 16, HalfTimbered = true, Chimney = true,
