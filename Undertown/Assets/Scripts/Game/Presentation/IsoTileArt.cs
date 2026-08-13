@@ -15,14 +15,18 @@ namespace Undertown.Game.Presentation
 
         private static readonly Dictionary<TileKind, Color32> Palette = new Dictionary<TileKind, Color32>
         {
-            { TileKind.Grass,       new Color32(0x6E, 0x74, 0x3E, 0xFF) },
-            { TileKind.Dirt,        new Color32(0x84, 0x6B, 0x46, 0xFF) },
-            { TileKind.Road,        new Color32(0x99, 0x7E, 0x56, 0xFF) },
-            { TileKind.Water,       new Color32(0x36, 0x63, 0x84, 0xFF) },
+            // Warmer and a step brighter than the first pass. The old palette was correct in
+            // the sense that grass is a desaturated olive under overcast light, and wrong in
+            // the sense that it left every building sitting on mud. The reference is lit like
+            // late afternoon, and the ground has to carry that or nothing else can.
+            { TileKind.Grass,       new Color32(0x7B, 0x86, 0x42, 0xFF) },
+            { TileKind.Dirt,        new Color32(0x96, 0x79, 0x4E, 0xFF) },
+            { TileKind.Road,        new Color32(0xAC, 0x8D, 0x60, 0xFF) },
+            { TileKind.Water,       new Color32(0x32, 0x68, 0x8E, 0xFF) },
             // Close to grass on purpose: what marks woodland is the trees standing on it, not
             // a differently coloured floor. Tinting the ground too made every wooded cell read
             // as a dark tile pasted onto the map.
-            { TileKind.Forest,      new Color32(0x67, 0x6E, 0x3B, 0xFF) },
+            { TileKind.Forest,      new Color32(0x6E, 0x78, 0x3E, 0xFF) },
             { TileKind.ClayDeposit, new Color32(0x9A, 0x5F, 0x44, 0xFF) },
             { TileKind.Rock,        new Color32(0x6E, 0x6E, 0x66, 0xFF) },
             { TileKind.DisusedMine, new Color32(0x54, 0x44, 0x30, 0xFF) },

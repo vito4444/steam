@@ -506,7 +506,7 @@ namespace Undertown.Game.UI
             if (_wageLabel != null)
             {
                 int daily = NeedsSystem.WageCost(_town.Wages) * people;
-                _wageLabel.text = $"wages: {NeedsSystem.WageLabel(_town.Wages)}  ({daily} coin/day)";
+                _wageLabel.text = $"wages: {NeedsSystem.WageLabel(_town.Wages)} · {daily}/day";
                 _wageLabel.color = _town.Wages == WageLevel.Meagre
                     ? (Color)ProceduralUiArt.Danger
                     : (Color)ProceduralUiArt.InkDim;

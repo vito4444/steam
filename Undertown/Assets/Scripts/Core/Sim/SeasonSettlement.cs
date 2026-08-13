@@ -37,8 +37,32 @@ namespace Undertown.Core.Sim
     public static class SeasonSettlement
     {
         /// <summary>Base tax, plus a levy per building the empire can see.</summary>
-        public const int BaseTax = 120;
-        public const int TaxPerVisibleBuilding = 15;
+        public const int BaseTax = 180;
+        public const int TaxPerTaxableBuilding = 15;
+
+        /// <summary>
+        /// The assessment counts workshops and worked ground, not dwellings.
+        ///
+        /// The empire taxes production, and housing the people who do the producing is not
+        /// production. There is a game reason for the distinction as well as a fiscal one:
+        /// housing is how the player buys loyalty, loyalty is what keeps villagers from
+        /// talking to inspectors, and taxing it would mean charging the player a levy for
+        /// every attempt to shore up the one defence they have. A hut is also the cheapest
+        /// thing to build, so a per-building levy that counted them turned a settlement that
+        /// merely looks like a village into one that cannot pay its bill.
+        /// </summary>
+        public static int TaxableBuildings(TownState town)
+        {
+            int taxable = 0;
+            for (int i = 0; i < town.Buildings.Count; i++)
+            {
+                var def = town.Buildings[i].Def;
+                if (def == null || def.Underground) continue;
+                if (def.Kind == BuildingKind.House) continue;
+                taxable++;
+            }
+            return taxable;
+        }
 
         /// <summary>Black market price per unit of contraband when it goes out through the tunnels.</summary>
         public const int ContrabandPrice = 9;
@@ -104,14 +128,7 @@ namespace Undertown.Core.Sim
 
         private static void LevyTax(TownState town, SettlementReport report)
         {
-            int visible = 0;
-            for (int i = 0; i < town.Buildings.Count; i++)
-            {
-                var def = town.Buildings[i].Def;
-                if (def != null && !def.Underground) visible++;
-            }
-
-            report.TaxDue = BaseTax + visible * TaxPerVisibleBuilding;
+            report.TaxDue = BaseTax + TaxableBuildings(town) * TaxPerTaxableBuilding;
 
             int fromCoin = Math.Min(town.Coin, report.TaxDue);
             town.Coin -= fromCoin;

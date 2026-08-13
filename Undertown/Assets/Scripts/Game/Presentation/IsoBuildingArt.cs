@@ -18,7 +18,10 @@ namespace Undertown.Game.Presentation
     /// </summary>
     public static class IsoBuildingArt
     {
-        private static readonly Dictionary<BuildingKind, Sprite> Cache = new Dictionary<BuildingKind, Sprite>();
+        private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
+
+        /// <summary>How many distinct looks a repeated building has.</summary>
+        public const int VariantCount = 4;
 
         /// <summary>How far the eaves stand out past the walls, in cells.</summary>
         private const float Overhang = 0.22f;
@@ -42,19 +45,26 @@ namespace Undertown.Game.Presentation
             public bool Chimney;
         }
 
-        public static Sprite For(BuildingKind kind)
+        /// <summary>
+        /// A building's sprite. The variant only has an effect on kinds a town has several of;
+        /// eight identical cottages in a row is the single clearest tell that a settlement was
+        /// generated rather than built, and it costs nothing to vary the render and the thatch.
+        /// </summary>
+        public static Sprite For(BuildingKind kind, int variant = 0)
         {
-            if (Cache.TryGetValue(kind, out var cached) && cached != null) return cached;
-            return Cache[kind] = Build(kind);
+            variant = ((variant % VariantCount) + VariantCount) % VariantCount;
+            int key = (int)kind * 16 + variant;
+            if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+            return Cache[key] = Build(kind, variant);
         }
 
-        private static Sprite Build(BuildingKind kind)
+        private static Sprite Build(BuildingKind kind, int variant)
         {
             var def = BuildingCatalog.Get(kind);
             int cw = Mathf.Max(1, def?.Width ?? 1);
             int ch = Mathf.Max(1, def?.Height ?? 1);
 
-            var scheme = SchemeFor(kind);
+            var scheme = SchemeFor(kind, variant);
             bool ridgeAlongX = cw >= ch;
 
             // Depth across the ridge, in cells: what the pitch has to beat.
@@ -81,7 +91,7 @@ namespace Undertown.Game.Presentation
                 (ch * Iso.HalfWidth + marginX) / (float)footW,
                 (footH - Iso.HalfHeight) / (float)total);
 
-            return ToSprite(px, footW, total, $"iso_{kind}", pivot);
+            return ToSprite(px, footW, total, $"iso_{kind}_{variant}", pivot);
         }
 
         private static bool IsOpenGround(BuildingKind kind) =>
@@ -561,10 +571,25 @@ namespace Undertown.Game.Presentation
             }
         }
 
-        private static Scheme SchemeFor(BuildingKind kind)
+        private static Scheme SchemeFor(BuildingKind kind, int variant)
         {
             switch (kind)
             {
+                case BuildingKind.House:
+                {
+                    // Four cottages: differing render, thatch age and eaves height. Village
+                    // houses were built by different hands in different decades and the ones
+                    // that were re-thatched last are visibly paler.
+                    var walls = new[] { C(0xC6, 0xB2, 0x8E), C(0xB0, 0x9A, 0x76), C(0xCE, 0xBE, 0xA0), C(0xA8, 0x8E, 0x68) };
+                    var thatch = new[] { C(0xC4, 0x9E, 0x52), C(0xA8, 0x86, 0x44), C(0xD2, 0xB0, 0x62), C(0x96, 0x78, 0x3E) };
+                    return new Scheme
+                    {
+                        Wall = walls[variant], Roof = thatch[variant],
+                        Timber = C(0x59, 0x3E, 0x28), Plinth = C(0x64, 0x5E, 0x54),
+                        WallHeight = 24 + variant * 2, Pitch = 13 + (variant & 1) * 3,
+                        Thatch = true, HalfTimbered = true, Chimney = true,
+                    };
+                }
                 case BuildingKind.TownHall:
                     return new Scheme
                     {
@@ -585,14 +610,6 @@ namespace Undertown.Game.Presentation
                         Wall = C(0x9C, 0x76, 0x48), Roof = C(0x4C, 0x62, 0x48),
                         Timber = C(0x4E, 0x36, 0x22), Plinth = C(0x60, 0x5A, 0x50),
                         WallHeight = 32, Pitch = 14, HalfTimbered = true, Chimney = true,
-                    };
-                case BuildingKind.House:
-                    return new Scheme
-                    {
-                        Wall = C(0xC2, 0xAE, 0x8C), Roof = C(0xBE, 0x9A, 0x50),
-                        Timber = C(0x59, 0x3E, 0x28), Plinth = C(0x64, 0x5E, 0x54),
-                        WallHeight = 26, Pitch = 14, Thatch = true, HalfTimbered = true,
-                        Chimney = true,
                     };
                 case BuildingKind.Still:
                     return new Scheme

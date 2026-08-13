@@ -68,7 +68,7 @@ namespace Undertown.Game.Presentation
             if (kind != TileKind.Dirt && kind != TileKind.Road) return null;
 
             int h = Hash(cell.X, cell.Y);
-            if (h % 9 != 0) return null;
+            if (h % 5 != 0) return null;
 
             var choices = new[]
             {

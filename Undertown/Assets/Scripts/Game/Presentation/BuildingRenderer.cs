@@ -43,7 +43,11 @@ namespace Undertown.Game.Presentation
             go.transform.position = _world.CellCentre(building.Origin);
 
             var sprite = go.AddComponent<SpriteRenderer>();
-            sprite.sprite = IsoBuildingArt.For(building.Kind);
+
+            // Keyed off the origin so a given house always looks the same, including after a
+            // rebuild and across runs of the same seed.
+            int variant = Mathf.Abs(building.Origin.X * 31 + building.Origin.Y * 17);
+            sprite.sprite = IsoBuildingArt.For(building.Kind, variant);
 
             // A building sorts by its nearest corner - the origin, which is the cell lowest on
             // screen. Sorting by the far corner instead puts the whole structure deeper than it

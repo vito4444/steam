@@ -32,7 +32,11 @@ namespace Undertown.Editor
             }
 
             foreach (BuildingKind kind in System.Enum.GetValues(typeof(BuildingKind)))
-                Write(root, $"building_{kind}", IsoBuildingArt.For(kind));
+            for (int v = 0; v < IsoBuildingArt.VariantCount; v++)
+                Write(root, $"building_{kind}_{v}", IsoBuildingArt.For(kind, v));
+
+            foreach (IsoPropArt.Clutter clutter in System.Enum.GetValues(typeof(IsoPropArt.Clutter)))
+                Write(root, $"clutter_{clutter}", IsoPropArt.ForClutter(clutter));
 
             Write(root, "agent_townsfolk", IsoAgentArt.Person(
                 new Color32(0x6E, 0x5A, 0x3E, 0xFF), new Color32(0x6E, 0x5A, 0x3E, 0xFF)));

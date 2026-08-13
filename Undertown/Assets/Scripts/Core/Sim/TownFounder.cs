@@ -28,17 +28,22 @@ namespace Undertown.Core.Sim
             // pasture on either side of it. Spreading the same buildings over equal spans of
             // x and y makes a compact diamond, which is what a town is supposed to look like
             // from here.
-            Pave(map, cx - 8, roadY - 1, cx + 11, roadY, TileKind.Road);
-            Pave(map, cx - 1, roadY - 5, cx, roadY + 11, TileKind.Road);
+            Pave(map, cx - 10, roadY - 1, cx + 11, roadY, TileKind.Road);
+            Pave(map, cx - 1, roadY - 8, cx, roadY + 11, TileKind.Road);
             Pave(map, cx + 5, roadY, cx + 6, roadY + 11, TileKind.Dirt);
-            Pave(map, cx - 6, roadY + 5, cx + 9, roadY + 6, TileKind.Dirt);
+            Pave(map, cx - 6, roadY + 6, cx + 9, roadY + 6, TileKind.Dirt);
+            Pave(map, cx - 7, roadY + 3, cx + 4, roadY + 3, TileKind.Dirt);
+            Pave(map, cx - 9, roadY - 5, cx + 9, roadY - 5, TileKind.Dirt);
 
             // The civic block, north of the street.
             PlaceNear(town, BuildingKind.TownHall, cx - 6, roadY + 1);
             PlaceNear(town, BuildingKind.Warehouse, cx + 1, roadY + 1);
             PlaceNear(town, BuildingKind.Brewery, cx + 7, roadY + 1);
 
-            // Dwellings behind it, off the lane.
+            // Dwellings behind it, off the lane, packed close the way a village is.
+            PlaceNear(town, BuildingKind.House, cx - 6, roadY + 4);
+            PlaceNear(town, BuildingKind.House, cx - 3, roadY + 4);
+            PlaceNear(town, BuildingKind.House, cx + 2, roadY + 4);
             PlaceNear(town, BuildingKind.House, cx - 6, roadY + 7);
             PlaceNear(town, BuildingKind.House, cx - 3, roadY + 7);
             PlaceNear(town, BuildingKind.House, cx + 1, roadY + 7);
@@ -47,9 +52,11 @@ namespace Undertown.Core.Sim
 
             // Working ground south of the street, where the fields have room.
             PlaceNear(town, BuildingKind.House, cx - 6, roadY - 4);
-            PlaceNear(town, BuildingKind.ClayPit, cx - 3, roadY - 4);
+            PlaceNear(town, BuildingKind.House, cx - 3, roadY - 4);
+            PlaceNear(town, BuildingKind.ClayPit, cx - 8, roadY - 7);
             PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 4);
             PlaceNear(town, BuildingKind.Field, cx + 6, roadY - 4);
+            PlaceNear(town, BuildingKind.Field, cx + 1, roadY - 7);
 
             // Yards: trodden earth around everything that was built, which is what stops the
             // buildings looking as though they were dropped onto untouched pasture.

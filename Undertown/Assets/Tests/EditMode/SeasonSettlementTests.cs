@@ -176,6 +176,44 @@ namespace Undertown.Tests
         }
 
         [Test]
+        public void HousingTheTownIsNotTaxed()
+        {
+            var town = NewTown();
+            AdvanceToAuditDay(town);
+            int before = SeasonSettlement.Settle(town).TaxDue;
+
+            var withHuts = NewTown();
+            int roadY = withHuts.Map.Height / 2;
+            int placed = 0;
+            for (int i = 0; i < 40 && placed < 4; i++)
+            {
+                var origin = new Coord(4 + i * 3, roadY - 14);
+                if (BuildingPlacement.Place(withHuts, BuildingKind.House, origin, payCost: false) != null) placed++;
+            }
+            Assert.AreEqual(4, placed, "the test needs four extra huts to mean anything");
+
+            AdvanceToAuditDay(withHuts);
+            int after = SeasonSettlement.Settle(withHuts).TaxDue;
+
+            Assert.AreEqual(before, after,
+                "the assessment is on production, and four more huts produce nothing");
+        }
+
+        [Test]
+        public void AWorkshopIsTaxedAndAHutIsNot()
+        {
+            var town = NewTown();
+            int taxableBefore = SeasonSettlement.TaxableBuildings(town);
+            int roadY = town.Map.Height / 2;
+
+            Assert.NotNull(BuildingPlacement.Place(town, BuildingKind.House, new Coord(6, roadY - 14), payCost: false));
+            Assert.AreEqual(taxableBefore, SeasonSettlement.TaxableBuildings(town), "a hut is not assessed");
+
+            Assert.NotNull(BuildingPlacement.Place(town, BuildingKind.Sawpit, new Coord(10, roadY - 14), payCost: false));
+            Assert.AreEqual(taxableBefore + 1, SeasonSettlement.TaxableBuildings(town), "a sawpit is");
+        }
+
+        [Test]
         public void PayingTheTaxWithBlackCoinIsNoticed()
         {
             var town = NewTown();
