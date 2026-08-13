@@ -138,7 +138,7 @@ namespace Monster.EditorTools
             tonemapping.mode.Override(TonemappingMode.Neutral);
 
             var colorAdjustments = Add<ColorAdjustments>();
-            colorAdjustments.postExposure.Override(-0.62f);
+            colorAdjustments.postExposure.Override(-0.76f);
             colorAdjustments.contrast.Override(9f);
             colorAdjustments.saturation.Override(-9f);
             colorAdjustments.colorFilter.Override(new Color(1.0f, 0.97f, 0.93f));

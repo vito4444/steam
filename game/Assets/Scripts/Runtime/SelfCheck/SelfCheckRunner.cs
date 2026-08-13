@@ -53,6 +53,9 @@ namespace Monster.SelfCheck
 
             [Tooltip("Put this question through the intercom and wait for the reply. -1 asks nothing.")]
             public int askQuestion = -1;
+
+            [Tooltip("Turn to the next page of the binder before capturing.")]
+            public bool turnPage;
         }
 
         [SerializeField] private List<Checkpoint> checkpoints = new();
@@ -133,6 +136,11 @@ namespace Monster.SelfCheck
                 if (presenter != null && checkpoint.subjectIndex >= 0)
                 {
                     presenter.ShowSubject(checkpoint.subjectIndex);
+                }
+
+                if (presenter != null && checkpoint.turnPage)
+                {
+                    presenter.LeafThroughManual();
                 }
 
                 var stage = presenter != null ? presenter.Stage : null;

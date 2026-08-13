@@ -539,7 +539,7 @@ namespace Monster.EditorTools
             // guessed in Euler degrees. This is the pool of warm light the whole shot is
             // built around, and the first pass missed the desk entirely.
             var keyPosition = origin + new Vector3(0.170f, 0.360f, 0.048f);
-            var keyTarget = new Vector3(0.06f, DeskTopY, 0.44f);
+            var keyTarget = new Vector3(0.16f, DeskTopY, 0.52f);
             _lampOrigin = keyPosition;
             _lampTarget = keyTarget;
             var light = new GameObject("Key").AddComponent<Light>();
@@ -548,9 +548,9 @@ namespace Monster.EditorTools
                 Quaternion.LookRotation(keyTarget - keyPosition, Vector3.up));
             light.type = LightType.Spot;
             light.color = new Color(1.00f, 0.735f, 0.455f);
-            light.intensity = 17f;
+            light.intensity = 25f;
             light.range = 4.5f;
-            light.spotAngle = 84f;
+            light.spotAngle = 114f;
             light.innerSpotAngle = 26f;
             light.shadows = LightShadows.Hard;
             light.shadowStrength = 0.80f;
@@ -932,6 +932,7 @@ namespace Monster.EditorTools
                 ("admitted", null, 3, false, 3, -1),
                 ("intercom", ScreenAnchors.Count > 0 ? ScreenAnchors[0] : null, 4, false, 2, 0),
                 ("mail", _mailAnchor, 1, true, 2, -1),
+                ("manual_page2", _manualPages, 5, true, 2, -1),
             };
 
             var serialized = new SerializedObject(runner);
@@ -949,6 +950,7 @@ namespace Monster.EditorTools
                 entry.FindPropertyRelative("leanIn").boolValue = poses[i].leanIn;
                 entry.FindPropertyRelative("stagePhase").intValue = poses[i].stage;
                 entry.FindPropertyRelative("askQuestion").intValue = poses[i].ask;
+                entry.FindPropertyRelative("turnPage").boolValue = poses[i].name.EndsWith("_page2");
             }
 
             serialized.FindProperty("reportAnchor").objectReferenceValue = _logAnchor;

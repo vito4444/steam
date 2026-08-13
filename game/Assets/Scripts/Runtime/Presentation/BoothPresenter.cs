@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using Monster.Interaction;
 using Monster.Rules;
 using Monster.Shift;
@@ -35,6 +36,7 @@ namespace Monster.Presentation
         // control dead in the build with nothing to indicate why.
         [SerializeField] private List<DeskInteractable> switches = new();
         [SerializeField] private List<DeskInteractable> mailControls = new();
+        [SerializeField] private List<DeskInteractable> manualControls = new();
 
         [SerializeField] private CheckpointStage stage;
 
@@ -44,6 +46,16 @@ namespace Monster.Presentation
         private Coroutine _pendingReply;
         private IReadOnlyList<Notice> _mail = Array.Empty<Notice>();
         private int _mailPage;
+        private int _manualPage;
+
+        private const int ManualCriteriaPerPage = 5;
+        private const int ManualLabelWidth = 9;
+
+        /// <summary>Characters per line, sized to the page rather than guessed. The binder
+        /// is 272 mm across and the body is set in 10 mm DejaVu Sans Mono, whose advance is
+        /// 0.602 em, so 42 characters is 253 mm and fits with a margin. A first pass assumed
+        /// an advance of 0.51 and ran every line off the right edge of the paper.</summary>
+        private const int ManualLineWidth = 33;
 
         public ShiftDirector Director => _director;
 
@@ -115,6 +127,8 @@ namespace Monster.Presentation
 
         public void RegisterMailControl(DeskInteractable control) => mailControls.Add(control);
 
+        public void RegisterManualControl(DeskInteractable control) => manualControls.Add(control);
+
         public void BindStage(CheckpointStage checkpointStage) => stage = checkpointStage;
 
         public CheckpointStage Stage => stage;
@@ -130,9 +144,16 @@ namespace Monster.Presentation
             {
                 control.Operated += OnMailTurned;
             }
+
+            foreach (var control in manualControls.Where(c => c != null))
+            {
+                control.Operated += OnManualTurned;
+            }
         }
 
         private void OnMailTurned(DeskInteractable _) => LeafThroughMail();
+
+        private void OnManualTurned(DeskInteractable _) => LeafThroughManual();
 
         private void OnDisable()
         {
@@ -144,6 +165,11 @@ namespace Monster.Presentation
             foreach (var control in mailControls.Where(c => c != null))
             {
                 control.Operated -= OnMailTurned;
+            }
+
+            foreach (var control in manualControls.Where(c => c != null))
+            {
+                control.Operated -= OnManualTurned;
             }
         }
 
@@ -418,6 +444,12 @@ namespace Monster.Presentation
         /// <summary>The binder shows every page ever issued, current and superseded, in the
         /// order they arrived. Working out which page is in force is the player's job, so
         /// nothing here marks the superseded ones.</summary>
+        /// <summary>Five criteria to a page, printed in full.
+        ///
+        /// They used to be one line each, truncated at forty-six characters, which meant a
+        /// player could not read the rule they were about to be judged against. That is not
+        /// a legibility complaint, it is unfair: the whole game is deciding whether a
+        /// subject matches a written criterion.</summary>
         private void RefreshManual()
         {
             if (manual == null || _director == null)
@@ -425,14 +457,67 @@ namespace Monster.Presentation
                 return;
             }
 
-            var fields = _director.Manual.AllPages
-                .Select(p => new DocumentField($"{p.Id}/{p.Revision}", Shorten(p.PrintedText, 46)))
-                .ToList();
+            var pages = _director.Manual.AllPages.ToList();
+            var total = Math.Max(1, (pages.Count + ManualCriteriaPerPage - 1) / ManualCriteriaPerPage);
+            _manualPage = Math.Clamp(_manualPage, 0, total - 1);
+
+            var fields = new List<DocumentField>();
+
+            foreach (var page in pages.Skip(_manualPage * ManualCriteriaPerPage).Take(ManualCriteriaPerPage))
+            {
+                var lines = Wrap(page.PrintedText, ManualLineWidth);
+                fields.Add(new DocumentField($"{page.Id}/{page.Revision}", lines[0]));
+
+                for (var i = 1; i < lines.Count; i++)
+                {
+                    fields.Add(new DocumentField(string.Empty, lines[i]));
+                }
+
+                fields.Add(new DocumentField(string.Empty, string.Empty));
+            }
 
             Show(manual, new DocumentContent(
-                $"CHECKPOINT 14 - STANDING ORDERS - NIGHT {_director.ShiftIndex + 1}",
+                $"STANDING ORDERS - NIGHT {_director.ShiftIndex + 1} - PAGE {_manualPage + 1}/{total}",
                 fields,
-                "AMENDMENTS SUPERSEDE. RETAIN ALL PAGES."));
+                "AMENDMENTS SUPERSEDE. RETAIN ALL PAGES.",
+                null,
+                ManualLabelWidth));
+        }
+
+        /// <summary>Turns to the next page of the binder, wrapping. Wired to clicking the
+        /// manual while already leaning over it.</summary>
+        public void LeafThroughManual()
+        {
+            _manualPage++;
+            RefreshManual();
+        }
+
+        /// <summary>Breaks a criterion across lines at word boundaries. TextMeshPro would
+        /// wrap this itself, but then the wrapped lines would start under the criterion
+        /// number instead of alongside it, and a page of rules has to stay a list.</summary>
+        private static List<string> Wrap(string text, int width)
+        {
+            var lines = new List<string>();
+            var line = new StringBuilder();
+
+            foreach (var word in (text ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (line.Length > 0 && line.Length + 1 + word.Length > width)
+                {
+                    lines.Add(line.ToString());
+                    line.Clear();
+                }
+
+                if (line.Length > 0)
+                {
+                    line.Append(' ');
+                }
+
+                line.Append(word);
+            }
+
+            lines.Add(line.ToString());
+            return lines;
         }
 
         private void RefreshLogbook(Decision? last)

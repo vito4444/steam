@@ -142,7 +142,12 @@ namespace Monster.EditorTools
             BuildSwitches(handles.SwitchMeshes, handles.SwitchLabelAnchors, font, presenter);
             BuildIntercomKeys(handles.IntercomKeys, handles.IntercomKeyLabels, font, presenter);
             MakeInspectable(handles.PermitMesh, "permit", 0.46f, new Vector3(0f, 1f, -0.34f));
-            MakeInspectable(handles.ManualMesh, "manual", 0.42f, new Vector3(0f, 1f, -0.34f));
+            var manualKey = MakeInspectable(handles.ManualMesh, "manual", 0.42f,
+                new Vector3(0f, 1f, -0.34f), DeskInteractable.Behaviour.Leaf);
+            if (manualKey != null)
+            {
+                presenter.RegisterManualControl(manualKey);
+            }
             var mailKey = MakeInspectable(handles.MailAnchor, "mail", 0.40f, new Vector3(0f, 1f, -0.34f),
                 DeskInteractable.Behaviour.Leaf);
             if (mailKey != null)
@@ -189,7 +194,7 @@ namespace Monster.EditorTools
             // be leaned over, which is what makes cross-referencing it cost time.
             var title = TextFromTop(anchor, "Title", font, Mm(9.5f), InkColour,
                 0.264f, 0.012f, 0.166f, 0f, TextAlignmentOptions.Top, FontStyles.Bold);
-            var body = TextFromTop(anchor, "Body", font, Mm(8.6f), InkColour,
+            var body = TextFromTop(anchor, "Body", font, Mm(10.0f), InkColour,
                 0.264f, 0.300f, 0.148f, 0f, TextAlignmentOptions.TopLeft);
             var footer = TextFromTop(anchor, "Footer", font, Mm(7.5f), InkColour,
                 0.264f, 0.012f, -0.156f, 0f, TextAlignmentOptions.Top, FontStyles.Italic);
