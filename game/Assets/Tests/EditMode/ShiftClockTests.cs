@@ -166,5 +166,81 @@ namespace Monster.Tests
             Assert.IsFalse(statement.QuotaMet);
             Assert.Greater(statement.Shortfall, 0, "missing the quota by eight vehicles cost nothing");
         }
+
+        /// <summary>The orders promise the post closes at 06:00 whether or not the queue has
+        /// cleared. If a night can always be finished no matter how it is played, that is a
+        /// promise the game never keeps and the clock is scenery.</summary>
+        [Test]
+        public void AskingEverythingOfEveryoneRunsTheNightOut()
+        {
+            var director = new ShiftDirector(CampaignSeed, Campaign.TotalShifts - 1);
+            var asked = 0;
+
+            while (!director.IsFinished)
+            {
+                // Four questions a bearer, then a decision, which is what a player who
+                // refuses to guess would do.
+                for (var q = 0; q < 4 && !director.IsOutOfTime; q++)
+                {
+                    director.Spend(ShiftDirector.MinutesPerQuestion);
+                    asked++;
+                }
+
+                if (director.IsOutOfTime)
+                {
+                    break;
+                }
+
+                director.Decide(Verdict.Pass);
+            }
+
+            Assert.IsTrue(director.IsOutOfTime,
+                $"the queue cleared after {asked} questions with " +
+                $"{director.MinutesRemaining} minutes still on the clock");
+            Assert.Less(director.Position, director.Quota,
+                "a night spent interrogating everybody still met quota, so questions are free");
+        }
+
+        /// <summary>And the other way round: a player who never asks anything must never be
+        /// beaten by the clock, or the game is punishing them for reading the paperwork it
+        /// gave them.</summary>
+        [Test]
+        public void WorkingSilentlyAlwaysBeatsTheClock()
+        {
+            for (var night = 0; night < Campaign.TotalShifts; night++)
+            {
+                var director = new ShiftDirector(CampaignSeed, night);
+
+                while (!director.IsFinished)
+                {
+                    director.Decide(Verdict.Pass);
+                }
+
+                Assert.GreaterOrEqual(director.Position, director.Quota,
+                    $"night {night + 1} cannot make quota even with no questions asked");
+            }
+        }
+
+        /// <summary>How many questions a night affords. Not an assertion about a magic
+        /// number so much as a guard on the shape: the budget has to exist, and it has to
+        /// shrink, or the escalation across thirty nights is only in the quota.</summary>
+        [Test]
+        public void TheQuestionBudgetShrinksButNeverVanishes()
+        {
+            int BudgetFor(int night)
+            {
+                var director = new ShiftDirector(CampaignSeed, night);
+                var forQuota = director.Quota * ShiftDirector.MinutesPerVehicle;
+                return (ShiftDirector.MinutesPerNight - forQuota) / ShiftDirector.MinutesPerQuestion;
+            }
+
+            var first = BudgetFor(0);
+            var last = BudgetFor(Campaign.TotalShifts - 1);
+
+            Assert.Greater(first, last, "the last night affords as many questions as the first");
+            Assert.GreaterOrEqual(last, 4,
+                "the last night cannot afford to question even one bearer properly");
+        }
+
     }
 }
