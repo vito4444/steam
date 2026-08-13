@@ -54,7 +54,7 @@ namespace Undertown.Core.Sim
             // corner of the screen - straight behind the minimap. The bell turret is short
             // enough to sit there. The two swap places on screen only; they are the same
             // distance from the warehouse either way.
-            PlaceNear(town, BuildingKind.Brewery, cx - 6, roadY + 2);
+            var brewery = PlaceNear(town, BuildingKind.Brewery, cx - 6, roadY + 2);
             PlaceNear(town, BuildingKind.Warehouse, cx + 1, roadY + 2);
             PlaceNear(town, BuildingKind.TownHall, cx + 7, roadY + 2);
 
@@ -85,7 +85,17 @@ namespace Undertown.Core.Sim
             // buildings looking as though they were dropped onto untouched pasture.
             TreadYards(town);
 
-            FoundHiddenWorks(town, cx + 7, roadY + 3);
+            // Under the brewery, which is where the opening log says it is and where an
+            // inspector who reasons about it will look. The shaft was left at a fixed offset
+            // when the brewery and the town hall swapped ends of the civic row, so the town's
+            // one undeclared chamber had quietly moved to sit beneath the town hall - the one
+            // building whose cellar nobody would have to explain. Taken from where the brewery
+            // actually went rather than from where it was asked to go, since the placement
+            // spirals outwards when the ground is occupied.
+            var shaft = brewery != null
+                ? brewery.Origin.Offset(0, 1)
+                : new Coord(cx - 6, roadY + 3);
+            FoundHiddenWorks(town, shaft.X, shaft.Y);
 
             town.Record("the town is yours");
         }
