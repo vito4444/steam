@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "runtime": {
+    "rembg": "2.0.80",
+    "onnxruntime": "1.29.0",
+    "provider": "CPUExecutionProvider"
+  },
+  "models": [
+    {
+      "route": "birefnet-general-lite",
+      "runtime_filename": "birefnet-general-lite.onnx",
+      "upstream_filename": "BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx",
+      "bytes": 224005088,
+      "md5": "4fab47adc4ff364be1713e97b7e66334",
+      "download_url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx",
+      "source_url": "https://huggingface.co/ZhengPeng7/BiRefNet",
+      "license": "MIT",
+      "closed_source_distribution": "accepted_with_notice"
+    },
+    {
+      "route": "u2net_cloth_seg",
+      "runtime_filename": "u2net_cloth_seg.onnx",
+      "upstream_filename": "u2net_cloth_seg.onnx",
+      "bytes": 176194565,
+      "md5": "2434d1f3cb744e0e49386c906e5a08bb",
+      "download_url": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_cloth_seg.onnx",
+      "source_url": "https://github.com/levindabhi/cloth-segmentation",
+      "license": "MIT (model repository) + Apache-2.0 (U-2-Net architecture)",
+      "closed_source_distribution": "accepted_with_notice"
+    }
+  ]
+}

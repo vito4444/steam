@@ -1,0 +1,31 @@
+appId: ai.multica.pixelfit
+productName: PixelFit
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - assets/**
+  - package.json
+extraResources:
+  - from: pipeline
+    to: pipeline
+    filter:
+      - manifest.json
+      - models.lock.json
+      - models/**
+      - runtime/**
+      - THIRD_PARTY.md
+      - README-CERE12.md
+win:
+  signAndEditExecutable: true
+  target:
+    - nsis
+    - portable
+nsis:
+  artifactName: ${productName}-Setup-${version}-${arch}.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: PixelFit
+portable:
+  artifactName: ${productName}-Portable-${version}-${arch}.${ext}

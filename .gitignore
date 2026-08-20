@@ -1,0 +1,34 @@
+node_modules/
+out/
+dist/
+shots/
+shotdata/
+scripts/.layout_check.mjs
+acceptance/
+docs/superpowers/
+pipeline/.build/
+pipeline/*.spec
+pipeline/.venv/
+pipeline/models/
+pipeline/runtime/
+
+# Generated release and AI evidence stay out of source control.
+release/cere26/*
+!release/cere26/REASSEMBLE.ps1
+evidence/cere26/aliyun/
+evidence/cere26/local/
+evidence/cere26/triptychs/
+evidence/cere26/windows/
+evidence/cere26/results.json
+
+# Credentials and local provider configuration must never be committed.
+.env
+.env.*
+!.env.example
+.npmrc
+*.key
+*.pem
+*.p12
+*.pfx
+credentials/
+secrets/

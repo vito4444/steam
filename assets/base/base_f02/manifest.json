@@ -1,0 +1,29 @@
+{
+  "pack": "pixelfit-cere13-female-first",
+  "canvas": { "w": 1152, "h": 2304 },
+  "layers": [
+    { "file": "body.png", "z": 20, "mode": "normal" }
+  ],
+  "tones": [],
+  "hair": {},
+  "mask": "body-mask.png",
+  "anchors": {
+    "head_top": { "x": 575, "y": 98 },
+    "eye_line": { "x": 575, "y": 240 },
+    "chin": { "x": 575, "y": 331 },
+    "neck": { "x": 575, "y": 384 },
+    "shoulder_line": { "x": 575, "y": 574 },
+    "shoulder_l": { "x": 303, "y": 574 },
+    "shoulder_r": { "x": 848, "y": 574 },
+    "chest": { "x": 575, "y": 704 },
+    "waist": { "x": 575, "y": 864 },
+    "hip": { "x": 576, "y": 992 },
+    "crotch": { "x": 576, "y": 993 },
+    "wrist_l": { "x": 201, "y": 1076 },
+    "wrist_r": { "x": 950, "y": 1076 },
+    "knee": { "x": 577, "y": 1568 },
+    "ankle_l": { "x": 410, "y": 2144 },
+    "ankle_r": { "x": 745, "y": 2144 },
+    "foot_base": { "x": 577, "y": 2229 }
+  }
+}

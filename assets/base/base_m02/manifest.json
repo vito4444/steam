@@ -1,0 +1,29 @@
+{
+  "pack": "pixelfit-cere13-male-secondary",
+  "canvas": { "w": 1152, "h": 2304 },
+  "layers": [
+    { "file": "body.png", "z": 20, "mode": "normal" }
+  ],
+  "tones": [],
+  "hair": {},
+  "mask": "body-mask.png",
+  "anchors": {
+    "head_top": { "x": 575, "y": 98 },
+    "eye_line": { "x": 575, "y": 240 },
+    "chin": { "x": 575, "y": 325 },
+    "neck": { "x": 575, "y": 378 },
+    "shoulder_line": { "x": 575, "y": 608 },
+    "shoulder_l": { "x": 267, "y": 608 },
+    "shoulder_r": { "x": 883, "y": 608 },
+    "chest": { "x": 576, "y": 727 },
+    "waist": { "x": 576, "y": 873 },
+    "hip": { "x": 576, "y": 934 },
+    "crotch": { "x": 576, "y": 993 },
+    "wrist_l": { "x": 186, "y": 1066 },
+    "wrist_r": { "x": 964, "y": 1066 },
+    "knee": { "x": 575, "y": 1568 },
+    "ankle_l": { "x": 402, "y": 2144 },
+    "ankle_r": { "x": 749, "y": 2144 },
+    "foot_base": { "x": 575, "y": 2229 }
+  }
+}

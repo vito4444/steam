@@ -1,0 +1,13 @@
+{
+  "pack": "pixelfit-cere26-evidence-dress-v1",
+  "items": [
+    {
+      "id": "c10n_dress_1087",
+      "name": "米白长款礼服裙",
+      "category": "dress",
+      "cutout": "c10n_dress_1087.png",
+      "palette": { "dominant": "#E8E0D0", "color_family": "white_cream" },
+      "tags": ["gown", "formal", "long"]
+    }
+  ]
+}

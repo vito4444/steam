@@ -1,0 +1,46 @@
+{
+  "cases": [
+    {
+      "id": "top",
+      "person": "../../assets/base/base_f02/body.png",
+      "garments": [
+        {
+          "id": "c10n_top_011",
+          "name": "藏青条纹粗针织衫",
+          "category": "top",
+          "image": "../../assets/wardrobe/items/c10n_top_011.png"
+        }
+      ]
+    },
+    {
+      "id": "separates",
+      "person": "../../assets/base/base_f02/body.png",
+      "garments": [
+        {
+          "id": "c10n_top_393",
+          "name": "撞色几何图案毛衣",
+          "category": "top",
+          "image": "../../assets/wardrobe/items/c10n_top_393.png"
+        },
+        {
+          "id": "c10n_bottom_102",
+          "name": "浅色做旧牛仔短裤",
+          "category": "bottom",
+          "image": "../../assets/wardrobe/items/c10n_bottom_102.png"
+        }
+      ]
+    },
+    {
+      "id": "dress",
+      "person": "../../assets/base/base_f02/body.png",
+      "garments": [
+        {
+          "id": "c10n_dress_1087",
+          "name": "米白长款礼服裙",
+          "category": "dress",
+          "image": "../../fixtures/cere26/c10n_dress_1087.png"
+        }
+      ]
+    }
+  ]
+}
