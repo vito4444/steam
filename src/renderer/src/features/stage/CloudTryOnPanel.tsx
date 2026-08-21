@@ -15,6 +15,16 @@ interface Props {
   onResult: (imageDataUrl: string | null) => void;
 }
 
+/** 进行中和出错必须当场看见，其余状态说明收进「详情」里，不跟主操作抢视觉重量。 */
+const LOUD_PHASES: Phase[] = ['preparing', 'generating', 'cancelling', 'error'];
+
+/**
+ * AI 高清试穿的操作坞。
+ *
+ * CERE-28：这块以前是浮在人物画布上的 `aside`，直接盖住模特的腿脚和底部
+ * 信息条。舞台唯一要给人看的就是模特，所以现在它是舞台**下面**的一条
+ * 独立横栏 —— 展开时舞台高度变小、人物等比缩下去让位，而不是被盖住。
+ */
 export function CloudTryOnPanel({ status, worn, outfitKey, onResult }: Props) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [message, setMessage] = useState('未生成时继续显示本地分层预览');
@@ -22,6 +32,7 @@ export function CloudTryOnPanel({ status, worn, outfitKey, onResult }: Props) {
   const [consentChecked, setConsentChecked] = useState(false);
   const [sessionConsent, setSessionConsent] = useState(false);
   const [lastCached, setLastCached] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const requestIdRef = useRef<string | null>(null);
 
   const active = useMemo(() => worn.filter((entry) => !entry.hidden), [worn]);
@@ -36,6 +47,8 @@ export function CloudTryOnPanel({ status, worn, outfitKey, onResult }: Props) {
   }, [active, status]);
   const estimate = status && previewPlan ? estimateTryOn(previewPlan, status.profile) : null;
   const running = phase === 'preparing' || phase === 'generating' || phase === 'cancelling';
+  const unsupported = previewPlan?.unsupported ?? [];
+  const statusText = status?.configured ? message : status?.missingConfiguration ?? message;
 
   useEffect(() => {
     if (requestIdRef.current) window.pixelfit.tryOn.cancel(requestIdRef.current);
@@ -50,6 +63,13 @@ export function CloudTryOnPanel({ status, worn, outfitKey, onResult }: Props) {
     const target = window as unknown as { __pixelfitCloudConsent?: () => void };
     target.__pixelfitCloudConsent = () => setConsentOpen(true);
     return () => { delete target.__pixelfitCloudConsent; };
+  }, []);
+
+  // 截图脚本要能拍到「详情展开」这一档，展开态不是纯内部状态。
+  useEffect(() => {
+    const target = window as unknown as { __pixelfitCloudDetails?: (open: boolean) => void };
+    target.__pixelfitCloudDetails = (open: boolean) => setDetailsOpen(open);
+    return () => { delete target.__pixelfitCloudDetails; };
   }, []);
 
   const generate = async (confirmedConsent = sessionConsent) => {
@@ -107,61 +127,85 @@ export function CloudTryOnPanel({ status, worn, outfitKey, onResult }: Props) {
 
   return (
     <>
-      <aside className={`cloud-tryon-panel ${phase}`}>
-        <div className="cloud-tryon-head">
-          <span className={`status-dot ${status?.configured ? 'ok' : 'warn'}`} />
-          <strong>{status?.name ?? '正在读取云端配置…'}</strong>
-          {lastCached && <span className="tag ok">缓存</span>}
+      <section className={`cloud-dock ${phase}${detailsOpen ? ' open' : ''}`} aria-label="AI 高清试穿">
+        <div className="cloud-dock-bar">
+          <span className="cloud-dock-id">
+            <span className={`status-dot ${status?.configured ? 'ok' : 'warn'}`} />
+            <strong>{status?.name ?? '正在读取云端配置…'}</strong>
+            {lastCached && <span className="tag ok">缓存</span>}
+          </span>
+
+          <span className="cloud-dock-meta">
+            {estimate ? (
+              <>
+                <span>{estimate.billableImages} 张输出</span>
+                <span>{estimate.cny !== undefined
+                  ? '约 ¥' + estimate.cny.toFixed(2) + '（US$' + estimate.usd.toFixed(3) + '）'
+                  : '约 US$' + estimate.usd.toFixed(3)}</span>
+                <span>约 {estimate.typicalSeconds.min === estimate.typicalSeconds.max
+                  ? `${estimate.typicalSeconds.min}s`
+                  : `${estimate.typicalSeconds.min}–${estimate.typicalSeconds.max}s`}</span>
+              </>
+            ) : <span>读取估算中</span>}
+          </span>
+
+          {LOUD_PHASES.includes(phase) && (
+            <span className={`cloud-dock-live${phase === 'error' ? ' bad' : ''}`}>{statusText}</span>
+          )}
+
+          <span className="cloud-dock-spacer" />
+
+          <span className="cloud-dock-actions">
+            {running ? (
+              <button className="btn sm ghost" onClick={cancel} disabled={phase === 'cancelling'}>
+                <IconX size={13} />
+                {phase === 'cancelling' ? '取消中' : '取消生成'}
+              </button>
+            ) : (
+              <button
+                className="btn sm primary"
+                disabled={!status?.configured || active.length === 0}
+                onClick={requestGeneration}
+              >
+                <IconSparkle size={13} />
+                {phase === 'error' ? '重试高清试穿' : '生成高清试穿'}
+              </button>
+            )}
+
+            <button
+              className={`cloud-dock-toggle${detailsOpen ? ' on' : ''}`}
+              aria-expanded={detailsOpen}
+              title={detailsOpen ? '收起详情' : '展开详情'}
+              onClick={() => setDetailsOpen((open) => !open)}
+            >
+              详情
+              <i className="chev" />
+            </button>
+          </span>
         </div>
 
-        <div className="cloud-tryon-meta">
-          {estimate ? (
-            <>
-              <span>{estimate.billableImages} 张输出</span>
-              <span>{estimate.cny !== undefined
-                ? '约 ¥' + estimate.cny.toFixed(2) + '（US$' + estimate.usd.toFixed(3) + '）'
-                : '约 US$' + estimate.usd.toFixed(3)}</span>
-              <span>约 {estimate.typicalSeconds.min === estimate.typicalSeconds.max
-                ? `${estimate.typicalSeconds.min}s`
-                : `${estimate.typicalSeconds.min}–${estimate.typicalSeconds.max}s`}</span>
-            </>
-          ) : <span>读取估算中</span>}
-        </div>
-
-        {previewPlan && previewPlan.unsupported.length > 0 && (
-          <p className="cloud-warning">
-            当前 provider 不支持：{previewPlan.unsupported.map((item) => item.name).join('、')}，不会上传或计费。
-          </p>
+        {detailsOpen && (
+          <div className="cloud-dock-details">
+            <p className="cloud-note">{statusText}</p>
+            {unsupported.length > 0 && (
+              <p className="cloud-note warn">
+                当前 provider 不支持：{unsupported.map((item) => item.name).join('、')}，不会上传或计费。
+              </p>
+            )}
+            <div className="cloud-dock-links">
+              <button className="link-btn" onClick={() => setConsentOpen(true)}>上传说明</button>
+              {phase === 'success' && (
+                <button
+                  className="link-btn"
+                  onClick={() => { onResult(null); setPhase('idle'); setMessage('已切回本地分层预览'); }}
+                >
+                  看本地预览
+                </button>
+              )}
+            </div>
+          </div>
         )}
-        <p className="cloud-message">{status?.configured ? message : status?.missingConfiguration ?? message}</p>
-
-        <div className="cloud-actions">
-          {running ? (
-            <button className="btn sm ghost" onClick={cancel} disabled={phase === 'cancelling'}>
-              <IconX size={13} />
-              {phase === 'cancelling' ? '取消中' : '取消生成'}
-            </button>
-          ) : (
-            <button
-              className="btn sm primary"
-              disabled={!status?.configured || active.length === 0}
-              onClick={requestGeneration}
-            >
-              <IconSparkle size={13} />
-              {phase === 'error' ? '重试高清试穿' : '生成高清试穿'}
-            </button>
-          )}
-          <button className="btn sm ghost" onClick={() => setConsentOpen(true)}>上传说明</button>
-          {phase === 'success' && (
-            <button
-              className="btn sm ghost"
-              onClick={() => { onResult(null); setPhase('idle'); setMessage('已切回本地分层预览'); }}
-            >
-              看本地预览
-            </button>
-          )}
-        </div>
-      </aside>
+      </section>
 
       {consentOpen && (
         <div className="modal-backdrop cloud-consent" onClick={() => setConsentOpen(false)}>

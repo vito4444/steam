@@ -23,6 +23,7 @@ export function StageView() {
   } = useStore();
   const worn = useWorn();
   const [modelOpen, setModelOpen] = useState(false);
+  const [renderOpen, setRenderOpen] = useState(false);
   const [cloudImage, setCloudImage] = useState<string | null>(null);
   const [cloudStatus, setCloudStatus] = useState<TryOnProviderStatus | null>(null);
   const base = bases[outfit.body];
@@ -48,60 +49,41 @@ export function StageView() {
   return (
     <section className="stage-wrap">
       <div className="stage-bar">
-        <ModelMenu open={modelOpen} onOpenChange={setModelOpen} />
+        <div className="stage-bar-main">
+          <ModelMenu open={modelOpen} onOpenChange={setModelOpen} />
 
-        <div className="seg subtle">
-          <button className={engineId === 'layered' ? 'active' : ''} onClick={() => setEngineId('layered')}>
-            即时预览
-          </button>
-          <button className={engineId === 'vton' ? 'active' : ''} onClick={() => setEngineId('vton')}>
-            AI 高清
-          </button>
-        </div>
-
-        <div className="seg subtle">
-          {BACKGROUNDS.map((b) => (
-            <button
-              key={b.key}
-              className={outfit.background === b.key ? 'active' : ''}
-              onClick={() => dispatch({ type: 'set', patch: { background: b.key } })}
-            >
-              {b.label}
+          <div className="seg subtle">
+            <button className={engineId === 'layered' ? 'active' : ''} onClick={() => setEngineId('layered')}>
+              即时预览
             </button>
-          ))}
+            <button className={engineId === 'vton' ? 'active' : ''} onClick={() => setEngineId('vton')}>
+              AI 高清
+            </button>
+          </div>
+
+          {/* 背景只在宽窗口露在工具栏；窗口一窄就收进「模特」菜单，
+              不占主工具栏的位置（CERE-28）。 */}
+          <BackgroundSeg className="stage-bar-bg" />
         </div>
 
-        <div style={{ flex: 1 }} />
-
-        <button
-          className={`btn sm ghost${outfit.noOcclusion ? ' on' : ''}`}
-          title="关掉遮挡与身体遮罩裁切，看纯锚点叠图"
-          onClick={() => dispatch({ type: 'set', patch: { noOcclusion: !outfit.noOcclusion } })}
-        >
-          {outfit.noOcclusion ? '无遮挡' : '遮挡开'}
-        </button>
-        <button
-          className={`btn sm ghost${outfit.rawCompositing ? ' on' : ''}`}
-          title="关掉羽化与接触阴影，看未处理的原始叠图"
-          onClick={() => dispatch({ type: 'set', patch: { rawCompositing: !outfit.rawCompositing } })}
-        >
-          {outfit.rawCompositing ? '原始叠图' : '贴合处理'}
-        </button>
-        <button className="btn sm ghost" onClick={undo} disabled={!canUndo} title="撤销 Ctrl+Z">
-          <IconUndo size={14} />
-          撤销
-        </button>
-        {compare.length > 0 ? (
-          <button className="btn sm ghost" onClick={clearCompare}>
-            <IconX size={14} />
-            退出对比
+        <div className="stage-bar-aux">
+          <button className="btn sm quiet" onClick={undo} disabled={!canUndo} title="撤销 Ctrl+Z">
+            <IconUndo size={14} />
+            撤销
           </button>
-        ) : (
-          <button className="btn sm ghost" onClick={addToCompare}>
-            <IconCompare size={14} />
-            加入对比
-          </button>
-        )}
+          {compare.length > 0 ? (
+            <button className="btn sm quiet" onClick={clearCompare}>
+              <IconX size={14} />
+              退出对比
+            </button>
+          ) : (
+            <button className="btn sm quiet" onClick={addToCompare}>
+              <IconCompare size={14} />
+              加入对比
+            </button>
+          )}
+          <RenderMenu open={renderOpen} onOpenChange={setRenderOpen} />
+        </div>
       </div>
 
       <div className={`stage${compare.length ? ' compare' : ''}`}>
@@ -116,27 +98,21 @@ export function StageView() {
           inputRef={stageHandles.input}
           overlayUrl={engineId === 'vton' ? cloudImage : null}
           interactive
-        >
-          <div className="stage-caption">
-            <span>{base?.canvas.w} × {base?.canvas.h} · 原样素材</span>
-            <span className="dot-sep" />
-            <span>
-              {engineId === 'vton'
-                ? `${cloudStatus?.name ?? engine.name}${cloudImage ? '（AI 结果）' : '（本地兜底）'}`
-                : `${engine.name}${engineStatus.available ? '' : '（回落）'}`}
-            </span>
-            <span className="dot-sep" />
-            <span>{outfit.noOcclusion ? '遮挡已关' : `遮挡规则 ${occlusion.occlusions.length} 条`}</span>
-          </div>
-          {engineId === 'vton' && (
-            <CloudTryOnPanel
-              status={cloudStatus}
-              worn={worn}
-              outfitKey={outfitKey}
-              onResult={setCloudImage}
-            />
-          )}
-        </DollCanvas>
+        />
+      </div>
+
+      {/* 画布尺寸 / 引擎 / 遮挡规则是「状态说明」。CERE-28：以前它浮在模特脚上，
+          还被生成面板压住；现在落到舞台下面单独一行，字重压到最轻。 */}
+      <div className="stage-foot">
+        <span>{base?.canvas.w} × {base?.canvas.h} · 原样素材</span>
+        <span className="dot-sep" />
+        <span>
+          {engineId === 'vton'
+            ? `${cloudStatus?.name ?? engine.name}${cloudImage ? '（AI 结果）' : '（本地兜底）'}`
+            : `${engine.name}${engineStatus.available ? '' : '（回落）'}`}
+        </span>
+        <span className="dot-sep" />
+        <span>{outfit.noOcclusion ? '遮挡已关' : `遮挡规则 ${occlusion.occlusions.length} 条`}</span>
       </div>
 
       {/*
@@ -171,17 +147,42 @@ export function StageView() {
           </div>
         </div>
       )}
+
+      {/* AI 高清的操作坤。在舞台**下面**，不在画布里：展开时舞台高度变小、
+          人物等比缩下去让位，任何时候都不会盖住模特（CERE-28）。 */}
+      {engineId === 'vton' && (
+        <CloudTryOnPanel
+          status={cloudStatus}
+          worn={worn}
+          outfitKey={outfitKey}
+          onResult={setCloudImage}
+        />
+      )}
     </section>
   );
 }
 
-/** 体型 / 肤色这类基底设置塞进一个下拉里，不再占满整条工具栏 */
-function ModelMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { outfit, dispatch, bases } = useStore();
-  const base = bases[outfit.body];
-  const swatches = toneSwatches(base);
-  const ref = useRef<HTMLDivElement>(null);
+/** 背景切换。工具栏和「模特」菜单各渲染一份，由断点决定哪一份可见。 */
+function BackgroundSeg({ className }: { className: string }) {
+  const { outfit, dispatch } = useStore();
+  return (
+    <div className={`seg subtle ${className}`}>
+      {BACKGROUNDS.map((b) => (
+        <button
+          key={b.key}
+          className={outfit.background === b.key ? 'active' : ''}
+          onClick={() => dispatch({ type: 'set', patch: { background: b.key } })}
+        >
+          {b.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
+/** 一个关闭按钮的下拉壳：点外面就收起。 */
+function useDismiss(open: boolean, onOpenChange: (v: boolean) => void) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
@@ -190,10 +191,70 @@ function ModelMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
     window.addEventListener('mousedown', onDown);
     return () => window.removeEventListener('mousedown', onDown);
   }, [open, onOpenChange]);
+  return ref;
+}
+
+/**
+ * 渲染开关（遮挡 / 贴合处理）。这两个是排查用的开关，
+ * 不该和「换模特」「换引擎」同一个重量摆在工具栏上（CERE-28）。
+ */
+function RenderMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { outfit, dispatch } = useStore();
+  const ref = useDismiss(open, onOpenChange);
+  const tweaked = outfit.noOcclusion || outfit.rawCompositing;
 
   return (
     <div className="menu-wrap" ref={ref}>
-      <button className={`btn sm ghost${open ? ' on' : ''}`} onClick={() => onOpenChange(!open)}>
+      <button
+        className={`btn sm quiet${open || tweaked ? ' on' : ''}`}
+        title="渲染开关"
+        onClick={() => onOpenChange(!open)}
+      >
+        渲染
+        {tweaked && <i className="dot-mark" />}
+      </button>
+
+      {open && (
+        <div className="menu right">
+          <div className="menu-label">遮挡与叠图</div>
+          <label className="menu-switch">
+            <input
+              type="checkbox"
+              checked={!outfit.noOcclusion}
+              onChange={() => dispatch({ type: 'set', patch: { noOcclusion: !outfit.noOcclusion } })}
+            />
+            <span>
+              遮挡规则
+              <em>关掉后看纯锚点叠图，不裁切身体遮罩</em>
+            </span>
+          </label>
+          <label className="menu-switch">
+            <input
+              type="checkbox"
+              checked={!outfit.rawCompositing}
+              onChange={() => dispatch({ type: 'set', patch: { rawCompositing: !outfit.rawCompositing } })}
+            />
+            <span>
+              贴合处理
+              <em>羽化与接触阴影；关掉看未处理的原始叠图</em>
+            </span>
+          </label>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 体型 / 肤色这类基底设置塞进一个下拉里，不再占满整条工具栏 */
+function ModelMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { outfit, dispatch, bases } = useStore();
+  const base = bases[outfit.body];
+  const swatches = toneSwatches(base);
+  const ref = useDismiss(open, onOpenChange);
+
+  return (
+    <div className="menu-wrap" ref={ref}>
+      <button className={`btn sm quiet${open ? ' on' : ''}`} onClick={() => onOpenChange(!open)}>
         模特 · {BODY_LABEL[outfit.body]}
         <i className="swatch mini" style={{ background: swatches[Math.min(outfit.skin - 1, swatches.length - 1)] }} />
       </button>
@@ -225,6 +286,9 @@ function ModelMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
               />
             ))}
           </div>
+
+          <div className="menu-label menu-bg-label">背景</div>
+          <BackgroundSeg className="menu-bg" />
 
           <p className="menu-note">
             底图：{base?.pack ?? '—'}

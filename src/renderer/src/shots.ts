@@ -424,7 +424,47 @@ const SCENES: Record<string, () => Promise<void>> = {
     latest?.dispatch({ type: 'clear' });
     await wait(120);
     await wearOnePer(['top', 'bottom', 'outer', 'shoe']);
+    (window as unknown as { __pixelfitCloudDetails?: (open: boolean) => void })
+      .__pixelfitCloudDetails?.(false);
     await wait(500);
+    // CERE-28 的验收点：任何时候都不能遮住模特。这一条靠真实几何关系判，
+    // 不靠人看截图。
+    const dock = document.querySelector('.cloud-dock')?.getBoundingClientRect();
+    const doll = document.querySelector('.doll')?.getBoundingClientRect();
+    assertCheck(
+      '生成坤不压住模特画布',
+      !!dock && !!doll && dock.top >= doll.bottom - 0.5,
+      dock && doll ? `dock.top=${Math.round(dock.top)} doll.bottom=${Math.round(doll.bottom)}` : undefined,
+    );
+    const foot = document.querySelector('.stage-foot')?.getBoundingClientRect();
+    assertCheck(
+      '舞台脚注不被生成坤压住',
+      !!foot && !!dock && foot.bottom <= dock.top + 0.5,
+      foot && dock ? `foot.bottom=${Math.round(foot.bottom)} dock.top=${Math.round(dock.top)}` : undefined,
+    );
+  },
+
+  /** 生成坤展开详情的那一档：舞台变矮、人物缩下去让位，而不是被盖住。 */
+  async 'ai-preview-open'() {
+    latest?.setView('wardrobe');
+    latest?.clearCompare();
+    latest?.setEngineId('vton');
+    latest?.dispatch({ type: 'clear' });
+    await wait(120);
+    await wearOnePer(['top', 'bottom', 'outer', 'shoe']);
+    await wait(400);
+    (window as unknown as { __pixelfitCloudDetails?: (open: boolean) => void })
+      .__pixelfitCloudDetails?.(true);
+    const opened = await waitUntil(() => !!document.querySelector('.cloud-dock.open'));
+    assertCheck('生成坤能展开详情', opened);
+    await wait(500);
+    const dock = document.querySelector('.cloud-dock')?.getBoundingClientRect();
+    const doll = document.querySelector('.doll')?.getBoundingClientRect();
+    assertCheck(
+      '展开后生成坤仍不压住模特画布',
+      !!dock && !!doll && dock.top >= doll.bottom - 0.5,
+      dock && doll ? `dock.top=${Math.round(dock.top)} doll.bottom=${Math.round(doll.bottom)}` : undefined,
+    );
   },
 
   async 'ai-consent'() {

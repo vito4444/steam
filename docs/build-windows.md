@@ -56,5 +56,22 @@ npm run dist
 ```
 
 生成 NSIS 安装器与 portable EXE。项目未配置代码签名证书，因此产物未签名；
-`win.signAndEditExecutable=true` 仍写入 PixelFit 的产品名、描述与 0.4.0 文件版本资源，
+`win.signAndEditExecutable=true` 仍写入 PixelFit 的产品名、描述与 `package.json` 里的文件版本资源，
 但不会凭空产生 Authenticode 签名。
+
+## 界面截图（回归证据）
+
+`npm run shots` 用真实窗口 + `capturePage` 出图，不做任何示意图。默认窗口是产品尺寸；
+CERE-28 要求同一场景出窄 / 宽两档对比，用 `PIXELFIT_SHOT_SIZE` 指定内容尺寸：
+
+```powershell
+$env:PIXELFIT_SHOT_SIZE='1120x860'
+$env:PIXELFIT_SHOT_DIR="$PWD\evidence\cere28
+arrow"
+$env:PIXELFIT_SHOT_SCENES='main,dressing,ai-preview,ai-preview-open,board,settings,ai-settings'
+npm run shots
+```
+
+`ai-preview` 与 `ai-preview-open` 分别是生成坞收起 / 展开两态。两个场景都在渲染进程里
+断言 `dock.top >= doll.bottom`——「生成面板不遮挡模特」这条验收靠几何判定，不靠人看截图。
+断言失败时 `npm run shots` 以非 0 退出。

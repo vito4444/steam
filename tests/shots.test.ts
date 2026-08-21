@@ -43,6 +43,30 @@ describe('shot output directory', () => {
   });
 });
 
+describe('shot window size', () => {
+  it('defaults to the product window when unset', () => {
+    expect(shots.parseShotWindowSize(undefined)).toBeUndefined();
+    expect(shots.parseShotWindowSize('   ')).toBeUndefined();
+  });
+
+  it('parses the CERE-28 narrow/wide comparison sizes', () => {
+    expect(shots.parseShotWindowSize('1120x860')).toEqual({ width: 1120, height: 860 });
+    expect(shots.parseShotWindowSize(' 1600 × 980 ')).toEqual({ width: 1600, height: 980 });
+  });
+
+  it('refuses sizes that would not render the app', () => {
+    expect(() => shots.parseShotWindowSize('wide')).toThrow(/1120x860/);
+    expect(() => shots.parseShotWindowSize('320x200')).toThrow(/too small/);
+  });
+});
+
+describe('shot scenes', () => {
+  it('captures the AI dock both collapsed and expanded', () => {
+    expect(shots.selectShotScenes('ai-preview,ai-preview-open'))
+      .toEqual(['ai-preview', 'ai-preview-open']);
+  });
+});
+
 interface Check {
   label: string;
   passed: boolean;
