@@ -17,6 +17,27 @@ import {
 
 export { ASSET_ALIAS, FIGURE_RECIPES, SHOT_RECIPES, resolveRecipeAssetId } from '../shared/shots';
 
+export interface ShotWindowSize {
+  width: number;
+  height: number;
+}
+
+/**
+ * `PIXELFIT_SHOT_SIZE=1120x860`：截图时把窗口摆到指定内容尺寸。
+ *
+ * CERE-28 要求同一场景出窄 / 宽两档对比图，改动前后必须是同一个尺寸，
+ * 否则「窄窗口修好了」这句话没有证据。
+ */
+export function parseShotWindowSize(raw: string | undefined): ShotWindowSize | undefined {
+  if (!raw?.trim()) return undefined;
+  const match = /^\s*(\d{3,5})\s*[x*×]\s*(\d{3,5})\s*$/i.exec(raw);
+  if (!match) throw new Error('PIXELFIT_SHOT_SIZE must look like 1120x860');
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (width < 320 || height < 320) throw new Error('PIXELFIT_SHOT_SIZE is too small to render the app');
+  return { width, height };
+}
+
 export function parseFigureRecipes(raw: string | undefined): readonly FigureRecipe[] {
   if (!raw?.trim()) return FIGURE_RECIPES;
   let parsed: unknown;
@@ -111,6 +132,7 @@ export const SHOT_SCENES = [
   'settings',
   'ai-settings',
   'ai-preview',
+  'ai-preview-open',
   'ai-consent',
   'empty',
 ] as const;

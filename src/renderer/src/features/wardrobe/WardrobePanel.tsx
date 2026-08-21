@@ -80,7 +80,7 @@ export function WardrobePanel() {
     <section className="panel wardrobe">
       <div className="panel-head">
         <span className="panel-title">我的衣橱</span>
-        <span className="count-pill">{demoCount} 件示例素材</span>
+        <span className="count-pill demo-pill">{demoCount} 件示例素材</span>
         <span className="count-pill">{assets.length} 件</span>
         <div style={{ flex: 1 }} />
         <button className="btn sm ghost" onClick={() => void importFiles()}>

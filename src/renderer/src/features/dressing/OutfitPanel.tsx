@@ -98,7 +98,7 @@ export function OutfitPanel() {
             return (
               <div
                 key={slot}
-                className={`slot-row${w ? '' : ' empty'}${selectedSlot === slot ? ' active' : ''}`}
+                className={`slot-row${w ? '' : ' vacant'}${selectedSlot === slot ? ' active' : ''}`}
                 onClick={() => setSelectedSlot(selectedSlot === slot ? null : slot)}
               >
                 <span className="z-tag">z{w ? w.z : SLOT_Z[slot]}</span>

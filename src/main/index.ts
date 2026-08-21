@@ -11,7 +11,7 @@ import { admittedPipelineAssets, decideLinkImport, manualImportFailure } from '.
 import { importFromLink } from './link-import/index.js';
 import { importPack } from './pack';
 import { ensureBundledWardrobe } from './bundled';
-import { parseFigureRecipes, resolveShotOutputDir, runFigures, runShots, runTriptychs } from './shots';
+import { parseFigureRecipes, parseShotWindowSize, resolveShotOutputDir, runFigures, runShots, runTriptychs } from './shots';
 import { TryOnDiskCache } from './tryon/cache';
 import { createProvider, createSettingsState } from './tryon/provider-registry';
 import { TryOnService } from './tryon/service';
@@ -53,11 +53,14 @@ function toLookRecord(look: Look): LookRecord {
 }
 
 function createWindow(): BrowserWindow {
+  // CERE-28：成员实际是在一个窄窗口里用的，1280 的下限等于「窄了就没法用」。
+  // 布局现在按断点自适应，所以下限跟着放到 1024。
+  const shotSize = SHOT_MODE ? parseShotWindowSize(process.env['PIXELFIT_SHOT_SIZE']) : undefined;
   const win = new BrowserWindow({
-    width: 1520,
-    height: 950,
-    minWidth: 1280,
-    minHeight: 800,
+    width: shotSize?.width ?? 1520,
+    height: shotSize?.height ?? 950,
+    minWidth: 1024,
+    minHeight: 720,
     show: false,
     frame: false,
     backgroundColor: '#16151A',
@@ -68,6 +71,8 @@ function createWindow(): BrowserWindow {
       contextIsolation: true,
     },
   });
+
+  if (shotSize) win.setContentSize(shotSize.width, shotSize.height);
 
   win.on('ready-to-show', () => win.show());
   win.webContents.setWindowOpenHandler(({ url }) => {
