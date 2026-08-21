@@ -38,3 +38,4 @@ secrets/
 .tmpshots/
 .crop*.png
 .probe.cjs
+.pipeline-build.log
