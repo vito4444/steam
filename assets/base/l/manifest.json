@@ -1,0 +1,148 @@
+{
+  "pack": "cere6-realistic-model",
+  "body": "l",
+  "canvas": {
+    "w": 1152,
+    "h": 2304
+  },
+  "anchors": {
+    "head_top": {
+      "x": 576,
+      "y": 96
+    },
+    "eye_line": {
+      "x": 576,
+      "y": 250
+    },
+    "chin": {
+      "x": 576,
+      "y": 376
+    },
+    "neck": {
+      "x": 576,
+      "y": 442
+    },
+    "shoulder_line": {
+      "x": 576,
+      "y": 500
+    },
+    "shoulder_l": {
+      "x": 380,
+      "y": 500
+    },
+    "shoulder_r": {
+      "x": 772,
+      "y": 500
+    },
+    "chest": {
+      "x": 576,
+      "y": 656
+    },
+    "waist": {
+      "x": 576,
+      "y": 846
+    },
+    "hip": {
+      "x": 576,
+      "y": 1010
+    },
+    "crotch": {
+      "x": 576,
+      "y": 1174
+    },
+    "wrist_l": {
+      "x": 258,
+      "y": 1132
+    },
+    "wrist_r": {
+      "x": 894,
+      "y": 1132
+    },
+    "knee": {
+      "x": 576,
+      "y": 1700
+    },
+    "ankle_l": {
+      "x": 492,
+      "y": 2140
+    },
+    "ankle_r": {
+      "x": 660,
+      "y": 2140
+    },
+    "foot_base": {
+      "x": 576,
+      "y": 2232
+    }
+  },
+  "tones": [
+    {
+      "id": "t1",
+      "name": "瓷白",
+      "swatch": "#F2D7C6",
+      "layers": [
+        {
+          "file": "model_l_t1.png",
+          "z": 20,
+          "mode": "normal"
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "暖白",
+      "swatch": "#E7BFA4",
+      "layers": [
+        {
+          "file": "model_l_t2.png",
+          "z": 20,
+          "mode": "normal"
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "name": "小麦",
+      "swatch": "#CE9B75",
+      "layers": [
+        {
+          "file": "model_l_t3.png",
+          "z": 20,
+          "mode": "normal"
+        }
+      ]
+    },
+    {
+      "id": "t4",
+      "name": "蜜棕",
+      "swatch": "#A26F4C",
+      "layers": [
+        {
+          "file": "model_l_t4.png",
+          "z": 20,
+          "mode": "normal"
+        }
+      ]
+    },
+    {
+      "id": "t5",
+      "name": "深棕",
+      "swatch": "#6B452F",
+      "layers": [
+        {
+          "file": "model_l_t5.png",
+          "z": 20,
+          "mode": "normal"
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "file": "underlayer_l.png",
+      "z": 24.5,
+      "mode": "normal"
+    }
+  ],
+  "hair": {}
+}

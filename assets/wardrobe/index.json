@@ -1,0 +1,14 @@
+{
+  "pack": "pixelfit-demo-daily-v2",
+  "demo": true,
+  "items": [
+    { "id": "c10n_top_011", "name": "藏青条纹粗针织衫", "category": "top", "cutout": "items/c10n_top_011.png", "palette": { "dominant": "#313044", "color_family": "blue" }, "tags": ["sweater", "stripe", "knit"] },
+    { "id": "c10n_top_015", "name": "红色印花针织马甲", "category": "top", "cutout": "items/c10n_top_015.png", "palette": { "dominant": "#B83A3C", "color_family": "red" }, "tags": ["vest", "knit"] },
+    { "id": "c10n_top_393", "name": "撞色几何图案毛衣", "category": "top", "cutout": "items/c10n_top_393.png", "palette": { "dominant": "#705A67", "color_family": "multi" }, "tags": ["sweater", "pattern"] },
+    { "id": "c10n_bottom_102", "name": "浅色做旧牛仔短裤", "category": "bottom", "cutout": "items/c10n_bottom_102.png", "palette": { "dominant": "#A9B7BF", "color_family": "blue" }, "tags": ["shorts", "denim", "summer"] },
+    { "id": "c10n_shoes_2178", "name": "黑色粗跟短靴", "category": "shoe", "cutout": "items/c10n_shoes_2178.png", "palette": { "dominant": "#242326", "color_family": "black_grey" }, "tags": ["boots", "heel"] },
+    { "id": "c10n_shoes_276", "name": "粉色跑鞋", "category": "shoe", "cutout": "items/c10n_shoes_276.png", "palette": { "dominant": "#D399A7", "color_family": "pink" }, "tags": ["sneakers", "sport"] },
+    { "id": "c10n_bag_382", "name": "黑色皮质双肩包", "category": "bag", "cutout": "items/c10n_bag_382.png", "palette": { "dominant": "#262529", "color_family": "black_grey" }, "tags": ["backpack", "leather"] },
+    { "id": "c10n_accessory_433", "name": "紫蓝混色围脖", "category": "neckwear", "cutout": "items/c10n_accessory_433.png", "palette": { "dominant": "#665F88", "color_family": "purple" }, "tags": ["scarf", "snood", "knit"] }
+  ]
+}

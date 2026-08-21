@@ -1,0 +1,66 @@
+{
+  "pack": "cere5-real-fixture",
+  "items": [
+    {
+      "cutout": "light_denim.png",
+      "name": "浅色水洗牛仔裤",
+      "category": "bottom",
+      "subcategory": "长裤",
+      "palette": {
+        "dominant": "#A9B6C4",
+        "color_family": "blue"
+      },
+      "attributes": {
+        "length": "ankle",
+        "pattern": "solid",
+        "fit": "loose"
+      },
+      "tags": [
+        "CERE-5 抠图",
+        "真实照片",
+        "抠图有残缺"
+      ],
+      "source_photo": "denim-jacket.jpg"
+    },
+    {
+      "cutout": "striped_top.png",
+      "name": "黑白条纹上衣 + 皮夹克",
+      "category": "top",
+      "subcategory": "条纹",
+      "palette": {
+        "dominant": "#2A2A2C",
+        "color_family": "black_grey"
+      },
+      "attributes": {
+        "sleeve": "long",
+        "pattern": "stripe",
+        "fit": "regular"
+      },
+      "tags": [
+        "CERE-5 抠图",
+        "真实照片"
+      ],
+      "source_photo": "layered-striped-outfit.jpg"
+    },
+    {
+      "cutout": "white_jeans.png",
+      "name": "白色高腰直筒牛仔裤",
+      "category": "bottom",
+      "subcategory": "长裤",
+      "palette": {
+        "dominant": "#EDEDEB",
+        "color_family": "white_cream"
+      },
+      "attributes": {
+        "length": "ankle",
+        "pattern": "solid",
+        "fit": "regular"
+      },
+      "tags": [
+        "CERE-5 抠图",
+        "真实照片"
+      ],
+      "source_photo": "layered-striped-outfit.jpg"
+    }
+  ]
+}

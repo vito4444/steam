@@ -1,0 +1,581 @@
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, net, protocol, safeStorage, shell } from 'electron';
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+import { Store, newId, toAppUrl, fromAppUrl } from './storage';
+import { assetsDir, baseAssetsDir } from './assets';
+import { analyzePhoto, pipelineStatus } from './pipeline';
+import { admittedPipelineAssets, decideLinkImport, manualImportFailure } from './photo-import';
+import { importFromLink } from './link-import/index.js';
+import { importPack } from './pack';
+import { ensureBundledWardrobe } from './bundled';
+import { parseFigureRecipes, resolveShotOutputDir, runFigures, runShots, runTriptychs } from './shots';
+import { TryOnDiskCache } from './tryon/cache';
+import { createProvider, createSettingsState } from './tryon/provider-registry';
+import { TryOnService } from './tryon/service';
+import { TryOnSettingsRepository } from './tryon/settings';
+import type { Asset, AssetMeta, CommerceSource, Look, LookRecord } from '../shared/types';
+import type { TryOnGenerateRequest, TryOnSettingsUpdate } from '../shared/tryon';
+import { CATEGORY_LABEL, CATEGORY_SLOT, SLOT_ANCHOR, SLOT_PLACEMENT, CANVAS } from '../shared/spec';
+import type { BodyType, Category, Slot } from '../shared/spec';
+
+const SHOT_MODE = process.argv.includes('--shots');
+const FIGURE_MODE = process.argv.includes('--figures');
+const TRIPTYCH_MODE = process.argv.includes('--cere26-triptychs');
+/** `--ingest ... --exit`：只导素材，不开界面 */
+const INGEST_ONLY = process.argv.includes('--exit');
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'pf', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } },
+]);
+
+let store: Store;
+let tryOnService: TryOnService;
+let tryOnCache: TryOnDiskCache;
+let tryOnSettings: TryOnSettingsRepository;
+let mainWindow: BrowserWindow | null = null;
+const tryOnControllers = new Map<string, AbortController>();
+
+function toAsset(meta: AssetMeta): Asset {
+  const dir = store.assetDir(meta.id);
+  return {
+    ...meta,
+    cutoutUrl: toAppUrl(path.join(dir, meta.files.cutout)),
+    thumbUrl: toAppUrl(path.join(dir, meta.files.thumb)),
+  };
+}
+
+function toLookRecord(look: Look): LookRecord {
+  const cover = path.join(store.lookDir(look.id), 'cover.png');
+  return { ...look, coverUrl: fs.existsSync(cover) ? `${toAppUrl(cover)}?v=${Date.parse(look.updated_at)}` : null };
+}
+
+function createWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1520,
+    height: 950,
+    minWidth: 1280,
+    minHeight: 800,
+    show: false,
+    frame: false,
+    backgroundColor: '#16151A',
+    title: 'PixelFit',
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      contextIsolation: true,
+    },
+  });
+
+  win.on('ready-to-show', () => win.show());
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  const devUrl = process.env['ELECTRON_RENDERER_URL'];
+  if (devUrl) win.loadURL(devUrl);
+  else win.loadFile(path.join(__dirname, '../renderer/index.html'));
+
+  return win;
+}
+
+// ---------------------------------------------------------------- IPC
+
+function registerIpc(): void {
+  ipcMain.handle('library:stats', async () => {
+    const [assets, looks] = await Promise.all([store.listAssets(), store.listLooks()]);
+    return { assets: assets.length, looks: looks.length, root: store.root };
+  });
+
+  ipcMain.handle('library:listAssets', async () => (await store.listAssets()).map(toAsset));
+
+  ipcMain.handle('library:updateAsset', async (_e, id: string, patch: Partial<AssetMeta>) =>
+    toAsset(await store.patchAsset(id, patch)));
+
+  ipcMain.handle('library:deleteAsset', async (_e, id: string) => {
+    await store.deleteAsset(id);
+    // 引用了这件素材的 Look 要把对应槽位清空，否则会留下悬空引用
+    for (const look of await store.listLooks()) {
+      let touched = false;
+      const slots = { ...look.slots };
+      for (const [slot, ref] of Object.entries(slots)) {
+        if (ref === id) {
+          slots[slot as Slot] = null;
+          touched = true;
+        }
+      }
+      if (touched) await store.writeLook({ ...look, slots, updated_at: new Date().toISOString() }, null);
+    }
+    return { ok: true };
+  });
+
+  ipcMain.handle('library:importPack', async () => {
+    const res = await dialog.showOpenDialog(mainWindow!, {
+      title: '选择素材包目录（含 index.json）',
+      properties: ['openDirectory'],
+    });
+    if (res.canceled) return { imported: 0, failed: 0, pack: '', canceled: true };
+    const r = await importPack(store, res.filePaths[0]);
+    for (const f of r.failed) console.warn('[pack] failed', f.file, f.error);
+    return { imported: r.imported, failed: r.failed.length, pack: r.pack };
+  });
+
+  ipcMain.handle('library:reset', async () => {
+    await store.reset();
+    return { ok: true };
+  });
+
+  ipcMain.handle('library:backup', async () => {
+    try {
+      const r = await store.backup();
+      return { ok: true, path: r.path, files: r.files };
+    } catch (err) {
+      return { ok: false, error: String(err) };
+    }
+  });
+
+  ipcMain.handle('library:revealRoot', async () => {
+    await shell.openPath(store.root);
+  });
+
+  ipcMain.handle('library:importFiles', async () => {
+    const res = await dialog.showOpenDialog(mainWindow!, {
+      title: '手动导入透明底衣物素材',
+      filters: [{ name: '透明图片', extensions: ['png', 'webp'] }],
+      properties: ['openFile', 'multiSelections'],
+    });
+    if (res.canceled) return { canceled: true, imported: 0, assets: [], failures: [] };
+
+    const out: Asset[] = [];
+    const failures = [];
+    for (const file of res.filePaths) {
+      try {
+        out.push(toAsset(await importOne(file, { requireTransparency: true })));
+      } catch (err) {
+        failures.push(manualImportFailure(file, err));
+        console.warn('[import] failed', file, err);
+      }
+    }
+    return { canceled: false, imported: out.length, assets: out, failures };
+  });
+
+  ipcMain.handle('looks:list', async () => (await store.listLooks()).map(toLookRecord));
+
+  ipcMain.handle('looks:save', async (_e, look: Look, coverDataUrl: string | null) => {
+    const cover = coverDataUrl ? Buffer.from(coverDataUrl.split(',')[1], 'base64') : null;
+    const saved = await store.writeLook(look, cover);
+    return toLookRecord(saved);
+  });
+
+  ipcMain.handle('looks:delete', async (_e, id: string) => {
+    await store.deleteLook(id);
+    return { ok: true };
+  });
+
+  ipcMain.handle('base:get', async (_e, body: BodyType) => store.getBase(body, baseAssetsDir()));
+
+  ipcMain.handle('pipeline:status', async () => pipelineStatus());
+
+  ipcMain.handle('pipeline:importPhotos', async () => {
+    const res = await dialog.showOpenDialog(mainWindow!, {
+      title: '选择包含衣物的照片',
+      filters: [{ name: '照片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+      properties: ['openFile', 'multiSelections'],
+    });
+    if (res.canceled) return { imported: 0, rejected: 0, assets: [], canceled: true };
+    const assets: Asset[] = [];
+    let rejected = 0;
+    const failures: string[] = [];
+    for (const file of res.filePaths) {
+      try {
+        const imported = await importAnalyzedPhoto(file);
+        assets.push(...imported.assets.map(toAsset));
+        rejected += imported.rejected;
+      } catch (error) {
+        failures.push(`${path.basename(file)}：${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    return {
+      imported: assets.length,
+      rejected,
+      assets,
+      message: failures.length ? failures.join('\n') : undefined,
+    };
+  });
+
+  ipcMain.handle('link:import', async (_event, input: string) => {
+    const result = await importFromLink(input, {
+      downloadDir: path.join(store.tmpDir, 'link-import'),
+    });
+    const decision = decideLinkImport(result);
+    if (decision.action === 'manual') {
+      return {
+        status: 'manual_required', imported: 0, assets: [], platform: result.platform,
+        title: result.product.title, message: decision.message,
+      };
+    }
+    try {
+      const imported = await importAnalyzedPhoto(decision.imagePath, {
+        name: result.product.title,
+        commerce: result.commerce,
+      });
+      return {
+        status: result.status,
+        imported: imported.assets.length,
+        assets: imported.assets.map(toAsset),
+        platform: result.platform,
+        title: result.product.title,
+        message: imported.rejected
+          ? `已导入 ${imported.assets.length} 件；${imported.rejected} 个候选未通过 CERE-12 质量门。`
+          : `已从 ${result.platform} 商品页导入 ${imported.assets.length} 件。`,
+      };
+    } catch (error) {
+      return {
+        status: 'failed', imported: 0, assets: [], platform: result.platform,
+        title: result.product.title,
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });
+
+  ipcMain.handle('tryon:status', () => tryOnService.status());
+
+  ipcMain.handle('tryon:settings', async () =>
+    createSettingsState(await tryOnSettings.load()));
+
+  ipcMain.handle('tryon:saveSettings', async (_e, update: TryOnSettingsUpdate) => {
+    const settings = await tryOnSettings.update(update);
+    tryOnService = new TryOnService(createProvider(process.env, {}, settings), tryOnCache);
+    return createSettingsState(settings);
+  });
+
+  ipcMain.handle('tryon:generate', async (_e, request: TryOnGenerateRequest) => {
+    const previous = tryOnControllers.get(request.clientRequestId);
+    previous?.abort(new DOMException('Superseded by a newer request', 'AbortError'));
+    const controller = new AbortController();
+    tryOnControllers.set(request.clientRequestId, controller);
+    const timeout = setTimeout(
+      () => controller.abort(new DOMException('Cloud try-on timeout', 'TimeoutError')),
+      tryOnTimeoutMs(),
+    );
+    try {
+      return await tryOnService.generate(request, controller.signal);
+    } finally {
+      clearTimeout(timeout);
+      if (tryOnControllers.get(request.clientRequestId) === controller) {
+        tryOnControllers.delete(request.clientRequestId);
+      }
+    }
+  });
+
+  ipcMain.on('tryon:cancel', (_e, clientRequestId: string) => {
+    tryOnControllers.get(clientRequestId)?.abort(new DOMException('Cancelled by user', 'AbortError'));
+  });
+
+  // 遮挡规则覆盖文件。读坏了不报错、不崩，退回内置默认表并把原因带回界面 ——
+  // 这份文件是给人手改的，写错一个逗号不该让应用打不开。
+  ipcMain.handle('rules:occlusion', async () => {
+    const file = path.join(store.root, 'occlusion.json');
+    if (!fs.existsSync(file)) return { override: null, path: file };
+    try {
+      return { override: JSON.parse(await fsp.readFile(file, 'utf8')), path: file };
+    } catch (err) {
+      return { override: null, path: file, error: String(err) };
+    }
+  });
+  ipcMain.handle('export:png', async (_e, req: { dataUrl: string; suggestedName: string }) => {
+    try {
+      const res = await dialog.showSaveDialog(mainWindow!, {
+        title: '导出图片',
+        defaultPath: path.join(store.exportsDir, req.suggestedName),
+        filters: [{ name: 'PNG', extensions: ['png'] }],
+      });
+      if (res.canceled || !res.filePath) return { ok: false, canceled: true };
+      await fsp.writeFile(res.filePath, Buffer.from(req.dataUrl.split(',')[1], 'base64'));
+      return { ok: true, path: res.filePath };
+    } catch (err) {
+      return { ok: false, error: String(err) };
+    }
+  });
+
+  ipcMain.on('window:minimize', () => mainWindow?.minimize());
+  ipcMain.on('window:toggleMaximize', () => {
+    if (!mainWindow) return;
+    if (mainWindow.isMaximized()) mainWindow.unmaximize();
+    else mainWindow.maximize();
+  });
+  ipcMain.on('window:close', () => mainWindow?.close());
+  ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false);
+}
+
+/**
+ * 手动导入一张图片作为素材。
+ *
+ * 这是 CERE-12 自动管线之外的人工兜底：只接受已有透明背景的素材，
+ * 不做抠图、不做任何风格化，只写元数据。
+ * 缩放与位置交给渲染期的自动贴合（`render/fit.ts`）按底图锚点解，所以这里
+ * 不再算绝对 scale —— 底图换一版，已导入的素材不用重算。
+ */
+interface ImportOneOptions {
+  category?: Category;
+  name?: string | null;
+  commerce?: CommerceSource;
+  photoId?: string;
+  originalFile?: string;
+  provenanceModel?: string;
+  requireTransparency?: boolean;
+}
+
+async function importAnalyzedPhoto(
+  file: string,
+  context: Pick<ImportOneOptions, 'name' | 'commerce'> = {},
+): Promise<{ assets: AssetMeta[]; rejected: number }> {
+  const importId = `import-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const outputDir = path.join(store.root, 'pipeline-imports');
+  const metadata = await analyzePhoto(file, outputDir, importId);
+  const approved = admittedPipelineAssets(metadata, path.join(outputDir, importId));
+  const assets: AssetMeta[] = [];
+  for (const candidate of approved) {
+    assets.push(await importOne(candidate.file, {
+      category: candidate.category,
+      name: context.name
+        ? `${context.name} · ${CATEGORY_LABEL[candidate.category]}`
+        : `${path.basename(file, path.extname(file))} · ${CATEGORY_LABEL[candidate.category]}`,
+      commerce: context.commerce,
+      photoId: importId,
+      originalFile: file,
+      provenanceModel: 'cere12-cpu-pipeline',
+      requireTransparency: true,
+    }));
+  }
+  return { assets, rejected: Math.max((metadata.assets ?? []).length - approved.length, 0) };
+}
+
+async function importOne(file: string, options: ImportOneOptions = {}): Promise<AssetMeta> {
+  const buf = await fsp.readFile(file);
+  const img = nativeImage.createFromBuffer(buf);
+  if (img.isEmpty()) throw new Error('unsupported image');
+  const size = img.getSize();
+
+  if (options.requireTransparency) {
+    const bitmap = img.toBitmap();
+    let transparent = false;
+    for (let i = 3; i < bitmap.length; i += 4) {
+      if (bitmap[i] < 250) {
+        transparent = true;
+        break;
+      }
+    }
+    if (!transparent) throw new Error('图片没有透明背景；请使用「照片自动识别」先抠图');
+  }
+
+  const category: Category = options.category ?? guessCategory(path.basename(file));
+  const slot: Slot = CATEGORY_SLOT[category];
+  const rule = SLOT_PLACEMENT[slot];
+  const anchorName = SLOT_ANCHOR[slot];
+
+  // 锚点落在素材位图的哪条边上，由槽位的贴合规则决定
+  const anchorY = rule.edge === 'top' ? 0 : rule.edge === 'bottom' ? size.height : size.height / 2;
+
+  const thumbSrc = img.resize({
+    width: Math.max(Math.round(256 * Math.min(1, size.width / Math.max(size.width, size.height))), 1),
+    height: Math.max(Math.round(256 * Math.min(1, size.height / Math.max(size.width, size.height))), 1),
+    quality: 'best',
+  });
+
+  const id = newId('itm');
+  const now = new Date().toISOString();
+  const meta: AssetMeta = {
+    schema_version: 3,
+    id,
+    name: (options.name ?? path.basename(file, path.extname(file))).slice(0, 60) || '未命名素材',
+    category,
+    subcategory: '',
+    slot,
+    z_offset: 0,
+    occupies: category === 'dress' ? ['top', 'bottom'] : [],
+    companion: null,
+    pose: 'front_idle',
+    canvas: { w: CANVAS.w, h: CANVAS.h },
+    bitmap: { file: 'cutout.png', w: size.width, h: size.height },
+    source_resolution: { w: size.width, h: size.height },
+    anchor: { base: anchorName, x: Math.round(size.width / 2), y: Math.round(anchorY) },
+    fit: { scale: 1, dx: 0, dy: 0, stretch_x: 1 },
+    palette: { dominant: '#8A8A90', color_family: 'multi', colors: [{ hex: '#8A8A90', ratio: 1, role: 'mid' }] },
+    attributes: {},
+    tags: [options.provenanceModel ? '照片识别' : '手动导入'],
+    season: [],
+    source: {
+      origin: options.commerce ? 'link' : options.photoId ? 'photo' : 'manual',
+      photo_id: options.photoId ?? null,
+      photo_file: options.originalFile ? 'original.jpg' : null,
+      bbox: null,
+      imported_at: now,
+      ...(options.commerce ? { commerce: options.commerce } : {}),
+    },
+    provenance: {
+      model: options.provenanceModel ?? 'manual-import', model_version: options.provenanceModel ? '2.0' : '0.2.0',
+      confidence: 1, edited_by_user: !options.provenanceModel,
+      edit_ops: options.provenanceModel ? ['segment', 'closed_form_matting', 'quality_gate'] : ['category'],
+    },
+    files: { original: options.originalFile ? 'original.jpg' : null, cutout: 'cutout.png', thumb: 'thumb.png' },
+    favorite: false,
+    wear_count: 0,
+    created_at: now,
+    updated_at: now,
+  };
+
+  let original: Buffer | undefined;
+  if (options.originalFile) {
+    const sourceImage = nativeImage.createFromBuffer(await fsp.readFile(options.originalFile));
+    if (!sourceImage.isEmpty()) original = sourceImage.toJPEG(90);
+  }
+  return store.writeAsset(meta, { cutout: img.toPNG(), thumb: thumbSrc.toPNG(), original });
+}
+
+const CATEGORY_HINTS: [RegExp, Category][] = [
+  [/dress|连衣裙|裙子/i, 'dress'],
+  [/skirt|半裙|裤|pants|jean|trouser|short/i, 'bottom'],
+  [/coat|jacket|outer|外套|风衣|大衣|开衫/i, 'outer'],
+  [/shoe|boot|sneaker|鞋|靴/i, 'shoe'],
+  [/bag|包/i, 'bag'],
+  [/hat|cap|帽/i, 'headwear'],
+  [/glass|镜/i, 'eyewear'],
+  [/scarf|围巾/i, 'neckwear'],
+  [/belt|腰带/i, 'belt'],
+];
+
+function guessCategory(filename: string): Category {
+  for (const [re, cat] of CATEGORY_HINTS) if (re.test(filename)) return cat;
+  return 'top';
+}
+
+// ---------------------------------------------------------------- boot
+
+app.whenReady().then(async () => {
+  // PIXELFIT_ROOT 指定素材库位置，缺省仍是 %APPDATA%/PixelFit。
+  // 截图 / 演示要跑一套独立数据（`--shots` 的空状态场景会真的清库），
+  // 没有这个开关就只能拿用户的真实素材库当试验田。
+  store = new Store(process.env['PIXELFIT_ROOT'] || undefined);
+  store.init();
+  try {
+    const seeded = await ensureBundledWardrobe(store, path.join(assetsDir(), 'wardrobe'), importPack);
+    if (seeded.seeded) console.log(`[bundle] ${seeded.pack}: ${seeded.imported} real-photo assets seeded`);
+    for (const failure of seeded.failed) console.warn('[bundle] failed', failure.file, failure.error);
+  } catch (err) {
+    // A damaged optional bundle must never turn into a launch crash. The manual
+    // importer remains available and the next launch will retry the seed.
+    console.warn('[bundle] bundled wardrobe unavailable', err);
+  }
+  tryOnSettings = new TryOnSettingsRepository(path.join(store.root, 'settings.json'), {
+    encrypt(value) {
+      if (!safeStorage.isEncryptionAvailable()) {
+        throw new Error('当前系统无法使用 Windows 安全存储，拒绝明文保存 API Key');
+      }
+      return safeStorage.encryptString(value).toString('base64');
+    },
+    decrypt(value) {
+      if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows 安全存储不可用');
+      return safeStorage.decryptString(Buffer.from(value, 'base64'));
+    },
+  });
+  const settings = await tryOnSettings.load();
+  tryOnCache = new TryOnDiskCache(path.join(store.root, 'cache', 'tryon'));
+  tryOnService = new TryOnService(
+    createProvider(process.env, {}, settings),
+    tryOnCache,
+  );
+
+  protocol.handle('pf', (request) => {
+    const abs = fromAppUrl(request.url.split('?')[0]);
+    // 只允许读取素材库与应用自带素材，挡住任意路径读取
+    const allowed = [store.root, assetsDir()].map((p) => path.resolve(p).replace(/\\/g, '/').toLowerCase());
+    const norm = path.resolve(abs).replace(/\\/g, '/').toLowerCase();
+    if (!allowed.some((root) => norm.startsWith(root))) {
+      return new Response('forbidden', { status: 403 });
+    }
+    return net.fetch(pathToFileURL(abs).toString());
+  });
+
+  registerIpc();
+
+  const ingestIdx = process.argv.indexOf('--ingest');
+  if (ingestIdx >= 0 && process.argv[ingestIdx + 1]) {
+    const r = await importPack(store, process.argv[ingestIdx + 1]);
+    console.log(`[pack] ${r.pack}: ${r.imported} imported, ${r.failed.length} failed`);
+    for (const f of r.failed) console.warn('[pack] failed', f.file, f.error);
+  }
+
+  let figureRecipes: ReturnType<typeof parseFigureRecipes> | undefined;
+  if (FIGURE_MODE) {
+    try {
+      figureRecipes = parseFigureRecipes(process.env.PIXELFIT_FIGURE_RECIPES);
+    } catch (error) {
+      console.error('[figures] invalid recipe override', error);
+      app.exit(1);
+      return;
+    }
+  }
+
+  mainWindow = createWindow();
+
+  if (SHOT_MODE) {
+    try {
+      await runShots(mainWindow, resolveShotOutputDir({
+        appPath: app.getAppPath(),
+        libraryRoot: store.root,
+        packaged: app.isPackaged,
+        override: process.env['PIXELFIT_SHOT_DIR'],
+      }));
+      app.exit(0);
+    } catch (err) {
+      console.error('[shots] fatal', err);
+      app.exit(1);
+    }
+    return;
+  }
+
+  if (FIGURE_MODE) {
+    try {
+      await runFigures(mainWindow, path.join(app.getAppPath(), 'figures'), figureRecipes);
+    } catch (error) {
+      console.error('[figures] run failed', error);
+      app.exit(1);
+      return;
+    }
+    app.quit();
+    return;
+  }
+
+  if (TRIPTYCH_MODE) {
+    try {
+      await runTriptychs(mainWindow);
+    } catch (error) {
+      console.error('[triptych] run failed', error);
+      app.exit(1);
+      return;
+    }
+    app.quit();
+    return;
+  }
+
+  // 只做导入、不需要界面时别把窗口留着（截图/对比图脚本会自己退出）
+  if (INGEST_ONLY) app.quit();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+
+function tryOnTimeoutMs(): number {
+  const requested = Number(process.env.PIXELFIT_VTON_TIMEOUT_MS ?? '180000');
+  if (!Number.isFinite(requested)) return 180_000;
+  return Math.min(Math.max(Math.round(requested), 10_000), 600_000);
+}

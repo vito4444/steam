@@ -1,0 +1,11 @@
+{
+  "name": "pixelfit-pipeline",
+  "version": "2.0.0-cere12",
+  "entry": "runtime/pixelfit-pipeline/pixelfit-pipeline.exe",
+  "schema_version": "2.0",
+  "capabilities": ["cpu-segmentation", "closed-form-matting", "quality-gate", "manual-mask-edit"],
+  "models": [
+    { "file": "models/birefnet-general-lite.onnx", "bytes": 224005088, "md5": "4fab47adc4ff364be1713e97b7e66334" },
+    { "file": "models/u2net_cloth_seg.onnx", "bytes": 176194565, "md5": "2434d1f3cb744e0e49386c906e5a08bb" }
+  ]
+}
