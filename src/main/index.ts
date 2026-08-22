@@ -17,6 +17,7 @@ import { importPack } from './pack';
 import { ensureBundledWardrobe } from './bundled';
 import { parseFigureRecipes, parseShotWindowSize, resolveShotOutputDir, runFigures, runShots, runTriptychs } from './shots';
 import { runModelPackEvidence, runUpdateEvidence, runVersionProof } from './update-evidence';
+import { runModelGateEvidence } from './model-gate-evidence';
 import { TryOnDiskCache } from './tryon/cache';
 import { createProvider, createSettingsState } from './tryon/provider-registry';
 import { TryOnService } from './tryon/service';
@@ -34,6 +35,8 @@ const TRIPTYCH_MODE = process.argv.includes('--cere26-triptychs');
 const UPDATE_EVIDENCE_MODE = process.argv.includes('--update-evidence');
 const VERSION_PROOF_MODE = process.argv.includes('--version-proof');
 const MODEL_PACK_EVIDENCE_MODE = process.argv.includes('--model-pack-evidence');
+// CERE-64：缺模型 → 就地下载 → 自动续跑导入，整条链路的取证模式。
+const MODEL_GATE_EVIDENCE_MODE = process.argv.includes('--model-gate-evidence');
 /** `--ingest ... --exit`：只导素材，不开界面 */
 const INGEST_ONLY = process.argv.includes('--exit');
 
@@ -44,8 +47,12 @@ const INGEST_ONLY = process.argv.includes('--exit');
  * userData 里，跟 PIXELFIT_ROOT 无关。于是同一台机器跑第二次时，上一次
  * 「先看看示例」写下的 key 还在，首次引导直接不显示 —— 截图结果取决于机器状态，
  * 这种证据不算数。把 profile 也钉到 PIXELFIT_ROOT 下面，每次跑都是干净的。
+ *
+ * CERE-64 用的是同一个道理，而且更严格：模型资源包落在 userData 里，
+ * 「干净环境下点导入会弹出模型下载」这条证据，前提就是这台机器上一次跑剩下的
+ * 382 MB 不能算数。取证模式一律用独立 profile。
  */
-if (SHOT_MODE && process.env['PIXELFIT_ROOT']) {
+if ((SHOT_MODE || MODEL_GATE_EVIDENCE_MODE) && process.env['PIXELFIT_ROOT']) {
   app.setPath('userData', path.join(process.env['PIXELFIT_ROOT'], 'electron-profile'));
 }
 
@@ -251,13 +258,29 @@ function registerIpc(): void {
   ipcMain.on('update:openReleasePage', () => updater?.openReleasePage());
   ipcMain.handle('modelPack:state', async () => modelPack?.state() ?? null);
   ipcMain.handle('modelPack:download', async () => (await modelPack?.download()) ?? null);
+  ipcMain.handle('modelPack:cancel', async () => modelPack?.cancel() ?? null);
+  ipcMain.handle('modelPack:redownload', async () => (await modelPack?.redownload()) ?? null);
+  ipcMain.handle('app:version', () => app.getVersion());
 
   ipcMain.handle('pipeline:importPhotos', async () => {
-    const res = await dialog.showOpenDialog(mainWindow!, {
-      title: '选择包含衣物的照片',
-      filters: [{ name: '照片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
-      properties: ['openFile', 'multiSelections'],
-    });
+    /*
+     * CERE-64：取证模式下由脚本指定照片。
+     *
+     * 「下完自动继续原本的导入」这件事必须截图为证，而系统选图框是原生窗口，
+     * 脚本点不动它。所以只在 `--model-gate-evidence` 这一个模式里允许用
+     * 环境变量替代选图 —— 之后的每一步（抠图、质量门、入库）都是真的，
+     * 换掉的只有「谁选的文件」。正常运行时这个分支根本不存在。
+     */
+    const scripted = MODEL_GATE_EVIDENCE_MODE
+      ? (process.env['PIXELFIT_IMPORT_PHOTOS'] ?? '').split(';').filter(Boolean)
+      : [];
+    const res = scripted.length > 0
+      ? { canceled: false, filePaths: scripted }
+      : await dialog.showOpenDialog(mainWindow!, {
+        title: '选择包含衣物的照片',
+        filters: [{ name: '照片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+        properties: ['openFile', 'multiSelections'],
+      });
     if (res.canceled) return { imported: 0, rejected: 0, assets: [], canceled: true };
     const assets: Asset[] = [];
     let rejected = 0;
@@ -596,12 +619,13 @@ app.whenReady().then(async () => {
 
   mainWindow = createWindow();
 
-  if (UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE) {
+  if (UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE || MODEL_GATE_EVIDENCE_MODE) {
     const outDir = process.env['PIXELFIT_UPDATE_EVIDENCE_DIR']
       ?? path.join(app.getPath('userData'), 'update-evidence');
     try {
       if (UPDATE_EVIDENCE_MODE) await runUpdateEvidence(mainWindow, outDir);
       else if (MODEL_PACK_EVIDENCE_MODE) await runModelPackEvidence(mainWindow, outDir);
+      else if (MODEL_GATE_EVIDENCE_MODE) await runModelGateEvidence(mainWindow, outDir);
       else await runVersionProof(mainWindow, outDir);
     } catch (error) {
       console.error('[update-evidence] failed', error);
@@ -669,13 +693,16 @@ app.whenReady().then(async () => {
 function bootUpdateServices(): void {
   if (SHOT_MODE || FIGURE_MODE || TRIPTYCH_MODE || INGEST_ONLY) return;
   // 取证模式自己按节奏点「立即检查更新」，不要启动时再自动查一次。
-  const manualOnly = UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE;
+  const manualOnly = UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE
+    || MODEL_GATE_EVIDENCE_MODE;
 
   const send = (channel: string) => (payload: unknown) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
   };
 
   modelPack = new ModelPackService(pipelineDir, { onState: send('modelPack:state') as (s: ModelPackState) => void });
+  // CERE-64：上一次没下完留下的 `.part` / 半个模型先扫掉，别让界面从一个坏状态出发。
+  void modelPack.init();
 
   // electron-updater 是 CJS，且只在装配时才需要；require 到这里可以让
   // `--shots` 之类的无头模式完全不加载它。

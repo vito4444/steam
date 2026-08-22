@@ -196,7 +196,7 @@ export async function pipelineStatus(): Promise<PipelineStatus> {
       provider: 'CPUExecutionProvider',
       message: automatic
         ? '已就绪：选图后在本机识别衣物、自动抠图，不上传、不联网。'
-        : '识别模型还没下载（约 382 MB，只需下载一次）。在设置页点「下载识别模型」即可开启自动抠图；已经抠好的透明底图片现在也能导入。',
+        : '识别模型还没下载（382 MB，只需下载一次）。点「选择照片并自动识别」会当场提示下载，下完自动继续这次导入；已经抠好的透明底图片不需要它，现在就能导入。',
     };
   } catch (error) {
     return {

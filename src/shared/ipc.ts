@@ -151,7 +151,15 @@ export interface PixelFitApi {
   modelPack: {
     state(): Promise<ModelPackState>;
     download(): Promise<ModelPackState>;
+    /** CERE-64：取消进行中的下载；已下好的整块文件保留 */
+    cancel(): Promise<ModelPackState>;
+    /** CERE-64：删掉外部资源包重下一遍（字节数对但内容坏掉时的自救入口） */
+    redownload(): Promise<ModelPackState>;
     onState(listener: (state: ModelPackState) => void): () => void;
+  };
+  /** CERE-64：版本号要能一眼看见并报出来，不必翻设置页深处 */
+  app: {
+    version(): Promise<string>;
   };
   exportPng(req: ExportRequest): Promise<ExportResult>;
   window: {

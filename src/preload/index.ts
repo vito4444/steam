@@ -56,11 +56,16 @@ const api: PixelFitApi = {
   modelPack: {
     state: () => ipcRenderer.invoke('modelPack:state'),
     download: () => ipcRenderer.invoke('modelPack:download'),
+    cancel: () => ipcRenderer.invoke('modelPack:cancel'),
+    redownload: () => ipcRenderer.invoke('modelPack:redownload'),
     onState: (listener) => {
       const handler = (_event: unknown, state: Parameters<typeof listener>[0]) => listener(state);
       ipcRenderer.on('modelPack:state', handler);
       return () => { ipcRenderer.off('modelPack:state', handler); };
     },
+  },
+  app: {
+    version: () => ipcRenderer.invoke('app:version'),
   },
   exportPng: (req) => ipcRenderer.invoke('export:png', req),
   window: {

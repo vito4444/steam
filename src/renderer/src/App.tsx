@@ -11,6 +11,7 @@ import {
   IconWardrobe, IconX,
 } from '@/ui/icons';
 import { UpdateGate } from '@/features/update/UpdatePanel';
+import { ModelGateProvider } from '@/features/import/ModelGate';
 import { registerShotHook } from '@/shots';
 import {
   completeOnboarding,
@@ -28,7 +29,7 @@ const RAIL: { key: View; label: string; Icon: (p: { size?: number }) => JSX.Elem
 
 export default function App() {
   const store = useStore();
-  const { ready, view, setView, assets, looks, toast } = store;
+  const { ready, view, setView, assets, looks, toast, version } = store;
   const [onboarding, setOnboarding] = useState(() => {
     try {
       return onboardingPending(window.localStorage);
@@ -65,6 +66,7 @@ export default function App() {
   }, [setView]);
 
   return (
+    <ModelGateProvider>
     <div className="shell">
       <header className="titlebar">
         <div className="brand">
@@ -74,6 +76,8 @@ export default function App() {
         <span className="meta">
           {ready ? `${assets.length} 件素材 · ${looks.length} 套 Look` : '正在载入素材库…'}
         </span>
+        {/* 版本号常驻标题栏：报问题时不用先教对方去哪儿找它。 */}
+        {version && <span className="titlebar-version" data-testid="titlebar-version">v{version}</span>}
         <div className="spacer" />
         <div className="win-controls">
           <button className="win-btn" onClick={() => window.pixelfit.window.minimize()}>
@@ -128,5 +132,6 @@ export default function App() {
       <UpdateGate />
       {toast && <div className="toast">{toast}</div>}
     </div>
+    </ModelGateProvider>
   );
 }
