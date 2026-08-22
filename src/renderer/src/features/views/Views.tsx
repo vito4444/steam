@@ -8,6 +8,9 @@ import type {
   TryOnProviderStatus,
   TryOnSettingsState,
 } from '@shared/tryon';
+import { ModelPackCard, UpdateCard } from '@/features/update/UpdatePanel';
+import { useModelGate } from '@/features/import/ModelGate';
+import { gateDecision, modelStatus } from '@/features/import/model-gate';
 import { useStore } from '@/state/store';
 import { boardHandles } from '@/features/board/boardStore';
 import { BaseView } from '@/features/base/BaseView';
@@ -176,6 +179,7 @@ interface ImportViewProps {
 
 export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps) {
   const { pipeline, importFiles, refresh, notify, setView } = useStore();
+  const { runWithModel, pack } = useModelGate();
   const [linkUrl, setLinkUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<ImportFeedback | null>(null);
@@ -290,13 +294,21 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
     }
   };
 
+  const status = modelStatus(pipeline, pack);
+  const decision = gateDecision(pipeline, pack);
+
   return (
     <div className="view">
       {onboarding ? (
         <div className="first-run" data-testid="first-run-guide">
           <div>
             <span className="eyebrow">建立你的个人衣橱</span>
-            <p>先放几件你真的会穿的衣服。选图后全部在本地处理，不会上传。</p>
+            <p>
+              先放几件你真的会穿的衣服。选图后全部在本地处理，不会上传。
+              第一次用自动识别时会提示下载 382 MB 的识别模型 ——
+              <strong>只需下载这一次</strong>，之后升级版本都不会再下；
+              已经抠好的透明底 PNG 不需要它，可以直接导入。
+            </p>
           </div>
           <button
             className="btn quiet"
@@ -346,15 +358,22 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
 
       <div className="info-card">
         <h4>
-          <span className={`status-dot ${pipeline?.installed ? 'ok' : 'warn'}`} />
+          <span className={`status-dot ${status.tone}`} />
           从照片导入
+          <span className={`model-badge ${status.tone}`} data-testid="model-status">{status.label}</span>
         </h4>
-        <p>{pipeline?.message ?? '正在检测…'}</p>
+        <p>{status.detail}</p>
         <div className="row" style={{ marginTop: 12 }}>
+          {/*
+            CERE-64：缺模型**不再**把这个按钮变灰。变灰只是把失败提前，用户仍然
+            不知道该干什么；现在点下去会当场给出下载说明，下完自动继续这次导入。
+            真正点不动的只有运行时没装 —— 那种情况下载模型也救不了。
+          */}
           <button
             className="btn primary"
-            disabled={busy || !pipeline?.automatic}
-            onClick={() => void importPhotos()}
+            data-testid="import-photos"
+            disabled={busy || decision === 'unavailable'}
+            onClick={() => runWithModel(importPhotos)}
           >
             <IconImport size={14} />
             选择照片并自动识别
@@ -404,7 +423,7 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
 }
 
 export function SettingsView() {
-  const { root, refresh, notify, assets, looks } = useStore();
+  const { root, refresh, notify, assets, looks, version } = useStore();
   const [busy, setBusy] = useState(false);
 
   const backup = async () => {
@@ -417,7 +436,15 @@ export function SettingsView() {
   return (
     <div className="view">
       <div className="view-head">
-        <h2>设置</h2>
+        <h2>
+          设置
+          {/*
+            CERE-64：版本号摆在设置页最上面。成员报「识别不到」时，第一个要问的
+            就是「你装的是哪一版」—— 那个答案必须在他一眼能看到的地方，
+            而不是让他翻更新卡片里的小字。标题栏也显示同一个号。
+          */}
+          <span className="app-version" data-testid="app-version">v{version || '…'}</span>
+        </h2>
         <p>素材库以文件为唯一真相：备份就是复制目录，迁移就是拷走目录。</p>
       </div>
 
@@ -459,6 +486,10 @@ export function SettingsView() {
           </button>
         </div>
       </div>
+
+      <UpdateCard />
+
+      <ModelPackCard />
 
       <EnginePicker />
 

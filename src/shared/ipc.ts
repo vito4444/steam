@@ -13,6 +13,7 @@ import type {
   TryOnSettingsUpdate,
 } from './tryon';
 import type { OcclusionOverride } from './occlusion';
+import type { ModelPackState, UpdateState } from './update';
 
 export interface ExportRequest {
   /** PNG dataURL */
@@ -131,6 +132,34 @@ export interface PixelFitApi {
      * 外部文件，而不是编译进去的常量。
      */
     occlusion(): Promise<{ override: OcclusionOverride | null; path: string; error?: string }>;
+  };
+  /**
+   * CERE-59：应用内更新。`onState` 返回退订函数——主进程在检查 / 下载过程中
+   * 会持续推状态，界面只订阅、不轮询。
+   */
+  update: {
+    state(): Promise<UpdateState>;
+    check(): Promise<UpdateState>;
+    download(): Promise<UpdateState>;
+    /** 退出并安装（NSIS）；免安装版是「在资源管理器里指出新文件」 */
+    install(): void;
+    openReleasePage(): void;
+    setCheckOnLaunch(enabled: boolean): Promise<UpdateState>;
+    onState(listener: (state: UpdateState) => void): () => void;
+  };
+  /** CERE-59：按需下载的离线识别模型资源包（382 MB，只下一次） */
+  modelPack: {
+    state(): Promise<ModelPackState>;
+    download(): Promise<ModelPackState>;
+    /** CERE-64：取消进行中的下载；已下好的整块文件保留 */
+    cancel(): Promise<ModelPackState>;
+    /** CERE-64：删掉外部资源包重下一遍（字节数对但内容坏掉时的自救入口） */
+    redownload(): Promise<ModelPackState>;
+    onState(listener: (state: ModelPackState) => void): () => void;
+  };
+  /** CERE-64：版本号要能一眼看见并报出来，不必翻设置页深处 */
+  app: {
+    version(): Promise<string>;
   };
   exportPng(req: ExportRequest): Promise<ExportResult>;
   window: {

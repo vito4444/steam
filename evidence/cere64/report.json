@@ -1,0 +1,37 @@
+{
+  "version": "0.4.9",
+  "assetsBefore": 8,
+  "assetsAfter": 9,
+  "modelPack": {
+    "phase": "ready",
+    "dir": "F:\\pixelfit-cere64\\evidence-root\\electron-profile\\model-pack",
+    "files": [
+      {
+        "name": "birefnet-general-lite.onnx",
+        "bytes": 224005088,
+        "present": true
+      },
+      {
+        "name": "u2net_cloth_seg.onnx",
+        "bytes": 176194565,
+        "present": true
+      }
+    ],
+    "totalBytes": 400199653,
+    "downloadedBytes": 400199653,
+    "error": null,
+    "failure": null,
+    "bytesPerSecond": null,
+    "etaSeconds": null,
+    "swept": [],
+    "bundled": false
+  },
+  "pipeline": {
+    "installed": true,
+    "version": "2.0.0-cere12",
+    "qualityGate": true,
+    "automatic": true,
+    "provider": "CPUExecutionProvider",
+    "message": "已就绪：选图后在本机识别衣物、自动抠图，不上传、不联网。"
+  }
+}

@@ -2338,3 +2338,249 @@ input[type='range']::-webkit-slider-thumb:active {
     padding: var(--sp-4) var(--sp-4);
   }
 }
+
+/* ------------------------------------------------- CERE-59 应用更新 / 模型包
+ *
+ * 更新弹窗比普通 modal 宽：版本说明是 Release 正文，挤在 380px 里读不了。
+ * 视觉上仍然是同一张纸，不加发光、不加强调色描边 —— 更新提示不该比衣服显眼。
+ */
+.update-modal {
+  width: 460px;
+  max-width: calc(100vw - 48px);
+  gap: var(--sp-3);
+}
+.update-modal h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.update-version-from {
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--text-3);
+}
+.update-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.update-notes {
+  max-height: 190px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  /* Release 正文里的表格转成纯文本后会很长，让它折行而不是横向滚动。 */
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+}
+.update-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/*
+ * 弹窗里的 .modal 自带 gap，卡片里没有 —— 不补这一下，模型资源包的进度条会贴上
+ * 上面那行文件清单，看起来像画在文字上。
+ */
+.info-card .update-progress {
+  margin-top: var(--sp-3);
+}
+.update-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.update-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.2s ease-out;
+}
+.update-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.update-differential,
+.update-ready {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--accent-2);
+}
+.update-error {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--danger);
+}
+/* 未签名说明必须能看清，但不该抢主按钮的注意力 */
+.update-unsigned {
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 10px var(--sp-3);
+}
+.update-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.update-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text);
+  margin-top: var(--sp-3);
+  cursor: pointer;
+}
+.update-toggle input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+.update-privacy {
+  margin-top: 6px;
+}
+
+/* ------------------------------------------------- CERE-64 模型缺失的就地补救
+ *
+ * 这扇门是在用户点「导入」之后弹出来的，不是一条通知。所以它必须一屏说完
+ * 三件事：为什么要下、多大、下完会自动继续 —— 再往下就没人读了。
+ * 视觉上仍然是同一张纸：不加强调色描边、不加发光，按钮才是强调色。
+ */
+.model-gate {
+  width: 500px;
+  max-width: calc(100vw - 48px);
+}
+.model-gate h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.model-gate-lead {
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-2);
+}
+.model-gate-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: var(--sp-3);
+  list-style: none;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-2);
+}
+.model-gate-facts li {
+  /* 项目符号自己画，浏览器默认的 disc 在这个字号下太重 */
+  padding-left: 14px;
+  position: relative;
+  overflow-wrap: anywhere;
+}
+.model-gate-facts li::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 9px;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--text-3);
+}
+.model-gate-swept {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--accent-2);
+}
+.model-gate-error {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 10px var(--sp-3);
+}
+.model-gate-error strong {
+  font-size: 12.5px;
+  line-height: 1.7;
+  font-weight: 560;
+  color: var(--text);
+}
+/* 原始报错留着，但排在建议下面、字号更小 —— 它是给排查用的，不是给用户读的 */
+.model-gate-error p {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-3);
+  overflow-wrap: anywhere;
+}
+
+/*
+ * 模型状态徽章：已就绪 / 未下载 / 下载中 63%。
+ * 导入页标题栏和衣橱空态用同一个，两处说法必须一致。
+ */
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 520;
+  background: var(--surface-2);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.model-badge.ok {
+  color: var(--accent-2);
+  background: rgba(63, 125, 114, 0.1);
+}
+.model-badge.warn,
+.model-badge.busy {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.model-badge.error {
+  color: var(--danger);
+  background: rgba(179, 69, 60, 0.1);
+}
+
+.status-dot.busy {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.status-dot.error {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(179, 69, 60, 0.14);
+}
+
+/* 版本号：标题栏和设置页各一处，成员报问题时一眼能念出来 */
+.titlebar-version {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.view-head h2 .app-version {
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}

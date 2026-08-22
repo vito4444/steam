@@ -6,6 +6,8 @@ import {
 } from '@shared/spec';
 import type { Asset } from '@shared/types';
 import { useStore } from '@/state/store';
+import { useModelGate } from '@/features/import/ModelGate';
+import { gateDecision, modelStatus } from '@/features/import/model-gate';
 import {
   IconImport, IconSearch, IconStar, IconStarFill, IconTrash,
 } from '@/ui/icons';
@@ -23,6 +25,9 @@ export function WardrobePanel() {
   const {
     assets, outfit, pipeline, wear, updateAsset, deleteAsset, importFiles, setView,
   } = useStore();
+  const { runWithModel, openGate, pack } = useModelGate();
+  const status = modelStatus(pipeline, pack);
+  const decision = gateDecision(pipeline, pack);
   const [tab, setTab] = useState<Category | 'all' | 'accessory'>('all');
   const [query, setQuery] = useState('');
   const [family, setFamily] = useState<ColorFamily | null>(null);
@@ -156,23 +161,30 @@ export function WardrobePanel() {
           {assets.length === 0 ? (
             <>
               <h3>衣橱还是空的</h3>
-              <p>
-                {pipeline?.automatic
-                  ? '选择一张衣物照片即可在本地自动识别，通过质量检查后会进入衣橱。'
-                  : '当前自动识别不可用，请先准备透明 PNG/WebP，再通过手动入口导入。'}
+              {/*
+                CERE-64：空态里直接把识别模型的状态摆出来 —— 已就绪 / 未下载 /
+                下载中一眼可见。之前这里只会在模型缺失时改一句话术，把人推去
+                「手动导入透明素材」，等于默认自动识别坏了没救。
+              */}
+              <p className={`model-badge ${status.tone}`} data-testid="wardrobe-model-status">
+                {status.label}
               </p>
+              <p>{status.detail}</p>
               <div className="row">
                 <button
                   className="btn primary"
-                  onClick={() => {
-                    if (pipeline?.automatic) setView('import');
-                    else void importFiles();
-                  }}
+                  disabled={decision === 'unavailable'}
+                  onClick={() => runWithModel(() => setView('import'))}
                 >
-                  {pipeline?.automatic ? '选择照片导入' : '导入透明素材'}
+                  选择照片导入
                 </button>
-                <button className="btn ghost" onClick={() => setView('import')}>
-                  了解导入流程
+                {decision === 'gate' && (
+                  <button className="btn" onClick={openGate}>
+                    下载识别模型
+                  </button>
+                )}
+                <button className="btn ghost" onClick={() => void importFiles()}>
+                  导入透明素材
                 </button>
               </div>
             </>

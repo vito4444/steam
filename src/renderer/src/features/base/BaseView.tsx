@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { BODY_LABEL, BODY_TYPES } from '@shared/spec';
 import { hasBakedTones, toneSwatches, useStore } from '@/state/store';
 import { errorMessage } from '@/features/import/importFeedback';
+import { useModelGate } from '@/features/import/ModelGate';
+import { gateDecision, modelStatus } from '@/features/import/model-gate';
 import { IconImport } from '@/ui/icons';
 
 /**
@@ -17,6 +19,9 @@ import { IconImport } from '@/ui/icons';
  */
 export function BaseView() {
   const { outfit, dispatch, bases, reloadBases, pipeline, notify, setView } = useStore();
+  const { runWithModel, pack } = useModelGate();
+  const modelState = modelStatus(pipeline, pack);
+  const decision = gateDecision(pipeline, pack);
   const base = bases[outfit.body];
   const swatches = toneSwatches(base);
   const tonesUsable = hasBakedTones(base);
@@ -87,10 +92,11 @@ export function BaseView() {
             </dl>
 
             <div className="row wrap">
+              {/* CERE-64：上传模特照片同样要走本地抠图，缺模型时走同一扇门就地补下载。 */}
               <button
                 className="btn primary"
-                disabled={busy !== null || !pipeline?.automatic}
-                onClick={() => void uploadPhoto()}
+                disabled={busy !== null || decision === 'unavailable'}
+                onClick={() => runWithModel(uploadPhoto)}
               >
                 <IconImport size={14} />
                 {busy === 'import' ? '正在抠图…' : '上传模特照片'}
@@ -106,7 +112,9 @@ export function BaseView() {
             </div>
 
             {!pipeline?.automatic && (
-              <p className="note warn">本地抠图模型不可用，暂时换不了底图。{pipeline?.message}</p>
+              <p className={`note ${decision === 'gate' ? '' : 'warn'}`} data-testid="base-model-status">
+                {modelState.label}：{modelState.detail}
+              </p>
             )}
             {notes.length > 0 && (
               <ul className="note-list">

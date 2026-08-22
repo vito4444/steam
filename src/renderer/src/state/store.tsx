@@ -154,6 +154,10 @@ interface Ctx {
   /** 上传 / 重置模特底图后重读（CERE-28） */
   reloadBases: () => Promise<void>;
   pipeline: PipelineStatus | null;
+  /** CERE-64：模型下完之后重新问一次主进程，自动抠图这时候才真的可用 */
+  refreshPipeline: () => Promise<void>;
+  /** 应用版本号；标题栏和设置页都显示它，成员报问题时能一眼念出来 */
+  version: string;
   root: string;
 
   /** 生效中的遮挡规则表（内置默认表 + 素材库里的 occlusion.json 覆盖） */
@@ -210,6 +214,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     base_f02: undefined, base_m02: undefined,
   });
   const [pipeline, setPipeline] = useState<PipelineStatus | null>(null);
+  const [version, setVersion] = useState('');
   const [root, setRoot] = useState('');
   const [occlusion, setOcclusion] = useState<OcclusionConfig>(DEFAULT_OCCLUSION);
   const [occlusionSource, setOcclusionSource] =
@@ -242,6 +247,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setRoot(stats.root);
   }, []);
 
+  const refreshPipeline = useCallback(async () => {
+    setPipeline(await window.pixelfit.pipeline.status());
+  }, []);
+
   const reloadBases = useCallback(async () => {
     const loaded: Record<string, BaseBodySet> = {};
     for (const b of BODY_TYPES) loaded[b] = await window.pixelfit.base.get(b);
@@ -251,7 +260,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       await reloadBases();
-      setPipeline(await window.pixelfit.pipeline.status());
+      setVersion(await window.pixelfit.app.version().catch(() => ''));
+      await refreshPipeline();
       const rules = await window.pixelfit.rules.occlusion();
       setOcclusion(mergeOcclusionConfig(DEFAULT_OCCLUSION, rules.override));
       setOcclusionSource({ path: rules.path, custom: !!rules.override, error: rules.error });
@@ -262,7 +272,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       notify('初始化失败，请查看日志');
       setReady(true);
     });
-  }, [refresh, notify, reloadBases]);
+  }, [refresh, notify, reloadBases, refreshPipeline]);
 
   const wear = useCallback((asset: Asset) => {
     history.current = [...history.current.slice(-24), outfit];
@@ -374,7 +384,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [refresh, notify]);
 
   const value = useMemo<Ctx>(() => ({
-    ready, assets, looks, bases, reloadBases, pipeline, root,
+    ready, assets, looks, bases, reloadBases, pipeline, refreshPipeline, version, root,
     occlusion, occlusionSource,
     engineId, setEngineId, engine,
     view, setView, stageTab, setStageTab,
@@ -384,7 +394,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     refresh, saveLook, applyLook, deleteLook, updateAsset, deleteAsset, importFiles,
     toast, notify,
   }), [
-    ready, assets, looks, bases, reloadBases, pipeline, root, occlusion, occlusionSource,
+    ready, assets, looks, bases, reloadBases, pipeline, refreshPipeline, version, root,
+    occlusion, occlusionSource,
     engineId, engine, view, stageTab, outfit, wear, undo,
     compare, addToCompare, selectedSlot, refresh, saveLook, applyLook, deleteLook,
     updateAsset, deleteAsset, importFiles, toast, notify,
