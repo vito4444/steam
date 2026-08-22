@@ -78,6 +78,10 @@ $workDirectory = Join-Path $pipelineRoot '.build'
   --paths (Join-Path $pipelineRoot 'src') `
   --hidden-import rembg `
   --hidden-import onnxruntime `
+  --hidden-import backports `
+  --hidden-import backports.tarfile `
+  --hidden-import setuptools._vendor.backports `
+  --hidden-import setuptools._vendor.backports.tarfile `
   --copy-metadata pymatting `
   --distpath $runtimeDirectory `
   --workpath $workDirectory `
