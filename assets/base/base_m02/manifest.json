@@ -1,5 +1,26 @@
 {
   "pack": "pixelfit-cere13-male-secondary",
+  "provenance": {
+    "source": "OpenAI image generation (CERE-13 production record)",
+    "source_url": null,
+    "original_url": null,
+    "creator": "PixelFit CERE-13 project workflow using OpenAI image generation",
+    "license": "OpenAI Services Agreement output ownership",
+    "license_url": "https://openai.com/policies/services-agreement/",
+    "attribution": "Generated with OpenAI",
+    "attribution_required": false,
+    "commercial_use": true,
+    "commercial_use_notes": "As between Customer and OpenAI, Customer owns Output; subject to applicable law, the agreement, and project-owner confirmation that the generating account was covered.",
+    "synthetic": true,
+    "real_person": false,
+    "likeness_release": "not_applicable_synthetic",
+    "review_status": "cleared_with_terms",
+    "reviewed_at": "2026-08-22",
+    "sha256": {
+      "body.png": "eda74753ec231421659e5655666b2ad73bdac40d60a32d239f51ac8c39ecb6f4",
+      "body-mask.png": "dbd35a819c3aa165220a202355f006464578ad07a1c8dfd290f31e31e7d36914"
+    }
+  },
   "canvas": { "w": 1152, "h": 2304 },
   "layers": [
     { "file": "body.png", "z": 20, "mode": "normal" }

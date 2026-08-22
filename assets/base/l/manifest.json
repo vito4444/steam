@@ -1,5 +1,30 @@
 {
   "pack": "cere6-realistic-model",
+  "provenance": {
+    "source": "CERE-6 procedural SVG-to-PNG generator (tools/gen_models.py in the delivered visual kit)",
+    "source_url": null,
+    "original_url": null,
+    "creator": "PixelFit CERE-6 project work",
+    "license": "UNVERIFIED",
+    "license_url": null,
+    "attribution": "Source generator: CERE-6 tools/gen_models.py (not present in this repository)",
+    "attribution_required": null,
+    "commercial_use": false,
+    "commercial_use_notes": "Not cleared for redistribution; no license or rights grant accompanied the delivered visual kit.",
+    "synthetic": true,
+    "real_person": false,
+    "likeness_release": "not_applicable_procedural_faceless_mannequin",
+    "review_status": "remove_recommended",
+    "reviewed_at": "2026-08-22",
+    "sha256": {
+      "model_l_t1.png": "f097fc506d99fc83f2471e3733220d4716ae8b49d6ebde3578f8153a446996ff",
+      "model_l_t2.png": "df6a80879c5dd8a889a3dfc4af2197f24cbb0da21ccc44790e999b90459349f0",
+      "model_l_t3.png": "65756e0fe88fa45863c6679da2235760a9130ff6ffb5e6b817c56d05abbd2098",
+      "model_l_t4.png": "4be86b666faafa3e1117717ffc875b1dc2e1828e119af702115f892793352bdc",
+      "model_l_t5.png": "057bb98e2a4384de5392ae66400c4de257e06808d933b6ced91f2605745a2909",
+      "underlayer_l.png": "8dc9eec0924088dd2c47eac73ae34125468a21ae74cc293cfda290c8cc50ee07"
+    }
+  },
   "body": "l",
   "canvas": {
     "w": 1152,

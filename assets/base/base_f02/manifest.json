@@ -1,5 +1,26 @@
 {
   "pack": "pixelfit-cere13-female-first",
+  "provenance": {
+    "source": "OpenAI image generation (CERE-13 production record)",
+    "source_url": null,
+    "original_url": null,
+    "creator": "PixelFit CERE-13 project workflow using OpenAI image generation",
+    "license": "OpenAI Services Agreement output ownership",
+    "license_url": "https://openai.com/policies/services-agreement/",
+    "attribution": "Generated with OpenAI",
+    "attribution_required": false,
+    "commercial_use": true,
+    "commercial_use_notes": "As between Customer and OpenAI, Customer owns Output; subject to applicable law, the agreement, and project-owner confirmation that the generating account was covered.",
+    "synthetic": true,
+    "real_person": false,
+    "likeness_release": "not_applicable_synthetic",
+    "review_status": "cleared_with_terms",
+    "reviewed_at": "2026-08-22",
+    "sha256": {
+      "body.png": "d11d1144f1b96b4ce425ba6424b5a80a0a69078e2e9a80417841084cf21c5905",
+      "body-mask.png": "da4e8b5e380905838340338b64d6773d2804609ee1e76ce857b1f91bfa2705f8"
+    }
+  },
   "canvas": { "w": 1152, "h": 2304 },
   "layers": [
     { "file": "body.png", "z": 20, "mode": "normal" }

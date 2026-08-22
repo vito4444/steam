@@ -25,11 +25,22 @@ evidence/cere26/results.json
 .env
 .env.*
 !.env.example
+.envrc
+.direnv/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
 .npmrc
+.pypirc
+.netrc
+_netrc
 *.key
 *.pem
+*.ppk
 *.p12
 *.pfx
+*.jks
+*.keystore
 credentials/
 secrets/
 
