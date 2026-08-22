@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { PipelineMetadata } from './photo-import';
+import { resolveModelsDir } from './update/model-pack';
 
 export interface PipelineStatus {
   installed: boolean;
@@ -60,10 +61,29 @@ function resolveRuntime(): Runtime | null {
   return null;
 }
 
+/**
+ * CERE-59：模型不再一定躺在 `runtime.dir/models` 里。
+ *
+ * 拆包之后，安装包只带 `models.lock.json`，权重在用户数据目录的资源包中。
+ * `resolveModelsDir` 两个位置都认——旧布局（自带）优先，缺了才看资源包，
+ * 所以 0.4.3 装出来的目录结构和开发机上的 `prepare-windows-pipeline.ps1`
+ * 都照常工作。Python 侧完全不用改：`models_dir` 本来就是请求参数。
+ */
+export function modelsDirFor(runtime: Runtime): string {
+  return resolveModelsDir(runtime.dir).dir;
+}
+
+/** 供 IPC 层查询模型资源包状态用；没装运行时就没有 pipeline 目录。 */
+export function pipelineDir(): string | null {
+  return resolveRuntime()?.dir ?? null;
+}
+
 function modelsReady(runtime: Runtime): boolean {
+  const dir = modelsDirFor(runtime);
   return (runtime.manifest.models ?? []).length > 0 && (runtime.manifest.models ?? []).every((model) => {
     try {
-      return fs.statSync(path.join(runtime.dir, model.file)).size === model.bytes;
+      // manifest 里写的是 `models/xxx.onnx`，解析后的目录本身就是 models 目录。
+      return fs.statSync(path.join(dir, path.basename(model.file))).size === model.bytes;
     } catch {
       return false;
     }
@@ -108,7 +128,7 @@ export async function runPipeline<T>(request: Record<string, unknown>, timeoutMs
         PYTHONUTF8: '1',
         PYTHONIOENCODING: 'utf-8',
         OMP_NUM_THREADS: String(Math.max(1, Math.min(os.cpus().length, 4))),
-        U2NET_HOME: path.join(runtime.dir, 'models'),
+        U2NET_HOME: modelsDirFor(runtime),
       },
     });
     let stdout = '';
@@ -176,7 +196,7 @@ export async function pipelineStatus(): Promise<PipelineStatus> {
       provider: 'CPUExecutionProvider',
       message: automatic
         ? '已就绪：选图后在本机识别衣物、自动抠图，不上传、不联网。'
-        : '识别模型缺失或损坏，自动抠图暂时不可用；已经抠好的透明底图片仍可导入。',
+        : '识别模型还没下载（约 382 MB，只需下载一次）。在设置页点「下载识别模型」即可开启自动抠图；已经抠好的透明底图片现在也能导入。',
     };
   } catch (error) {
     return {
@@ -202,7 +222,7 @@ export async function analyzePhoto(
     image_path: imagePath,
     import_id: importId,
     output_dir: outputDir,
-    models_dir: path.join(runtime.dir, 'models'),
+    models_dir: modelsDirFor(runtime),
   }, 10 * 60_000);
 }
 
@@ -222,6 +242,6 @@ export async function cutoutSubject(imagePath: string, destination: string): Pro
     command: 'cutout-subject',
     image_path: imagePath,
     destination,
-    models_dir: path.join(runtime.dir, 'models'),
+    models_dir: modelsDirFor(runtime),
   }, 10 * 60_000);
 }

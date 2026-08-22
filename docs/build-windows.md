@@ -55,7 +55,16 @@ python -m PyInstaller --noconfirm --clean --onedir `
 npm run dist
 ```
 
-生成 NSIS 安装器与 portable EXE。项目未配置代码签名证书，因此产物未签名；
+生成 NSIS 安装器与 portable EXE，外加 `latest.yml` 和 `.blockmap`。
+**这四类文件必须全部上传到 Release**：少了 `latest.yml`，应用内检查更新会 404；
+少了 `.blockmap`，差分下载会退回全量。详见 `docs/auto-update.md`。
+
+从 0.4.4 起，两个 ONNX 权重（合计 381.6 MB）不再进安装包 —— `extraResources`
+的 filter 里没有 `models/**`，安装包只带 `models.lock.json`，权重改为按需从
+`models-v1` tag 下载。安装包因此从 496.4 MB 降到 184.2 MB。
+开发机上 `pipeline/models/` 仍然照常使用，`prepare-windows-pipeline.ps1` 不变。
+
+项目未配置代码签名证书，因此产物未签名；
 `win.signAndEditExecutable=true` 仍写入 PixelFit 的产品名、描述与 `package.json` 里的文件版本资源，
 但不会凭空产生 Authenticode 签名。
 

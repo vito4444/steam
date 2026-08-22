@@ -1,6 +1,6 @@
 {
   "name": "pixelfit",
-  "version": "0.4.2",
+  "version": "0.4.4",
   "description": "PixelFit — 离线个人衣橱与搭配台（左衣橱 / 右模特）",
   "main": "out/main/index.js",
   "author": "PixelFit",
@@ -17,6 +17,7 @@
     "evidence:triptychs": "electron-vite build && vite-node --script scripts/cere26-triptychs.ts",
     "figures": "electron-vite build && electron . --figures",
     "dist": "electron-vite build && electron-builder --win nsis portable",
+    "blockmap:diff": "vite-node --script scripts/blockmap-diff.ts",
     "check:layout": "esbuild scripts/layout_check.ts --bundle --platform=node --format=esm --alias:@shared=./src/shared --alias:@=./src/renderer/src --outfile=scripts/.layout_check.mjs --log-level=warning && node scripts/.layout_check.mjs"
   },
   "devDependencies": {
@@ -28,10 +29,11 @@
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
+    "electron-updater": "^6.3.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   }

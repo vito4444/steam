@@ -10,6 +10,7 @@ import {
   IconBoard, IconBody, IconImport, IconLooks, IconMinus, IconSettings, IconSquare,
   IconWardrobe, IconX,
 } from '@/ui/icons';
+import { UpdateGate } from '@/features/update/UpdatePanel';
 import { registerShotHook } from '@/shots';
 import {
   completeOnboarding,
@@ -124,6 +125,7 @@ export default function App() {
         )}
       </div>
 
+      <UpdateGate />
       {toast && <div className="toast">{toast}</div>}
     </div>
   );

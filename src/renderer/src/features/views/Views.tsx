@@ -8,6 +8,7 @@ import type {
   TryOnProviderStatus,
   TryOnSettingsState,
 } from '@shared/tryon';
+import { ModelPackCard, UpdateCard } from '@/features/update/UpdatePanel';
 import { useStore } from '@/state/store';
 import { boardHandles } from '@/features/board/boardStore';
 import { BaseView } from '@/features/base/BaseView';
@@ -459,6 +460,10 @@ export function SettingsView() {
           </button>
         </div>
       </div>
+
+      <UpdateCard />
+
+      <ModelPackCard />
 
       <EnginePicker />
 
