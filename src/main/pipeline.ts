@@ -70,6 +70,29 @@ function modelsReady(runtime: Runtime): boolean {
   });
 }
 
+/**
+ * 把请求编成**纯 ASCII** 的 JSON。
+ *
+ * CERE-28：打包后的管线用 ANSI 代码页解 stdin，不是 UTF-8 —— PyInstaller 的
+ * bootloader 先把解释器配置好了，`PYTHONUTF8` / `PYTHONIOENCODING` 都改不动它
+ * （两个都试过，无效）。于是任何带非 ASCII 字符的路径都会被解错，比如 Windows
+ * 中文版默认的截图文件名 `屏幕截图 2026-07-30 005149.png`，管线拿到的是乱码
+ * 路径，报 `ASSET_NOT_FOUND: source image was not found`。
+ *
+ * 更阴的是错误信息里回显的路径**看着是对的**：错解一次、再错编一次，字节又变
+ * 回原样，所以这个 bug 一直没被发现。
+ *
+ * 把非 ASCII 字符全部转成 `\uXXXX` 之后，请求在任何代码页下都解成同一个字符
+ * 串，不依赖运行时是哪一版构建 —— 旧运行时也一样能用。
+ */
+export function encodePipelineRequest(request: Record<string, unknown>): string {
+  const escaped = JSON.stringify(request).replace(
+    /[^\x20-\x7e]/g,
+    (char) => '\\u' + char.charCodeAt(0).toString(16).padStart(4, '0'),
+  );
+  return `${escaped}\n`;
+}
+
 export async function runPipeline<T>(request: Record<string, unknown>, timeoutMs = 30_000): Promise<T> {
   const runtime = resolveRuntime();
   if (!runtime) throw new Error('PIPELINE_NOT_INSTALLED: CERE-12 runtime executable was not found');
@@ -81,6 +104,9 @@ export async function runPipeline<T>(request: Record<string, unknown>, timeoutMs
       env: {
         ...process.env,
         CUDA_VISIBLE_DEVICES: '',
+        // 打包运行时会忽略这两个，但开发时直接跑 python 的话它们有用。
+        PYTHONUTF8: '1',
+        PYTHONIOENCODING: 'utf-8',
         OMP_NUM_THREADS: String(Math.max(1, Math.min(os.cpus().length, 4))),
         U2NET_HOME: path.join(runtime.dir, 'models'),
       },
@@ -123,7 +149,7 @@ export async function runPipeline<T>(request: Record<string, unknown>, timeoutMs
         reject(new Error(`PIPELINE_TRANSPORT: invalid JSON response (${String(error)})`));
       }
     });
-    child.stdin.end(`${JSON.stringify(request)}\n`, 'utf8');
+    child.stdin.end(encodePipelineRequest(request), 'ascii');
   });
 }
 
@@ -136,7 +162,7 @@ export async function pipelineStatus(): Promise<PipelineStatus> {
       qualityGate: false,
       automatic: false,
       provider: null,
-      message: '本地照片管线未安装；仍可手动导入透明底 PNG。',
+      message: '本地识别没有安装，暂时只能导入已经抠好的透明底图片。',
     };
   }
   try {
@@ -149,8 +175,8 @@ export async function pipelineStatus(): Promise<PipelineStatus> {
       automatic,
       provider: 'CPUExecutionProvider',
       message: automatic
-        ? 'CERE-12 本地 CPU 管线已就绪：两级衣物识别、闭式抠图与 fail-closed 质量门均可用。'
-        : 'CERE-12 质量门已就绪；自动识别模型缺失或尺寸不匹配，透明底 PNG 仍可本地检查。',
+        ? '已就绪：选图后在本机识别衣物、自动抠图，不上传、不联网。'
+        : '识别模型缺失或损坏，自动抠图暂时不可用；已经抠好的透明底图片仍可导入。',
     };
   } catch (error) {
     return {
@@ -159,7 +185,7 @@ export async function pipelineStatus(): Promise<PipelineStatus> {
       qualityGate: false,
       automatic: false,
       provider: null,
-      message: `本地照片管线启动失败：${error instanceof Error ? error.message : String(error)}`,
+      message: `本地识别启动失败：${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }
@@ -176,6 +202,26 @@ export async function analyzePhoto(
     image_path: imagePath,
     import_id: importId,
     output_dir: outputDir,
+    models_dir: path.join(runtime.dir, 'models'),
+  }, 10 * 60_000);
+}
+
+export interface SubjectCutoutResult {
+  file: string;
+  width: number;
+  height: number;
+  visible_pixels: number;
+  visible_ratio: number;
+}
+
+/** 把一张照片里的人抠出来，写成透明底 PNG（CERE-28 的模特底图入口）。 */
+export async function cutoutSubject(imagePath: string, destination: string): Promise<SubjectCutoutResult> {
+  const runtime = resolveRuntime();
+  if (!runtime || !modelsReady(runtime)) throw new Error('MODEL_MISSING: 离线抠图模型不可用');
+  return runPipeline<SubjectCutoutResult>({
+    command: 'cutout-subject',
+    image_path: imagePath,
+    destination,
     models_dir: path.join(runtime.dir, 'models'),
   }, 10 * 60_000);
 }

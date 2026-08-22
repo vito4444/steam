@@ -107,14 +107,21 @@ const SCENES: Record<string, () => Promise<void>> = {
     await wait(300);
 
     const guide = document.querySelector('[data-testid="first-run-guide"]');
-    const photoCta = buttonWithText('拍照 / 选图导入');
-    const linkCta = buttonWithText('粘贴商品链接');
+    const photoCta = buttonWithText('选择照片并自动识别');
+    const linkInput = document.querySelector('.import-link-input');
     const skipCta = buttonWithText('先看看示例');
     assertCheck('首次引导使用真实空 localStorage', window.localStorage.getItem(ONBOARDING_KEY) === null);
     assertCheck('首次引导容器可见', !!guide);
     assertCheck('照片导入 CTA 可见', !!photoCta);
-    assertCheck('商品链接 CTA 可见', !!linkCta);
+    assertCheck('商品链接入口可见', !!linkInput);
     assertCheck('先看看示例操作可用', !!skipCta && !skipCta.disabled);
+    // CERE-28：成员反馈「上面有点重复」。首次引导只留一句话 + 跳过，
+    // 导入动作必须只有一份，不能首屏一套、下面再来一套。
+    assertCheck(
+      '首次引导不再重复导入动作',
+      document.querySelectorAll('.view .btn.primary').length <= 2,
+      `${document.querySelectorAll('.view .btn.primary').length} 个主按钮`,
+    );
   },
 
   async import() {

@@ -168,6 +168,16 @@ class RembgCascadeBackend:
                 masks[name] = mask
         return masks
 
+    def segment_subject(self, image: Image.Image) -> Image.Image:
+        """Person mask only.
+
+        The model base import (CERE-28) needs the person cut out of a photo and
+        nothing else, so running the cloth cascade too would just burn CPU.
+        """
+        self._ensure_sessions()
+        masks = self._predict(self._subject_session, image, ["person"])
+        return masks.get("person", Image.new("L", image.size, 0))
+
     def segment(self, image: Image.Image) -> SegmentationBundle:
         subject_path, cloth_path = self._ensure_sessions()
         started = time.perf_counter()

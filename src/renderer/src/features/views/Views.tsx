@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { BODY_LABEL, BODY_TYPES } from '@shared/spec';
+import { BODY_LABEL } from '@shared/spec';
 import { OCCASIONS, occasionLabel } from '@shared/board';
 import type { LinkImportResult, PhotoImportResult } from '@shared/ipc';
 import type {
@@ -8,8 +8,9 @@ import type {
   TryOnProviderStatus,
   TryOnSettingsState,
 } from '@shared/tryon';
-import { toneSwatches, useStore } from '@/state/store';
+import { useStore } from '@/state/store';
 import { boardHandles } from '@/features/board/boardStore';
+import { BaseView } from '@/features/base/BaseView';
 import { engineCatalog, type EngineId } from '@/tryon/registry';
 import {
   errorMessage,
@@ -292,54 +293,27 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
   return (
     <div className="view">
       {onboarding ? (
-        <section className="import-hero" data-testid="first-run-guide">
-          <div className="import-hero-copy">
-            <span className="import-kicker">建立你的个人衣橱</span>
-            <h1>先把你真的会穿的衣服放进来</h1>
-            <p>
-              选一张衣物清晰的照片，PixelFit 会在本地预处理并通过质量门检查；
-              只有通过的单品才会进入衣橱。
-            </p>
-            <div className="import-choice-grid">
-              <button
-                className="btn primary"
-                disabled={busy || !pipeline?.automatic}
-                onClick={() => void importPhotos()}
-              >
-                <IconImport size={15} />
-                拍照 / 选图导入
-              </button>
-              <button className="btn ghost" disabled={busy} onClick={focusLinkInput}>
-                <IconFolder size={15} />
-                粘贴商品链接
-              </button>
-            </div>
-            <button
-              className="import-skip"
-              onClick={() => {
-                onOnboardingComplete();
-                setView('wardrobe');
-              }}
-            >
-              先看看示例
-            </button>
-            <p className="import-demo-note">内置的 8 件衣物只是示例素材，不会冒充你的个人衣橱。</p>
+        <div className="first-run" data-testid="first-run-guide">
+          <div>
+            <span className="eyebrow">建立你的个人衣橱</span>
+            <p>先放几件你真的会穿的衣服。选图后全部在本地处理，不会上传。</p>
           </div>
-          <ol className="import-register">
-            <li><span>01</span>选择衣物清晰的照片</li>
-            <li><span>02</span>在本地完成预处理与质量检查</li>
-            <li><span>03</span>通过检查的单品进入衣橱</li>
-          </ol>
-        </section>
+          <button
+            className="btn quiet"
+            onClick={() => {
+              onOnboardingComplete();
+              setView('wardrobe');
+            }}
+          >
+            先看看示例
+          </button>
+        </div>
       ) : null}
 
-      <div className="view-head">
+      <header className="view-head">
         <h2>导入素材</h2>
-        <p>
-          选择照片后，本地管线会预处理并执行质量检查。通过的单品进入衣橱；
-          未通过的内容保持在衣橱之外，可在外部修补后以透明 PNG/WebP 重新导入。
-        </p>
-      </div>
+        <p>照片在本地预处理并过质量门。通过的进衣橱，没通过的不会静默入库。</p>
+      </header>
 
       {feedback ? (
         <div
@@ -373,7 +347,7 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
       <div className="info-card">
         <h4>
           <span className={`status-dot ${pipeline?.installed ? 'ok' : 'warn'}`} />
-          照片识别管线
+          从照片导入
         </h4>
         <p>{pipeline?.message ?? '正在检测…'}</p>
         <div className="row" style={{ marginTop: 12 }}>
@@ -387,36 +361,11 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
           </button>
           <span className="tag ok">CPU-only · 不上传</span>
         </div>
-        <div className="steps">
-          <div className="step">
-            <div className="n">1</div>
-            <div className="t">选择照片</div>
-            <div className="d">从本机选择已经拍好的衣物照片。</div>
-          </div>
-          <div className="step">
-            <div className="n">2</div>
-            <div className="t">本地预处理</div>
-            <div className="d">在设备上识别衣物并生成候选素材。</div>
-          </div>
-          <div className="step">
-            <div className="n">3</div>
-            <div className="t">质量检查</div>
-            <div className="d">未通过的候选不会静默进入衣橱。</div>
-          </div>
-          <div className="step done">
-            <div className="n">4</div>
-            <div className="t">入衣橱</div>
-            <div className="d">只有通过质量门的单品才会完成入库。</div>
-          </div>
-        </div>
       </div>
 
       <div className="info-card">
         <h4>从商品链接导入</h4>
-        <p>
-          自动解析公开商品页的主图、标题与价格，再交给同一套本地抠图质量门。
-          淘宝、京东等登录墙不会绕过，会明确回落到“保存主图后手动导入”。
-        </p>
+        <p>公开商品页会自动取主图；淘宝、京东这类要登录的页面取不到，会明说让你存图后手动导入。</p>
         <div className="row" style={{ marginTop: 12 }}>
           <input
             ref={linkInputRef}
@@ -438,90 +387,17 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
 
       <div
         ref={manualDropzoneRef}
-        className="dropzone"
+        className="fallback-row"
         data-testid="manual-dropzone"
         tabIndex={-1}
       >
-        <div className="empty-art">
-          <IconImport size={30} />
+        <div>
+          <strong>已经是透明底的图</strong>
+          <p>自己修好的透明 PNG/WebP 可以直接进衣橱，不再走识别。</p>
         </div>
-        <h3 style={{ fontSize: 14, fontWeight: 600 }}>手动导入透明 PNG/WebP</h3>
-        <p style={{ color: 'var(--text-3)', fontSize: 12.5, maxWidth: 460, lineHeight: 1.7 }}>
-          自动链路拒绝的内容不会进入衣橱。请先在外部工具中修补为透明 PNG/WebP，
-          再回到这里选择文件导入。
-        </p>
-        <button className="btn primary" disabled={busy} onClick={() => void importManualFiles()}>
+        <button className="btn ghost" disabled={busy} onClick={() => void importManualFiles()}>
           选择文件
         </button>
-      </div>
-    </div>
-  );
-}
-
-export function BaseView() {
-  const { outfit, dispatch, bases } = useStore();
-  const base = bases[outfit.body];
-  const swatches = toneSwatches(base);
-
-  return (
-    <div className="view">
-      <div className="view-head">
-        <h2>模特基底</h2>
-        <p>
-          基底素材由应用提供，不来自用户照片。内置 F02 / M02 两套写实模特，
-          每套独立读取人体遮罩与锚点，默认使用 F02。
-        </p>
-      </div>
-
-      <div className="info-card">
-        <h4>
-          <span className={`status-dot ${base?.source === 'library' ? 'ok' : 'warn'}`} />
-          当前底图：{base?.pack ?? '—'}（{base?.source === 'library' ? '素材库' : '内置'}）
-        </h4>
-        <p>
-          画布 {base?.canvas.w} × {base?.canvas.h}，肤色 {swatches.length} 档。
-          画布尺寸与锚点全部读自底图包的 <code>manifest.json</code>，
-          换一版底图不需要改代码 —— 把底图包解压到
-          <code>library/base/&lt;体型&gt;/</code> 即可自动接管。
-        </p>
-        <ul>
-          <li><code>canvas</code>：底图画布尺寸，衣物贴合的坐标系。</li>
-          <li><code>anchors</code>：肩 / 胸 / 腰 / 胯 / 膝 / 踝等锚点，衣物按它对位。</li>
-          <li><code>tones</code>：每档肤色一套烘焙好的图层；只有一档也合法。</li>
-        </ul>
-        <p>
-          衣物的缩放不读这份 manifest，而是实测底图轮廓：在锚点所在的行上量身体
-          有多宽，再按版型宽松量把衣服缩到那个宽度。所以底图换成真人照片后，
-          衣物尺寸会自动跟着人体走。
-        </p>
-      </div>
-
-      <div className="info-card">
-        <h4>体型与肤色</h4>
-        <div className="row" style={{ marginTop: 8 }}>
-          <div className="seg">
-            {BODY_TYPES.map((b) => (
-              <button
-                key={b}
-                className={outfit.body === b ? 'active' : ''}
-                onClick={() => dispatch({ type: 'set', patch: { body: b } })}
-              >
-                {BODY_LABEL[b]}
-              </button>
-            ))}
-          </div>
-          <div className="filter-row" style={{ padding: 0 }}>
-            {swatches.map((t, i) => (
-              <button
-                key={t + i}
-                title={base?.tones[i]?.name ?? `肤色 ${i + 1}`}
-                className={`swatch${outfit.skin === i + 1 ? ' active' : ''}`}
-                style={{ background: t }}
-                onClick={() => dispatch({ type: 'set', patch: { skin: i + 1 } })}
-              />
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -766,3 +642,5 @@ function EnginePicker() {
     </div>
   );
 }
+
+export { BaseView };

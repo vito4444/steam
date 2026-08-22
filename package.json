@@ -1,6 +1,6 @@
 {
   "name": "pixelfit",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "PixelFit — 离线个人衣橱与搭配台（左衣橱 / 右模特）",
   "main": "out/main/index.js",
   "author": "PixelFit",

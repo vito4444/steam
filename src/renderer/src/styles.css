@@ -897,25 +897,239 @@ input:focus-visible,
   overflow-y: auto;
   padding: var(--sp-5) var(--sp-6);
 }
-/* 宽窗口下不让正文拉成一行 1500px，读起来很累（CERE-28） */
+/* 一栏正文的宽度。宽窗口下拉成 1500px 一行读起来很累，
+   而且满屏拉开的区块正是「模板感」的来源之一（CERE-28） */
 .view > * {
-  max-width: 1120px;
+  max-width: 940px;
 }
 
+/* 兑底入口：一行就够了。它是自动链路拒绝之后的后路，
+   不该是整页最大的一块（CERE-28） */
+.fallback-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  max-width: 940px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+}
+.fallback-row:focus-visible {
+  border-color: var(--accent-line);
+  outline: none;
+}
+.fallback-row strong {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.fallback-row p {
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--text-3);
+}
+
+/* 页面标题：一行标题 + 一行事实，不写成一段介绍（CERE-28） */
 .view-head {
   margin-bottom: var(--sp-5);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--line-soft);
 }
 .view-head h2 {
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 640;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.012em;
+  line-height: 1.25;
 }
 .view-head p {
   color: var(--text-3);
   font-size: 12.5px;
-  margin-top: 5px;
-  max-width: 620px;
+  margin-top: 6px;
+  max-width: 62ch;
   line-height: 1.7;
+}
+
+/*
+ * 分区。
+ *
+ * CERE-28：成员说「UI 太像是 AI 做的」。很大一部分原因是**每一块都是
+ * 一张白底圆角卡片** —— 同一个圆角、同一层阴影、同样的内边距，一屏排下去
+ * 像模板填出来的。这里改成编排的做法：分区靠**标题 + 发丝线**区分，
+ * 不抬底、不投影；只有真正是「一个东西」的块（供应商配置、拖放区）才给面。
+ */
+.block {
+  margin-bottom: var(--sp-6);
+}
+.block-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.block-head h3 {
+  font-size: 13.5px;
+  font-weight: 620;
+  letter-spacing: -0.005em;
+  flex: none;
+}
+/* 标题右边拉一条线到头，分区一眼就分得出来，不靠卡片边框 */
+.block-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line-soft);
+}
+.block-head .tag {
+  order: 3;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* 事实表：把「画布 1152 × 2304」这类数据从段落里拿出来，当数据排 */
+.fact-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  margin-bottom: var(--sp-3);
+}
+.fact-list > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fact-list dt {
+  font-size: 10.5px;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+}
+.fact-list dd {
+  font-size: 12.5px;
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin-top: var(--sp-3);
+  max-width: 62ch;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--text-3);
+}
+.note.warn {
+  color: #865237;
+}
+.note-list {
+  margin-top: var(--sp-3);
+  padding-left: 17px;
+  max-width: 62ch;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: #865237;
+}
+
+/* 开发者细节默认收起：排查时有用，但不该占首屏 */
+.disclosure {
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--sp-3);
+  max-width: 74ch;
+}
+.disclosure > summary {
+  font-size: 12px;
+  color: var(--text-3);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure > summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.4px solid currentColor;
+  border-bottom: 1.4px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.16s;
+}
+.disclosure[open] > summary::before {
+  transform: translateY(-2px) rotate(45deg);
+}
+.disclosure > summary:hover {
+  color: var(--text);
+}
+.disclosure p {
+  margin-top: var(--sp-3);
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text-2);
+}
+
+/* 首次引导压成一条横幅：动作只在下面那一份，不再重复（CERE-28） */
+.first-run {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+}
+.first-run p {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-2);
+  max-width: 62ch;
+}
+
+/* 模特底图的上传块：左边看到当前长什么样，右边是数据和动作 */
+.base-swap {
+  display: flex;
+  gap: var(--sp-5);
+  align-items: flex-start;
+}
+.base-preview {
+  flex: none;
+  width: 132px;
+  aspect-ratio: 1 / 2;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-soft);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.base-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.base-preview-empty {
+  font-size: 11px;
+  color: var(--text-3);
+}
+.base-swap-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.row.wrap {
+  flex-wrap: wrap;
 }
 
 .import-hero {
@@ -1115,26 +1329,34 @@ input:focus-visible,
   margin-top: 3px;
 }
 
+/*
+ * 说明块。跟 .block 一样不再抬底投影（CERE-28）；它们是文字，不是卡片。
+ * 标题右边同样拉一条线，和 .block-head 是同一套语言。
+ */
 .info-card {
-  border-radius: var(--r-lg);
-  border: 1px solid var(--line-soft);
-  background: var(--surface);
-  padding: var(--sp-4) var(--sp-5);
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-6);
 }
 .info-card h4 {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 620;
-  margin-bottom: 8px;
+  letter-spacing: -0.005em;
+  margin-bottom: var(--sp-3);
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.info-card h4::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line-soft);
 }
 .info-card p,
 .info-card li {
   font-size: 12.5px;
   color: var(--text-2);
   line-height: 1.75;
+  max-width: 74ch;
 }
 .info-card ul {
   padding-left: 18px;

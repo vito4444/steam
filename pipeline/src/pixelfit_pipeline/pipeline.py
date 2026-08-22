@@ -183,6 +183,62 @@ def analyze_image(
     return metadata
 
 
+def cutout_subject(
+    image_path: str | Path,
+    destination: str | Path,
+    backend: Any,
+    margin_ratio: float = 0.04,
+) -> dict[str, Any]:
+    """Cut the person out of a photo and write a trimmed transparent PNG.
+
+    This is the model-base import path (CERE-28): the member picks a photo and
+    the app has to end up with a transparent full-body figure without anyone
+    opening an image editor. Unlike the wardrobe import there is no quality
+    gate here -- a base image the member chose on purpose is theirs to keep, and
+    the anchors are derived from whatever silhouette comes out.
+    """
+    source_path = Path(image_path).resolve()
+    image = _load_image(source_path)
+    raw_mask = backend.segment_subject(image)
+    mask = clean_mask(raw_mask)
+    refinement = refine_cutout(image, mask)
+    cutout = refinement.cutout
+
+    alpha = np.asarray(cutout.getchannel("A"), dtype=np.uint8)
+    rows = np.nonzero(alpha.max(axis=1) >= 16)[0]
+    columns = np.nonzero(alpha.max(axis=0) >= 16)[0]
+    if rows.size == 0 or columns.size == 0:
+        raise PipelineError(
+            "SUBJECT_NOT_FOUND",
+            "no person was found in this photo",
+            {"path": str(source_path)},
+        )
+
+    margin = int(round(max(cutout.width, cutout.height) * max(margin_ratio, 0.0)))
+    left = max(0, int(columns[0]) - margin)
+    top = max(0, int(rows[0]) - margin)
+    right = min(cutout.width, int(columns[-1]) + 1 + margin)
+    bottom = min(cutout.height, int(rows[-1]) + 1 + margin)
+    trimmed = cutout.crop((left, top, right, bottom))
+
+    target = Path(destination)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    trimmed.save(target, format="PNG")
+    visible = int(np.count_nonzero(np.asarray(trimmed.getchannel("A"), dtype=np.uint8) >= 16))
+    return {
+        "file": str(target),
+        "width": trimmed.width,
+        "height": trimmed.height,
+        "visible_pixels": visible,
+        "visible_ratio": round(visible / float(trimmed.width * trimmed.height), 6),
+        "source": {
+            "original_filename": source_path.name,
+            "width": image.width,
+            "height": image.height,
+        },
+    }
+
+
 def set_category(
     metadata_path: str | Path,
     asset_id: str,
