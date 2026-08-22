@@ -277,7 +277,6 @@ git commit -m "feat(ui): show CERE-53 candidate quality details"
 
 **Files:**
 - Modify: `scripts/prepare-windows-pipeline.ps1`
-- Modify: `tests/pipeline-prep-script.test.ts`
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `pipeline/manifest.json`
@@ -287,21 +286,17 @@ git commit -m "feat(ui): show CERE-53 candidate quality details"
 - PyInstaller command explicitly collects the `backports` namespace required by current setuptools runtime hooks.
 - Package and pipeline manifest versions report `0.4.3` and the three-level candidate capability.
 
-- [ ] **Step 1: Write RED packaging assertions**
+- [ ] **Step 1: Record the real packaged-runtime RED**
 
-Extend `pipeline-prep-script.test.ts` to assert that the PyInstaller command includes the hidden imports needed for `backports` and that verify-only still accepts the locked model fixture.
+Run the unmodified `prepare-windows-pipeline.ps1` through PyInstaller and its built-in runtime ping.
 
-- [ ] **Step 2: Run RED**
+Expected: packaging completes, then the real runtime exits 1 with `ModuleNotFoundError: No module named 'backports'`. This observed full-build failure is the regression test; do not replace it with a source-text assertion.
 
-Run: `npm test -- tests/pipeline-prep-script.test.ts`
+- [ ] **Step 2: Add hidden imports and bump release metadata**
 
-Expected: packaging assertion fails on the current script.
+Add `--hidden-import backports` and `--hidden-import backports.tarfile`; set package version to `0.4.3`; update the pipeline manifest/README capability and policy copy. Keep the existing verify-only tests as the locked-model behavior check.
 
-- [ ] **Step 3: Add hidden imports and bump release metadata**
-
-Add `--hidden-import backports` and `--hidden-import backports.tarfile`; set package version to `0.4.3`; update the pipeline manifest/README capability and policy copy.
-
-- [ ] **Step 4: Rebuild and ping the pipeline**
+- [ ] **Step 3: Rebuild and ping the pipeline**
 
 Run: `pwsh -File scripts/prepare-windows-pipeline.ps1`
 
@@ -309,7 +304,7 @@ Run: `'{"command":"ping"}' | pipeline/runtime/pixelfit-pipeline/pixelfit-pipelin
 
 Expected: JSON `ok: true` and exit code 0.
 
-- [ ] **Step 5: Run all automated gates and package**
+- [ ] **Step 4: Run all automated gates and package**
 
 Run: `npm test`
 
@@ -323,7 +318,7 @@ Run: `npm run dist`
 
 Expected: all gates pass and both x64 artifacts are created.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```powershell
 git add scripts tests package.json package-lock.json pipeline/manifest.json pipeline/README-CERE12.md
