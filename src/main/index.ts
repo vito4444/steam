@@ -6,25 +6,34 @@ import { pathToFileURL } from 'node:url';
 
 import { Store, newId, toAppUrl, fromAppUrl } from './storage';
 import { assetsDir, baseAssetsDir } from './assets';
-import { analyzePhoto, cutoutSubject, pipelineStatus } from './pipeline';
+import { analyzePhoto, cutoutSubject, pipelineDir, pipelineStatus } from './pipeline';
+import { ModelPackService } from './update/model-pack';
+import { UpdatePreferencesRepository } from './update/settings';
+import { UpdaterService, detectInstallKind } from './update/service';
 import { admittedPipelineAssets, decideLinkImport, manualImportFailure } from './photo-import';
 import { importBasePhoto, readSilhouette, resetBasePhoto } from './base-import';
 import { importFromLink } from './link-import/index.js';
 import { importPack } from './pack';
 import { ensureBundledWardrobe } from './bundled';
 import { parseFigureRecipes, parseShotWindowSize, resolveShotOutputDir, runFigures, runShots, runTriptychs } from './shots';
+import { runModelPackEvidence, runUpdateEvidence, runVersionProof } from './update-evidence';
 import { TryOnDiskCache } from './tryon/cache';
 import { createProvider, createSettingsState } from './tryon/provider-registry';
 import { TryOnService } from './tryon/service';
 import { TryOnSettingsRepository } from './tryon/settings';
 import type { Asset, AssetMeta, CommerceSource, Look, LookRecord } from '../shared/types';
 import type { TryOnGenerateRequest, TryOnSettingsUpdate } from '../shared/tryon';
+import type { ModelPackState, UpdateState } from '../shared/update';
 import { CATEGORY_LABEL, CATEGORY_SLOT, SLOT_ANCHOR, SLOT_PLACEMENT, CANVAS } from '../shared/spec';
 import type { BodyType, Category, Slot } from '../shared/spec';
 
 const SHOT_MODE = process.argv.includes('--shots');
 const FIGURE_MODE = process.argv.includes('--figures');
 const TRIPTYCH_MODE = process.argv.includes('--cere26-triptychs');
+/** CERE-59：更新流程取证。走真按钮、真下载，只是由脚本来点。 */
+const UPDATE_EVIDENCE_MODE = process.argv.includes('--update-evidence');
+const VERSION_PROOF_MODE = process.argv.includes('--version-proof');
+const MODEL_PACK_EVIDENCE_MODE = process.argv.includes('--model-pack-evidence');
 /** `--ingest ... --exit`：只导素材，不开界面 */
 const INGEST_ONLY = process.argv.includes('--exit');
 
@@ -49,6 +58,8 @@ let tryOnService: TryOnService;
 let tryOnCache: TryOnDiskCache;
 let tryOnSettings: TryOnSettingsRepository;
 let mainWindow: BrowserWindow | null = null;
+let updater: UpdaterService | null = null;
+let modelPack: ModelPackService | null = null;
 const tryOnControllers = new Map<string, AbortController>();
 
 function toAsset(meta: AssetMeta): Asset {
@@ -229,6 +240,17 @@ function registerIpc(): void {
   });
 
   ipcMain.handle('pipeline:status', async () => pipelineStatus());
+
+  // ---------------- CERE-59：应用内更新 / 模型资源包
+  ipcMain.handle('update:state', async () => updater?.state() ?? null);
+  ipcMain.handle('update:check', async () => (await updater?.check()) ?? null);
+  ipcMain.handle('update:download', async () => (await updater?.download()) ?? null);
+  ipcMain.handle('update:setCheckOnLaunch', async (_e, enabled: boolean) =>
+    (await updater?.setCheckOnLaunch(Boolean(enabled))) ?? null);
+  ipcMain.on('update:install', () => updater?.install());
+  ipcMain.on('update:openReleasePage', () => updater?.openReleasePage());
+  ipcMain.handle('modelPack:state', async () => modelPack?.state() ?? null);
+  ipcMain.handle('modelPack:download', async () => (await modelPack?.download()) ?? null);
 
   ipcMain.handle('pipeline:importPhotos', async () => {
     const res = await dialog.showOpenDialog(mainWindow!, {
@@ -552,6 +574,7 @@ app.whenReady().then(async () => {
   });
 
   registerIpc();
+  bootUpdateServices();
 
   const ingestIdx = process.argv.indexOf('--ingest');
   if (ingestIdx >= 0 && process.argv[ingestIdx + 1]) {
@@ -572,6 +595,22 @@ app.whenReady().then(async () => {
   }
 
   mainWindow = createWindow();
+
+  if (UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE) {
+    const outDir = process.env['PIXELFIT_UPDATE_EVIDENCE_DIR']
+      ?? path.join(app.getPath('userData'), 'update-evidence');
+    try {
+      if (UPDATE_EVIDENCE_MODE) await runUpdateEvidence(mainWindow, outDir);
+      else if (MODEL_PACK_EVIDENCE_MODE) await runModelPackEvidence(mainWindow, outDir);
+      else await runVersionProof(mainWindow, outDir);
+    } catch (error) {
+      console.error('[update-evidence] failed', error);
+      app.exit(1);
+      return;
+    }
+    app.exit(0);
+    return;
+  }
 
   if (SHOT_MODE) {
     try {
@@ -620,6 +659,43 @@ app.whenReady().then(async () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow();
   });
 });
+
+/**
+ * CERE-59：装配更新与模型资源包服务。
+ *
+ * 截图 / 出图 / 纯导入这几种无人值守模式一律不装——它们跑在 CI 和证据脚本里，
+ * 不该因为一次版本检查去访问网络，更不该弹更新提示污染截图。
+ */
+function bootUpdateServices(): void {
+  if (SHOT_MODE || FIGURE_MODE || TRIPTYCH_MODE || INGEST_ONLY) return;
+  // 取证模式自己按节奏点「立即检查更新」，不要启动时再自动查一次。
+  const manualOnly = UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE;
+
+  const send = (channel: string) => (payload: unknown) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
+  };
+
+  modelPack = new ModelPackService(pipelineDir, { onState: send('modelPack:state') as (s: ModelPackState) => void });
+
+  // electron-updater 是 CJS，且只在装配时才需要；require 到这里可以让
+  // `--shots` 之类的无头模式完全不加载它。
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { autoUpdater } = require('electron-updater') as typeof import('electron-updater');
+  updater = new UpdaterService({
+    updater: autoUpdater,
+    preferences: new UpdatePreferencesRepository(path.join(store.root, 'update.json')),
+    logFile: path.join(store.root, 'logs', 'updater.log'),
+    installKind: detectInstallKind(process.env, app.isPackaged),
+    currentVersion: app.getVersion(),
+    emit: send('update:state') as (s: UpdateState) => void,
+  });
+
+  if (manualOnly) return;
+  // 启动检查往后挪：先把窗口和素材库跑起来，别让一次网络往返卡在冷启动路径上。
+  setTimeout(() => {
+    void updater?.checkOnLaunch();
+  }, 4_000);
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

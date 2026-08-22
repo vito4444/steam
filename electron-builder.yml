@@ -7,13 +7,21 @@ files:
   - out/**
   - assets/**
   - package.json
+  # electron-vite 把 dependencies 标记为 external，electron-updater 必须真的
+  # 进包，否则打包后的主进程 require 不到它。
+  - node_modules/**
 extraResources:
   - from: pipeline
     to: pipeline
     filter:
+      # CERE-59：`models/**` 有意不在这里。
+      #
+      # 两个 .onnx 合计 382 MB，是已压缩的二进制，NSIS 再压也压不动，
+      # 几乎 1:1 变成安装包体积 —— 500 MB 安装包里最大的一块就是它们，
+      # 而它们在版本之间根本不变。现在改成首次运行时按需下载，
+      # 由 models.lock.json 的字节数 + MD5 校验，只下一次。
       - manifest.json
       - models.lock.json
-      - models/**
       - runtime/**
       - THIRD_PARTY.md
       - README-CERE12.md
@@ -27,5 +35,13 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   shortcutName: PixelFit
+  # 显式写出来：差分下载依赖它生成 .blockmap 并按块对齐 7z 归档。
+  differentialPackage: true
 portable:
   artifactName: ${productName}-Portable-${version}-${arch}.${ext}
+# CERE-59：更新源。仓库是 public，electron-updater 直接读 Releases，不需要 token。
+publish:
+  provider: github
+  owner: vito4444
+  repo: steam
+  releaseType: release

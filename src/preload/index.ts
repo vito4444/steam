@@ -40,6 +40,28 @@ const api: PixelFitApi = {
   rules: {
     occlusion: () => ipcRenderer.invoke('rules:occlusion'),
   },
+  update: {
+    state: () => ipcRenderer.invoke('update:state'),
+    check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
+    install: () => ipcRenderer.send('update:install'),
+    openReleasePage: () => ipcRenderer.send('update:openReleasePage'),
+    setCheckOnLaunch: (enabled) => ipcRenderer.invoke('update:setCheckOnLaunch', enabled),
+    onState: (listener) => {
+      const handler = (_event: unknown, state: Parameters<typeof listener>[0]) => listener(state);
+      ipcRenderer.on('update:state', handler);
+      return () => { ipcRenderer.off('update:state', handler); };
+    },
+  },
+  modelPack: {
+    state: () => ipcRenderer.invoke('modelPack:state'),
+    download: () => ipcRenderer.invoke('modelPack:download'),
+    onState: (listener) => {
+      const handler = (_event: unknown, state: Parameters<typeof listener>[0]) => listener(state);
+      ipcRenderer.on('modelPack:state', handler);
+      return () => { ipcRenderer.off('modelPack:state', handler); };
+    },
+  },
   exportPng: (req) => ipcRenderer.invoke('export:png', req),
   window: {
     minimize: () => ipcRenderer.send('window:minimize'),
