@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from .candidate_generation import generate_candidates
 from .contracts import (
     ALLOWED_CATEGORIES,
     SCHEMA_VERSION,
@@ -21,13 +22,6 @@ from .matting import refine_cutout
 from .palette import dominant_palette
 from .quality import evaluate_cutout
 from .segmentation import SegmentationBackend
-
-
-CATEGORY_MAP = {
-    "upper": "upper-body",
-    "lower": "bottoms",
-    "full": "dress-or-full-body",
-}
 
 
 def _file_sha256(path: Path) -> str:
@@ -83,13 +77,14 @@ def analyze_image(
         raise PipelineError("MASK_SIZE_MISMATCH", "subject mask differs from source image")
     subject = clean_mask(bundle.subject_mask)
     records: list[dict[str, Any]] = []
-    for channel, raw_mask in bundle.garment_masks.items():
-        asset_id = validate_slug(channel, "mask_name")
+    for candidate in generate_candidates(subject, bundle.garment_masks):
+        asset_id = validate_slug(candidate.asset_id, "mask_name")
+        raw_mask = candidate.mask
         if raw_mask.size != image.size:
             raise PipelineError(
                 "MASK_SIZE_MISMATCH",
                 "garment mask differs from source image",
-                {"mask": channel},
+                {"mask": candidate.asset_id},
             )
         clipped = clip_to_subject(raw_mask, subject)
         try:
@@ -100,7 +95,7 @@ def analyze_image(
             raise
         quality = evaluate_cutout(
             refinement.cutout,
-            category=CATEGORY_MAP.get(channel),
+            category=candidate.category,
             source_mask=clipped,
         )
         bbox = refinement.alpha.getbbox()
@@ -119,7 +114,8 @@ def analyze_image(
             auto_file = None
             quarantine_file = output_path.relative_to(root).as_posix()
         refinement.cutout.save(output_path, format="PNG")
-        category = CATEGORY_MAP.get(channel, "other")
+        preview_file = output_path.relative_to(root).as_posix()
+        category = candidate.category
         palette = dominant_palette(refinement.cutout, max_colors=5)
         admission = {
             "allowed": quality.allowed,
@@ -130,24 +126,30 @@ def analyze_image(
         records.append(
             {
                 "asset_id": asset_id,
-                "mask_name": channel,
+                "mask_name": candidate.asset_id,
                 "category": category,
-                "category_source": "u2net-cloth-coarse-class",
+                "category_source": candidate.source,
+                "candidate_source": candidate.source,
+                "scene": candidate.scene,
+                "visibility": candidate.visibility,
                 "tags": [category, *[f"color:{entry['hex']}" for entry in palette[:3]]],
                 "palette": palette,
                 "source_bbox": list(bbox),
                 "pixel_width": image.width,
                 "pixel_height": image.height,
                 "visible_ratio": quality.metrics["visible_ratio"],
-                "review_state": (
-                    "approved" if quality.allowed else "needs_manual_repair"
-                ),
+                "review_state": {
+                    "pass": "approved",
+                    "needs_optimization": "needs_optimization",
+                    "retry": "retry",
+                }[quality.decision],
                 "warnings": [reason.to_dict() for reason in quality.reasons],
                 "quality": quality.to_dict(),
                 "admission": admission,
                 "processing": refinement.processing_dict(),
                 "mask_file": mask_path.relative_to(root).as_posix(),
                 "working_mask_file": working_path.relative_to(root).as_posix(),
+                "preview_file": preview_file,
                 "auto_file": auto_file,
                 "quarantine_file": quarantine_file,
                 "final_file": None,
