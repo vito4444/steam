@@ -7,8 +7,10 @@
 
 ## 安装与首次使用
 
-PixelFit 0.4.2 提供 Windows x64 安装版与免安装版，从本仓库的 GitHub Release 下载。
-可执行文件约 500 MiB（内含离线抠图模型与 Python 运行时），未放入 Git。
+PixelFit 0.4.9 提供 Windows x64 安装版与免安装版，从本仓库的 GitHub Release 下载。
+安装包约 184 MiB —— 从 0.4.4 起，381.6 MB 的离线识别模型不再随包分发，改成
+**第一次用自动识别时按需下载，只下一次**（做法见 `docs/auto-update.md`，
+界面流程见 `docs/model-gate.md`）。已经抠好的透明底 PNG 不需要它，装完就能导入。
 安装包未签名，Windows SmartScreen 可能显示警告；请先核对 Release 里的
 `SHA256SUMS.txt` 再选择“仍要运行”。
 
@@ -176,6 +178,8 @@ z 高（裤挖鞋）同时存在，没有任何单一顺序能同时满足。完
 - 渲染层做什么、上限在哪：`docs/render-contract.md`。
 - CERE-12 本地管线与 fail-closed 准入：`src/main/pipeline.ts`、`docs/pipeline-contract.md`。
 - CERE-9 商品链接解析：`src/main/link-import/`；登录墙不对抗，明确回落手动取图。
+- 应用内更新与模型资源包拆分：`docs/auto-update.md`（CERE-59）。
+- 模型缺失时导入流程如何就地补下载并自动续跑：`docs/model-gate.md`（CERE-64）。
 
 ## 已知边界
 
