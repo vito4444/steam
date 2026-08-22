@@ -71,9 +71,45 @@ export function UpdateDialog({
   onDismiss: () => void;
 }) {
   const info = state.info;
-  if (!info) return null;
   const portable = state.install === 'portable';
   const progress = state.progress;
+
+  /*
+   * 手动点了「立即检查更新」而结果是「已经最新」时，也要给一个明确回执。
+   * 只把卡片里一行小字换成「已是最新版本」等于点了没反应 —— 用户不知道
+   * 到底查过没有。这一态没有下载按钮，只有一个确认。
+   */
+  if (state.phase === 'current' || state.phase === 'error' && !info) {
+    return (
+      <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="检查更新结果">
+        <div className="modal update-modal" data-testid="update-dialog">
+          <h3>
+            {state.phase === 'current' ? '已经是最新版本' : '检查更新失败'}
+            <span className="update-version-from">当前 {state.currentVersion}</span>
+          </h3>
+          {state.phase === 'current' ? (
+            <p className="update-ready" data-testid="update-current">
+              已经向 GitHub Releases 查过，{state.currentVersion} 就是最新版，不需要更新。
+            </p>
+          ) : (
+            <p className="update-error" data-testid="update-error">
+              {state.error}
+            </p>
+          )}
+          <div className="row update-actions">
+            <button className="btn ghost" onClick={onDismiss}>
+              知道了
+            </button>
+            <button className="btn" onClick={() => window.pixelfit.update.openReleasePage()}>
+              打开 Releases 页面
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!info) return null;
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="有新版本可用">
@@ -225,7 +261,12 @@ export function UpdateCard() {
 
   if (!state) return null;
   const dialogVisible =
-    open && (state.phase === 'available' || state.phase === 'downloading' || state.phase === 'ready');
+    open &&
+    (state.phase === 'available' ||
+      state.phase === 'downloading' ||
+      state.phase === 'ready' ||
+      state.phase === 'current' ||
+      state.phase === 'error');
 
   return (
     <div className="info-card" data-testid="update-card">

@@ -16,7 +16,7 @@ import { importFromLink } from './link-import/index.js';
 import { importPack } from './pack';
 import { ensureBundledWardrobe } from './bundled';
 import { parseFigureRecipes, parseShotWindowSize, resolveShotOutputDir, runFigures, runShots, runTriptychs } from './shots';
-import { runUpdateEvidence, runVersionProof } from './update-evidence';
+import { runModelPackEvidence, runUpdateEvidence, runVersionProof } from './update-evidence';
 import { TryOnDiskCache } from './tryon/cache';
 import { createProvider, createSettingsState } from './tryon/provider-registry';
 import { TryOnService } from './tryon/service';
@@ -33,6 +33,7 @@ const TRIPTYCH_MODE = process.argv.includes('--cere26-triptychs');
 /** CERE-59：更新流程取证。走真按钮、真下载，只是由脚本来点。 */
 const UPDATE_EVIDENCE_MODE = process.argv.includes('--update-evidence');
 const VERSION_PROOF_MODE = process.argv.includes('--version-proof');
+const MODEL_PACK_EVIDENCE_MODE = process.argv.includes('--model-pack-evidence');
 /** `--ingest ... --exit`：只导素材，不开界面 */
 const INGEST_ONLY = process.argv.includes('--exit');
 
@@ -595,11 +596,12 @@ app.whenReady().then(async () => {
 
   mainWindow = createWindow();
 
-  if (UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE) {
+  if (UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE) {
     const outDir = process.env['PIXELFIT_UPDATE_EVIDENCE_DIR']
       ?? path.join(app.getPath('userData'), 'update-evidence');
     try {
       if (UPDATE_EVIDENCE_MODE) await runUpdateEvidence(mainWindow, outDir);
+      else if (MODEL_PACK_EVIDENCE_MODE) await runModelPackEvidence(mainWindow, outDir);
       else await runVersionProof(mainWindow, outDir);
     } catch (error) {
       console.error('[update-evidence] failed', error);
@@ -667,7 +669,7 @@ app.whenReady().then(async () => {
 function bootUpdateServices(): void {
   if (SHOT_MODE || FIGURE_MODE || TRIPTYCH_MODE || INGEST_ONLY) return;
   // 取证模式自己按节奏点「立即检查更新」，不要启动时再自动查一次。
-  const manualOnly = UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE;
+  const manualOnly = UPDATE_EVIDENCE_MODE || VERSION_PROOF_MODE || MODEL_PACK_EVIDENCE_MODE;
 
   const send = (channel: string) => (payload: unknown) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);

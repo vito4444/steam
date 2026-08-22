@@ -64,6 +64,12 @@ async function dismissOnboarding(win: BrowserWindow): Promise<void> {
 
 async function openSettings(win: BrowserWindow): Promise<void> {
   await waitFor(win, 'app shell', "document.querySelector('.rail-btn')");
+  // 素材库还在载入时截图，设置页的路径和计数是「…」和 0 —— 那不是应用的真实样子。
+  await waitFor(
+    win,
+    'library ready',
+    "!(document.querySelector('.titlebar .meta')?.textContent || '').includes('正在载入')",
+  );
   await sleep(1_200);
   await dismissOnboarding(win);
   await click(win, '设置');
@@ -134,4 +140,39 @@ export async function runVersionProof(win: BrowserWindow, outDir: string): Promi
     'utf8',
   );
   console.log('[update-evidence] running version', state?.currentVersion);
+}
+
+/**
+ * 模型资源包的取证：未下载 → 下载中 → 已就绪。
+ * 这是「安装包为什么能从 496 MB 降到 184 MB」那半条需求的可见证据。
+ */
+export async function runModelPackEvidence(win: BrowserWindow, outDir: string): Promise<void> {
+  await fsp.mkdir(outDir, { recursive: true });
+  await openSettings(win);
+  await win.webContents.executeJavaScript(
+    "document.querySelector('[data-testid=\"model-pack-card\"]').scrollIntoView({block:'center'})",
+  );
+  await sleep(600);
+  await shoot(win, outDir, '06-models-missing.png');
+
+  await click(win, '下载识别模型');
+  await waitFor(win, 'model download progress', "document.querySelector('[data-testid=\"model-pack-progress\"]')");
+  await sleep(2_500);
+  await shoot(win, outDir, '07-models-downloading.png');
+
+  await waitFor(
+    win,
+    'model download complete',
+    "[...document.querySelectorAll('button')].some((b) => b.textContent && b.textContent.includes('模型已就绪'))",
+    1_200,
+  );
+  await sleep(800);
+  await shoot(win, outDir, '08-models-ready.png');
+  const state = await win.webContents.executeJavaScript('window.pixelfit.modelPack.state()');
+  await fsp.writeFile(
+    path.join(outDir, 'model-pack.json'),
+    `${JSON.stringify(state, null, 2)}
+`,
+    'utf8',
+  );
 }
