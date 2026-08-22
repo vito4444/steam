@@ -81,17 +81,33 @@ latest.yml                               ← electron-updater 读这个
 把 NSIS 内嵌的 7z 归档按块对齐，并生成 `.blockmap`。更新时 electron-updater
 下载新旧两份 blockmap，逐块比对，只对变化的块发 HTTP range 请求。
 
-### 它什么时候**不**生效
+### 生效的三个条件
 
-差分需要一份可比对的**旧安装包**，位置是 `%LOCALAPPDATA%/pixelfit-updater/pending/installer.exe`
-——也就是**上一次更新时由应用自己下载的那个安装包**。因此：
+差分要凑齐三样东西，缺一样就退回全量：
 
-- 从 GitHub 手动下载安装的版本，下一次更新是**全量**（本机没有那份缓存）。
-- 0.4.3 → 0.4.4 必然是全量：0.4.3 里根本没有更新功能，而且 0.4.3 的 Release
-  也没有 `.blockmap`。好消息是这次全量只有 184 MB，不是 496 MB。
-- 0.4.4 → 0.4.5 起，只要上一版是通过应用内更新装的，差分才真正生效。
+1. **本机有一份旧安装包**，路径 `%LOCALAPPDATA%/pixelfit-updater/installer.exe`。
+   这份是 **NSIS 安装器自己在安装时复制过去的**（electron-builder 的
+   `installer.nsh` 里那句 `copyFile "$EXEPATH" "$LOCALAPPDATA\${APP_INSTALLER_STORE_FILE}"`），
+   只要 build 是 differential-aware 就会做。**所以从 GitHub 手动下载安装的用户
+   同样有这份缓存**，不是只有走过应用内更新的人才有。
+2. **旧版本的 `.blockmap` 能下到**。electron-updater 把新版 URL 里的版本号换成旧版号
+   来拼这个地址，所以旧版的 Release 里必须有那个 `.blockmap` 文件。
+3. **新版本的 `.blockmap`**，由这次发布产出。
 
-界面上如实显示这一点：没生效时不写「差分下载生效」，而是写明为什么这次是全量。
+免安装版（portable）不满足条件 1 —— NSIS 那段复制只对安装版生效，免安装版是整包替换。
+
+界面上如实显示：没生效时不写「差分下载生效」，而是写明为什么这次是全量。
+
+### 实测
+
+| 更新 | 完整安装包 | 实际下载 | 占比 |
+| --- | --- | --- | --- |
+| 0.4.3 → 0.4.4 | 184.25 MB | 见 PR 实测表 | |
+| 0.4.4 → 0.4.5 | 184.25 MB | **1.04 MB**（1,095,251 字节） | 0.57% |
+
+0.4.3 的 Release 原本没有 `.blockmap`（那时还没接更新功能），所以条件 2 不满足。
+补发布之后 0.4.3 → 0.4.4 也能走差分 —— 但那一版删掉了 382 MB 模型、7z 块布局
+几乎全变，可复用的块很少，实测值见 PR。
 
 ### 自己复算
 

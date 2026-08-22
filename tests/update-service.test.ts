@@ -11,6 +11,7 @@ import {
   isDifferentialFallback,
   parseDifferentialLine,
 } from '../src/main/update/differential';
+import { releaseNotesToText } from '../src/main/update/release-notes';
 import { UpdatePreferencesRepository } from '../src/main/update/settings';
 
 const roots: string[] = [];
@@ -95,5 +96,47 @@ describe('update preferences', () => {
       checkOnLaunch: true,
       lastCheckedAt: null,
     });
+  });
+});
+
+/**
+ * GitHub provider 从 Releases 的 Atom feed 取 `<content>`，那是**渲染后的 HTML**。
+ * 0.4.5 的更新弹窗里因此显示成了 `<p><strong>…</strong></p>` 标签原文。
+ */
+describe('release notes', () => {
+  it('turns GitHub HTML into readable plain text', () => {
+    const html =
+      '<p><strong>这是第一个可以通过应用内更新装上的版本。</strong></p>\n' +
+      '<h2>改了什么</h2>\n<ul><li>手动检查更新给出明确回执</li><li>修了 &amp; 转义</li></ul>' +
+      '<p>第一行<br>第二行</p>';
+    const text = releaseNotesToText(html);
+    expect(text).not.toContain('<');
+    expect(text).toContain('这是第一个可以通过应用内更新装上的版本。');
+    expect(text).toContain('• 手动检查更新给出明确回执');
+    expect(text).toContain('修了 & 转义');
+    expect(text).toContain('第一行\n第二行');
+    expect(text).not.toMatch(/\n{3,}/);
+  });
+
+  it('passes plain text through untouched and tolerates empty input', () => {
+    expect(releaseNotesToText('只是一行普通说明')).toBe('只是一行普通说明');
+    expect(releaseNotesToText('')).toBe('');
+    expect(releaseNotesToText(null)).toBe('');
+    expect(releaseNotesToText(undefined)).toBe('');
+  });
+
+  it('flattens the fullChangelog array form', () => {
+    expect(
+      releaseNotesToText([
+        { version: '0.4.6', note: '<p>修了更新说明显示成 HTML 源码</p>' },
+        { version: '0.4.5', note: '<p>手动检查有回执</p>' },
+      ]),
+    ).toBe('## 0.4.6\n修了更新说明显示成 HTML 源码\n\n## 0.4.5\n手动检查有回执');
+  });
+
+  it('decodes numeric and named entities', () => {
+    expect(releaseNotesToText('<p>a&nbsp;b &#8212; &lt;tag&gt; &quot;q&quot;</p>')).toBe(
+      'a b — <tag> "q"',
+    );
   });
 });

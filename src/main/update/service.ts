@@ -22,6 +22,7 @@ import type {
   UpdateState,
 } from '../../shared/update';
 import { fullDownloadReport, isDifferentialFallback, parseDifferentialLine } from './differential';
+import { releaseNotesToText } from './release-notes';
 import { UpdatePreferencesRepository } from './settings';
 
 export const UPDATE_REPO = { owner: 'vito4444', repo: 'steam' } as const;
@@ -238,7 +239,8 @@ export class UpdaterService {
   }
 
   private toView(info: { version: string; releaseNotes?: unknown; releaseDate?: string; files?: Array<{ size?: number }> }): UpdateInfoView {
-    const notes = typeof info.releaseNotes === 'string' ? info.releaseNotes.trim() : '';
+    // GitHub provider 给的是渲染后的 HTML，不是 Markdown 原文。
+    const notes = releaseNotesToText(info.releaseNotes);
     return {
       version: info.version,
       notes: notes || NO_UPDATE_NOTES,
