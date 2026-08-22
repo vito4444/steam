@@ -63,7 +63,7 @@ describe('photo import feedback', () => {
   it('fails closed when every photo candidate is rejected', () => {
     expect(photoFeedback({ imported: 0, rejected: 2, assets: [] })).toEqual({
       tone: 'warning',
-      message: '2 个候选未通过质量门，没有静默入库。请使用透明 PNG/WebP 手动修补入口。',
+      message: '2 个候选未通过质量门，没有静默入库。没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。',
       repair: true,
       canOpenWardrobe: false,
     });
@@ -87,7 +87,7 @@ describe('photo import feedback', () => {
       message: 'coat.png：照片分析进程退出',
     })).toEqual({
       tone: 'error',
-      message: 'coat.png：照片分析进程退出。请使用透明 PNG/WebP 手动修补入口。',
+      message: 'coat.png：照片分析进程退出。没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。',
       repair: true,
       canOpenWardrobe: false,
     });
@@ -101,7 +101,7 @@ describe('photo import feedback', () => {
       message: 'coat.png：图片损坏',
     })).toEqual({
       tone: 'warning',
-      message: '已导入 1 件；2 个候选未通过质量门。coat.png：图片损坏。请使用透明 PNG/WebP 手动修补入口。',
+      message: '已导入 1 件；2 个候选未通过质量门。coat.png：图片损坏。没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。',
       repair: true,
       canOpenWardrobe: true,
     });
@@ -144,7 +144,7 @@ describe('manual import feedback', () => {
       refreshFailed: false,
     })).toEqual({
       tone: 'warning',
-      message: '已导入 1 件；1 个文件未导入（opaque.png：图片没有透明背景）。请使用透明 PNG/WebP 手动修补入口。',
+      message: '已导入 1 件；1 个文件未导入（opaque.png：图片没有透明背景）。没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。',
       repair: true,
       canOpenWardrobe: true,
     });
@@ -163,13 +163,13 @@ describe('manual import feedback', () => {
       refreshFailed: false,
     })).toEqual({
       tone: 'error',
-      message: '未导入任何文件。opaque.png：图片没有透明背景。请使用透明 PNG/WebP 手动修补入口。',
+      message: '未导入任何文件。opaque.png：图片没有透明背景。没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。',
       repair: true,
       canOpenWardrobe: false,
     });
     expect(manualFeedback?.({ status: 'bridge-error', message: '文件选择器不可用' })).toEqual({
       tone: 'error',
-      message: '文件选择器不可用。请使用透明 PNG/WebP 手动修补入口。',
+      message: '文件选择器不可用。没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。',
       repair: true,
       canOpenWardrobe: false,
     });
@@ -215,7 +215,7 @@ describe('link import feedback', () => {
       message: '0 个候选未通过 CERE-12 质量门。',
     })).toEqual({
       tone: 'warning',
-      message: '0 个候选未通过 CERE-12 质量门。请保存商品主图为透明 PNG/WebP 后，使用手动修补入口。',
+      message: '0 个候选未通过 CERE-12 质量门。可以存下商品主图，再用页面下方的透明底入口导入。',
       repair: true,
       canOpenWardrobe: false,
     });
@@ -226,7 +226,7 @@ describe('link import feedback', () => {
       status: 'partial', imported: 1, assets: [], platform: 'Shopify', message: '部分候选未完成导入',
     })).toEqual({
       tone: 'warning',
-      message: '部分候选未完成导入。请保存商品主图为透明 PNG/WebP 后，使用手动修补入口。',
+      message: '部分候选未完成导入。可以存下商品主图，再用页面下方的透明底入口导入。',
       repair: true,
       canOpenWardrobe: true,
     });
@@ -237,7 +237,7 @@ describe('link import feedback', () => {
       status: 'failed', imported: 0, assets: [], platform: 'Shopify', message: '下载商品主图失败',
     })).toEqual({
       tone: 'error',
-      message: '下载商品主图失败。请保存商品主图为透明 PNG/WebP 后，使用手动修补入口。',
+      message: '下载商品主图失败。可以存下商品主图，再用页面下方的透明底入口导入。',
       repair: true,
       canOpenWardrobe: false,
     });
@@ -248,7 +248,7 @@ describe('link import feedback', () => {
       status: 'manual_required', imported: 0, assets: [], platform: '淘宝', message: '需要登录后手动选择商品主图',
     })).toEqual({
       tone: 'warning',
-      message: '需要登录后手动选择商品主图。请保存商品主图为透明 PNG/WebP 后，使用手动修补入口。',
+      message: '需要登录后手动选择商品主图。可以存下商品主图，再用页面下方的透明底入口导入。',
       repair: true,
       canOpenWardrobe: false,
     });

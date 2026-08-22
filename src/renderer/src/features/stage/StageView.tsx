@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { BODY_LABEL, BODY_TYPES, SLOT_LABEL } from '@shared/spec';
 import type { TryOnProviderStatus } from '@shared/tryon';
-import { toneSwatches, useStore, useWorn } from '@/state/store';
+import { hasBakedTones, toneSwatches, useStore, useWorn } from '@/state/store';
 import { IconCompare, IconUndo, IconX } from '@/ui/icons';
 import { DollCanvas } from './DollCanvas';
 import { stageHandles } from './handles';
@@ -274,18 +274,23 @@ function ModelMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (v: bo
             ))}
           </div>
 
-          <div className="menu-label">肤色</div>
-          <div className="swatch-row">
-            {swatches.map((tone, i) => (
-              <button
-                key={tone + i}
-                title={base?.tones[i]?.name ?? `肤色 ${i + 1}`}
-                className={`swatch${outfit.skin === i + 1 ? ' active' : ''}`}
-                style={{ background: tone }}
-                onClick={() => dispatch({ type: 'set', patch: { skin: i + 1 } })}
-              />
-            ))}
-          </div>
+          {/* 底图包没烘培肤色时不摆色块：点了不动的控件比没有控件更坏（CERE-28） */}
+          {hasBakedTones(base) && (
+            <>
+              <div className="menu-label">肤色</div>
+              <div className="swatch-row">
+                {swatches.map((tone, i) => (
+                  <button
+                    key={tone + i}
+                    title={base?.tones[i]?.name ?? `肤色 ${i + 1}`}
+                    className={`swatch${outfit.skin === i + 1 ? ' active' : ''}`}
+                    style={{ background: tone }}
+                    onClick={() => dispatch({ type: 'set', patch: { skin: i + 1 } })}
+                  />
+                ))}
+              </div>
+            </>
+          )}
 
           <div className="menu-label menu-bg-label">背景</div>
           <BackgroundSeg className="menu-bg" />

@@ -72,6 +72,18 @@ export interface LinkImportResult {
   title?: string | null;
 }
 
+export interface BasePhotoImportResponse {
+  ok: boolean;
+  canceled?: boolean;
+  /** 底图包标识，界面上如实显示用的是哪一版 */
+  pack?: string;
+  canvas?: { w: number; h: number };
+  /** true = 剪影量不出来，锚点用的是按画布缩放的兵底值 */
+  fallbackAnchors?: boolean;
+  notes?: string[];
+  error?: string;
+}
+
 export interface PixelFitApi {
   library: {
     stats(): Promise<LibraryStats>;
@@ -93,6 +105,10 @@ export interface PixelFitApi {
   };
   base: {
     get(body: BodyType): Promise<BaseBodySet>;
+    /** 选一张模特照片，本地抠图 + 自动量锚点，直接换掉底图 */
+    importPhoto(body: BodyType): Promise<BasePhotoImportResponse>;
+    /** 删掉上传的底图，回到应用内置的写实模特 */
+    reset(body: BodyType): Promise<{ ok: boolean; restored: boolean }>;
   };
   pipeline: {
     status(): Promise<PipelineStatus>;

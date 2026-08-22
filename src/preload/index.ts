@@ -20,6 +20,8 @@ const api: PixelFitApi = {
   },
   base: {
     get: (body) => ipcRenderer.invoke('base:get', body),
+    importPhoto: (body) => ipcRenderer.invoke('base:importPhoto', body),
+    reset: (body) => ipcRenderer.invoke('base:reset', body),
   },
   pipeline: {
     status: () => ipcRenderer.invoke('pipeline:status'),

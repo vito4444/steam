@@ -6,8 +6,9 @@ import { pathToFileURL } from 'node:url';
 
 import { Store, newId, toAppUrl, fromAppUrl } from './storage';
 import { assetsDir, baseAssetsDir } from './assets';
-import { analyzePhoto, pipelineStatus } from './pipeline';
+import { analyzePhoto, cutoutSubject, pipelineStatus } from './pipeline';
 import { admittedPipelineAssets, decideLinkImport, manualImportFailure } from './photo-import';
+import { importBasePhoto, readSilhouette, resetBasePhoto } from './base-import';
 import { importFromLink } from './link-import/index.js';
 import { importPack } from './pack';
 import { ensureBundledWardrobe } from './bundled';
@@ -26,6 +27,18 @@ const FIGURE_MODE = process.argv.includes('--figures');
 const TRIPTYCH_MODE = process.argv.includes('--cere26-triptychs');
 /** `--ingest ... --exit`：只导素材，不开界面 */
 const INGEST_ONLY = process.argv.includes('--exit');
+
+/*
+ * 截图跑在一个独立的 Electron profile 上（CERE-28）。
+ *
+ * `onboarding` 场景断言 localStorage 是空的，但 localStorage 存在 Electron 的
+ * userData 里，跟 PIXELFIT_ROOT 无关。于是同一台机器跑第二次时，上一次
+ * 「先看看示例」写下的 key 还在，首次引导直接不显示 —— 截图结果取决于机器状态，
+ * 这种证据不算数。把 profile 也钉到 PIXELFIT_ROOT 下面，每次跑都是干净的。
+ */
+if (SHOT_MODE && process.env['PIXELFIT_ROOT']) {
+  app.setPath('userData', path.join(process.env['PIXELFIT_ROOT'], 'electron-profile'));
+}
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'pf', privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true } },
@@ -181,6 +194,39 @@ function registerIpc(): void {
   });
 
   ipcMain.handle('base:get', async (_e, body: BodyType) => store.getBase(body, baseAssetsDir()));
+
+  // CERE-28：成员要的是「直接上传模特照片」，不是去找文件夹改 manifest。
+  ipcMain.handle('base:importPhoto', async (_e, body: BodyType) => {
+    const picked = await dialog.showOpenDialog(mainWindow!, {
+      title: '选择一张全身模特照片',
+      filters: [{ name: '照片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+      properties: ['openFile'],
+    });
+    if (picked.canceled || !picked.filePaths[0]) return { ok: false, canceled: true };
+    try {
+      const result = await importBasePhoto(body, picked.filePaths[0], {
+        cutoutSubject,
+        readSilhouette,
+        baseLibraryDir: store.baseDir,
+        tmpDir: store.tmpDir,
+      });
+      return {
+        ok: true,
+        pack: result.pack,
+        canvas: result.canvas,
+        fallbackAnchors: result.fallbackAnchors,
+        notes: result.notes,
+      };
+    } catch (error) {
+      // 绝对路径不进渲染进程，错误信息只留原因。
+      return { ok: false, error: manualImportFailure(picked.filePaths[0], error).message };
+    }
+  });
+
+  ipcMain.handle('base:reset', async (_e, body: BodyType) => {
+    const restored = await resetBasePhoto(body, store.baseDir);
+    return { ok: true, restored };
+  });
 
   ipcMain.handle('pipeline:status', async () => pipelineStatus());
 

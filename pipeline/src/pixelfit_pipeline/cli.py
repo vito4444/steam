@@ -11,7 +11,7 @@ from PIL import Image
 from .contracts import SCHEMA_VERSION, PipelineError
 from .editor import EditSession
 from .matting import refine_cutout
-from .pipeline import analyze_image, set_category
+from .pipeline import analyze_image, cutout_subject, set_category
 from .quality import evaluate_cutout
 from .segmentation import RembgCascadeBackend
 
@@ -162,6 +162,13 @@ class AppBridge:
                 str(self._required(request, "asset_id")),
                 str(self._required(request, "category")),
             )
+        if command == "cutout-subject":
+            backend = RembgCascadeBackend(str(self._required(request, "models_dir")))
+            return cutout_subject(
+                str(self._required(request, "image_path")),
+                str(self._required(request, "destination")),
+                backend,
+            )
         if command == "analyze":
             backend = RembgCascadeBackend(str(self._required(request, "models_dir")))
             return analyze_image(
@@ -203,10 +210,33 @@ class AppBridge:
             }
         else:
             response = self.handle(request)
-        return json.dumps(response, ensure_ascii=False, separators=(",", ":"))
+        # ensure_ascii=True 是有意的：回程也必须是纯 ASCII，见 main() 的说明。
+        return json.dumps(response, ensure_ascii=True, separators=(",", ":"))
+
+
+def _force_utf8_stdio() -> None:
+    """Pin the JSON-lines transport to UTF-8 regardless of the console codepage.
+
+    Frozen on Windows the interpreter picks the ANSI codepage for stdin/stdout,
+    so a request carrying a non-ASCII path (e.g. the default Chinese screenshot
+    name 屏幕截图 2026-07-30 005149.png) decodes into mojibake and every lookup
+    fails with ASSET_NOT_FOUND. Decoding wrongly and then encoding wrongly is
+    byte-symmetric, so the echoed path in the error still *looks* correct --
+    which is why this went unnoticed. PYTHONUTF8/PYTHONIOENCODING do not help
+    once PyInstaller's bootloader has configured the interpreter, so pin it here.
+    """
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):  # pragma: no cover - detached stream
+            pass
 
 
 def main() -> int:
+    _force_utf8_stdio()
     bridge = AppBridge()
     for line in sys.stdin:
         if not line.strip():

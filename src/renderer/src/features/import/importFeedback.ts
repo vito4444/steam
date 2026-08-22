@@ -7,13 +7,13 @@ export interface ImportFeedback {
   canOpenWardrobe: boolean;
 }
 
-const repairGuide = '请使用透明 PNG/WebP 手动修补入口。';
-const linkRepairGuide = '请保存商品主图为透明 PNG/WebP 后，使用手动修补入口。';
+const repairGuide = '没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。';
+const linkRepairGuide = '可以存下商品主图，再用页面下方的透明底入口导入。';
 
 export const errorMessage = (error: unknown) => {
   if (error instanceof Error && error.message.trim()) return error.message;
   if (typeof error === 'string' && error.trim()) return error;
-  return '导入未完成，请重试或使用手动修补入口。';
+  return '导入没有完成，可以换一张再试。';
 };
 
 const sentence = (message: string) => {

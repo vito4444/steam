@@ -151,6 +151,8 @@ interface Ctx {
   assets: Asset[];
   looks: LookRecord[];
   bases: Record<BodyType, BaseBodySet | undefined>;
+  /** 上传 / 重置模特底图后重读（CERE-28） */
+  reloadBases: () => Promise<void>;
   pipeline: PipelineStatus | null;
   root: string;
 
@@ -240,11 +242,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setRoot(stats.root);
   }, []);
 
+  const reloadBases = useCallback(async () => {
+    const loaded: Record<string, BaseBodySet> = {};
+    for (const b of BODY_TYPES) loaded[b] = await window.pixelfit.base.get(b);
+    setBases(loaded as Record<BodyType, BaseBodySet>);
+  }, []);
+
   useEffect(() => {
     (async () => {
-      const loaded: Record<string, BaseBodySet> = {};
-      for (const b of BODY_TYPES) loaded[b] = await window.pixelfit.base.get(b);
-      setBases(loaded as Record<BodyType, BaseBodySet>);
+      await reloadBases();
       setPipeline(await window.pixelfit.pipeline.status());
       const rules = await window.pixelfit.rules.occlusion();
       setOcclusion(mergeOcclusionConfig(DEFAULT_OCCLUSION, rules.override));
@@ -256,7 +262,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       notify('初始化失败，请查看日志');
       setReady(true);
     });
-  }, [refresh, notify]);
+  }, [refresh, notify, reloadBases]);
 
   const wear = useCallback((asset: Asset) => {
     history.current = [...history.current.slice(-24), outfit];
@@ -368,7 +374,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [refresh, notify]);
 
   const value = useMemo<Ctx>(() => ({
-    ready, assets, looks, bases, pipeline, root,
+    ready, assets, looks, bases, reloadBases, pipeline, root,
     occlusion, occlusionSource,
     engineId, setEngineId, engine,
     view, setView, stageTab, setStageTab,
@@ -378,7 +384,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     refresh, saveLook, applyLook, deleteLook, updateAsset, deleteAsset, importFiles,
     toast, notify,
   }), [
-    ready, assets, looks, bases, pipeline, root, occlusion, occlusionSource,
+    ready, assets, looks, bases, reloadBases, pipeline, root, occlusion, occlusionSource,
     engineId, engine, view, stageTab, outfit, wear, undo,
     compare, addToCompare, selectedSlot, refresh, saveLook, applyLook, deleteLook,
     updateAsset, deleteAsset, importFiles, toast, notify,
@@ -432,6 +438,19 @@ export function toneIndex(skin: number, base?: BaseBodySet): number {
 export function toneSwatches(base?: BaseBodySet): string[] {
   if (base?.tones.length) return base.tones.map((t) => t.swatch);
   return [...SKIN_TONES];
+}
+
+/**
+ * 这套底图到底能不能换肤色。
+ *
+ * CERE-28：`toneSwatches` 在底图包没有烘焙肤色时会回落到内置的 6 档色板，
+ * 于是界面上排出 6 个可点的色块 —— 但渲染层画的是 `base.tones[i].layers`，
+ * 数组是空的就一层都不画，点了没任何变化。内置的 F02 / M02 包本来就是
+ * `tones: []`，上传的照片底图也是。摆一排点了不动的控件比不摆更糟糕，
+ * 所以界面用这个判断决定要不要显示肤色行。
+ */
+export function hasBakedTones(base?: BaseBodySet): boolean {
+  return (base?.tones.length ?? 0) > 0;
 }
 
 export function hairName(id: string): string {
