@@ -109,6 +109,9 @@ export const SHOT_SCENES = [
   'cere53-candidates-bottom',
   'cere53-wardrobe',
   'cere53-worn',
+  'cere60-layered',
+  'cere60-flatlay',
+  'cere60-separates',
   'imported-wardrobe',
   'imported-worn',
   'main',
@@ -224,12 +227,18 @@ export function selectShotScenes(requestedRaw?: string | string[]): string[] {
     ?.map((name) => name.trim())
     .filter(Boolean) ?? [];
   if (names.length === 0) {
-    return SHOT_SCENES.filter((scene) => !scene.startsWith('cere53-'));
+    return SHOT_SCENES.filter((scene) => (
+      !scene.startsWith('cere53-') && !scene.startsWith('cere60-')
+    ));
   }
   const unknown = names.filter((name) => !SHOT_SCENES.includes(name as (typeof SHOT_SCENES)[number]));
   if (unknown.length) throw new Error(`Unknown shot scene(s): ${unknown.join(', ')}`);
   const wanted = new Set(names);
   return SHOT_SCENES.filter((scene) => wanted.has(scene));
+}
+
+export function selectShotPrerequisites(scenes: string[]): string[] {
+  return scenes.some((scene) => scene.startsWith('cere60-')) ? ['cere60-prepare'] : [];
 }
 
 export function collectCheckFailures(scene: string, checks: ShotCheck[]): string[] {
@@ -261,6 +270,24 @@ export async function runShots(win: BrowserWindow, outDir: string, options: Shot
   await fsp.mkdir(outDir, { recursive: true });
   await waitForShotReady(win, { attempts: options.readyAttempts, delayMs: options.readyDelayMs });
   const failures: string[] = [];
+
+  for (const setup of selectShotPrerequisites(scenes)) {
+    try {
+      await win.webContents.executeJavaScript('(window.__pixelfitChecks || []).splice(0)');
+      await win.webContents.executeJavaScript(`window.__pixelfitShot(${JSON.stringify(setup)})`);
+    } catch (err) {
+      failures.push(`${setup}：${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      const checks = await win.webContents
+        .executeJavaScript('(window.__pixelfitChecks || []).splice(0)')
+        .catch((error) => {
+          failures.push(`${setup}：failed to collect renderer checks (${String(error)})`);
+          return [];
+        }) as ShotCheck[];
+      failures.push(...collectCheckFailures(setup, checks));
+    }
+  }
+  assertRunSucceeded('shot prerequisites', failures);
 
   for (const scene of scenes) {
     try {

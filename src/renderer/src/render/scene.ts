@@ -71,6 +71,9 @@ export function buildScene(input: RenderInput, m: BaseMetrics, displayScale: num
     const fit = normalizeFit(worn.asset, worn.fit);
     const p = placeGarment(worn.asset, worn.slot, m, fit);
     const o = occ.get(worn.asset.id);
+    const materialBand = stablePhotoMaterialBand(worn.asset, p);
+    const keepFrom = tighterLower(o?.keepFrom, materialBand?.from);
+    const keepTo = tighterUpper(o?.keepTo, materialBand?.to);
     // Callers historically sent SLOT_Z + item override. Recover only that bounded
     // per-item delta; structural order always comes from the active rule table.
     const callerZ = Number.isFinite(worn.z) ? worn.z : SLOT_Z[worn.slot];
@@ -88,17 +91,17 @@ export function buildScene(input: RenderInput, m: BaseMetrics, displayScale: num
       highlight: worn.highlight,
       dx: p.x, dy: p.y, dw: p.w, dh: p.h,
       // clip 里的 y 与长度是显示像素，画布坐标统一在这里乘一次 k
-      clip: o && {
-        keepFrom: o.keepFrom === undefined ? undefined : o.keepFrom * k,
-        keepTo: o.keepTo === undefined ? undefined : o.keepTo * k,
-        keepFeather: o.keepFeather * k,
-        mask: o.mask && {
+      clip: (o || materialBand) && {
+        keepFrom: keepFrom === undefined ? undefined : keepFrom * k,
+        keepTo: keepTo === undefined ? undefined : keepTo * k,
+        keepFeather: Math.max(o?.keepFeather ?? 0, materialBand?.feather ?? 0) * k,
+        mask: o?.mask && {
           growCanvas: o.mask.grow,
           from: o.mask.from === undefined ? undefined : o.mask.from * k,
           to: o.mask.to === undefined ? undefined : o.mask.to * k,
           feather: o.mask.feather * k,
         },
-        erasedBy: o.erasedBy.map((e) => ({
+        erasedBy: (o?.erasedBy ?? []).map((e) => ({
           key: e.key,
           from: e.from === undefined ? undefined : e.from * k,
           to: e.to === undefined ? undefined : e.to * k,
@@ -120,6 +123,39 @@ export function buildScene(input: RenderInput, m: BaseMetrics, displayScale: num
     layers,
     bodyMask: (grow: number) => bodyMask(input.base, input.tone, grow, canvas.w),
   };
+}
+
+/**
+ * CERE-53's review tier keeps incomplete cutouts usable. Pixels outside the
+ * stable top/hem rows are usually an occluding shirt tail, skin, or background
+ * fragment, so keep them out of the intrinsic garment layer without touching
+ * ready assets or changing the segmentation pipeline.
+ */
+function stablePhotoMaterialBand(
+  asset: RenderInput['worn'][number]['asset'],
+  placement: ReturnType<typeof placeGarment>,
+): { from: number; to: number; feather: number } | undefined {
+  if (asset.source.origin !== 'photo' || asset.review_status !== 'needs_optimization') return undefined;
+  const top = asset.landmarks?.top_edge?.y;
+  const hem = asset.landmarks?.hem?.y;
+  if (top === undefined || hem === undefined || hem - top <= 8) return undefined;
+  return {
+    from: placement.y + top * placement.scaleY,
+    to: placement.y + hem * placement.scaleY,
+    feather: Math.max(placement.w * 0.006, 1),
+  };
+}
+
+function tighterLower(a: number | undefined, b: number | undefined): number | undefined {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  return Math.max(a, b);
+}
+
+function tighterUpper(a: number | undefined, b: number | undefined): number | undefined {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  return Math.min(a, b);
 }
 
 function clamp(value: number, min: number, max: number): number {
