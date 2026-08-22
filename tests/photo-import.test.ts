@@ -7,6 +7,20 @@ import * as photoImport from '../src/main/photo-import';
 const { admittedPipelineAssets, collectPipelineCandidates, decideLinkImport } = photoImport;
 
 describe('photo candidate renderer contract', () => {
+  it('accepts only an explicit JSON list of absolute photo fixtures for shot mode', () => {
+    const parseShotPhotoFixtures = (photoImport as unknown as {
+      parseShotPhotoFixtures?: (raw: string | undefined) => string[];
+    }).parseShotPhotoFixtures;
+    expect(parseShotPhotoFixtures).toBeTypeOf('function');
+
+    const flat = path.resolve('fixtures', 'flat.png');
+    const street = path.resolve('fixtures', 'street.png');
+    expect(parseShotPhotoFixtures?.(JSON.stringify([flat, street]))).toEqual([flat, street]);
+    expect(parseShotPhotoFixtures?.(undefined)).toEqual([]);
+    expect(() => parseShotPhotoFixtures?.('["relative.png"]')).toThrow(/absolute/i);
+    expect(() => parseShotPhotoFixtures?.('{"file":"flat.png"}')).toThrow(/array/i);
+  });
+
   it('maps a safe internal candidate to a renderer preview without exposing its path', () => {
     const toPhotoImportCandidate = (photoImport as unknown as {
       toPhotoImportCandidate?: (

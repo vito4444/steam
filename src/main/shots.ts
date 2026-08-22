@@ -105,6 +105,10 @@ function parseRecipeTuck(value: unknown, recipeName: string): Record<string, 'in
 export const SHOT_SCENES = [
   'onboarding',
   'import',
+  'cere53-candidates-top',
+  'cere53-candidates-bottom',
+  'cere53-wardrobe',
+  'cere53-worn',
   'imported-wardrobe',
   'imported-worn',
   'main',
@@ -219,7 +223,9 @@ export function selectShotScenes(requestedRaw?: string | string[]): string[] {
   const names = (Array.isArray(requestedRaw) ? requestedRaw : requestedRaw?.split(','))
     ?.map((name) => name.trim())
     .filter(Boolean) ?? [];
-  if (names.length === 0) return [...SHOT_SCENES];
+  if (names.length === 0) {
+    return SHOT_SCENES.filter((scene) => !scene.startsWith('cere53-'));
+  }
   const unknown = names.filter((name) => !SHOT_SCENES.includes(name as (typeof SHOT_SCENES)[number]));
   if (unknown.length) throw new Error(`Unknown shot scene(s): ${unknown.join(', ')}`);
   const wanted = new Set(names);

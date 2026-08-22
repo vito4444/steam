@@ -12,11 +12,13 @@ import {
   collectPipelineCandidates,
   decideLinkImport,
   manualImportFailure,
+  parseShotPhotoFixtures,
   toPhotoImportCandidate,
   type PipelineCandidate,
 } from './photo-import';
 import { importBasePhoto, readSilhouette, resetBasePhoto } from './base-import';
 import { importFromLink } from './link-import/index.js';
+import { alphaBoundsFromBgra, measureLandmarksFromBgra } from './image-geometry';
 import { importPack } from './pack';
 import { ensureBundledWardrobe } from './bundled';
 import { parseFigureRecipes, parseShotWindowSize, resolveShotOutputDir, runFigures, runShots, runTriptychs } from './shots';
@@ -238,12 +240,17 @@ function registerIpc(): void {
   ipcMain.handle('pipeline:status', async () => pipelineStatus());
 
   ipcMain.handle('pipeline:importPhotos', async () => {
-    const res = await dialog.showOpenDialog(mainWindow!, {
-      title: '选择包含衣物的照片',
-      filters: [{ name: '照片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
-      properties: ['openFile', 'multiSelections'],
-    });
-    if (res.canceled) {
+    const shotFixtures = SHOT_MODE
+      ? parseShotPhotoFixtures(process.env['PIXELFIT_PHOTO_IMPORT_FIXTURES'])
+      : [];
+    const picked = shotFixtures.length
+      ? { canceled: false, filePaths: shotFixtures }
+      : await dialog.showOpenDialog(mainWindow!, {
+        title: '选择包含衣物的照片',
+        filters: [{ name: '照片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+        properties: ['openFile', 'multiSelections'],
+      });
+    if (picked.canceled) {
       return {
         imported: 0,
         needsOptimization: 0,
@@ -258,7 +265,7 @@ function registerIpc(): void {
     let needsOptimization = 0;
     let rejected = 0;
     const failures: string[] = [];
-    for (const file of res.filePaths) {
+    for (const file of picked.filePaths) {
       try {
         const imported = await importAnalyzedPhoto(file);
         assets.push(...imported.assets.map(toAsset));
@@ -450,19 +457,25 @@ async function importOne(file: string, options: ImportOneOptions = {}): Promise<
   const buf = await fsp.readFile(file);
   const img = nativeImage.createFromBuffer(buf);
   if (img.isEmpty()) throw new Error('unsupported image');
-  const size = img.getSize();
+  const sourceSize = img.getSize();
+  const sourceBitmap = img.toBitmap();
 
   if (options.requireTransparency) {
-    const bitmap = img.toBitmap();
     let transparent = false;
-    for (let i = 3; i < bitmap.length; i += 4) {
-      if (bitmap[i] < 250) {
+    for (let i = 3; i < sourceBitmap.length; i += 4) {
+      if (sourceBitmap[i] < 250) {
         transparent = true;
         break;
       }
     }
     if (!transparent) throw new Error('图片没有透明背景；请使用「照片自动识别」先抠图');
   }
+
+  const box = alphaBoundsFromBgra(sourceBitmap, sourceSize.width, sourceSize.height);
+  if (!box) throw new Error('fully transparent cutout');
+  const cropped = img.crop(box);
+  const size = cropped.getSize();
+  const landmarks = measureLandmarksFromBgra(cropped.toBitmap(), size.width, size.height);
 
   const category: Category = options.category ?? guessCategory(path.basename(file));
   const slot: Slot = CATEGORY_SLOT[category];
@@ -472,7 +485,7 @@ async function importOne(file: string, options: ImportOneOptions = {}): Promise<
   // 锚点落在素材位图的哪条边上，由槽位的贴合规则决定
   const anchorY = rule.edge === 'top' ? 0 : rule.edge === 'bottom' ? size.height : size.height / 2;
 
-  const thumbSrc = img.resize({
+  const thumbSrc = cropped.resize({
     width: Math.max(Math.round(256 * Math.min(1, size.width / Math.max(size.width, size.height))), 1),
     height: Math.max(Math.round(256 * Math.min(1, size.height / Math.max(size.width, size.height))), 1),
     quality: 'best',
@@ -493,8 +506,10 @@ async function importOne(file: string, options: ImportOneOptions = {}): Promise<
     pose: 'front_idle',
     canvas: { w: CANVAS.w, h: CANVAS.h },
     bitmap: { file: 'cutout.png', w: size.width, h: size.height },
-    source_resolution: { w: size.width, h: size.height },
+    source_resolution: { w: sourceSize.width, h: sourceSize.height },
     anchor: { base: anchorName, x: Math.round(size.width / 2), y: Math.round(anchorY) },
+    landmarks,
+    landmarks_given: [],
     fit: { scale: 1, dx: 0, dy: 0, stretch_x: 1 },
     palette: { dominant: '#8A8A90', color_family: 'multi', colors: [{ hex: '#8A8A90', ratio: 1, role: 'mid' }] },
     attributes: {},
@@ -509,14 +524,16 @@ async function importOne(file: string, options: ImportOneOptions = {}): Promise<
       origin: options.commerce ? 'link' : options.photoId ? 'photo' : 'manual',
       photo_id: options.photoId ?? null,
       photo_file: options.originalFile ? 'original.jpg' : null,
-      bbox: null,
+      bbox: [box.x, box.y, box.width, box.height],
       imported_at: now,
       ...(options.commerce ? { commerce: options.commerce } : {}),
     },
     provenance: {
       model: options.provenanceModel ?? 'manual-import', model_version: options.provenanceModel ? '2.0' : '0.2.0',
       confidence: 1, edited_by_user: !options.provenanceModel,
-      edit_ops: options.provenanceModel ? ['segment', 'closed_form_matting', 'quality_gate'] : ['category'],
+      edit_ops: options.provenanceModel
+        ? ['segment', 'closed_form_matting', 'quality_gate', 'crop_to_alpha']
+        : ['category', 'crop_to_alpha'],
     },
     files: { original: options.originalFile ? 'original.jpg' : null, cutout: 'cutout.png', thumb: 'thumb.png' },
     favorite: false,
@@ -530,7 +547,7 @@ async function importOne(file: string, options: ImportOneOptions = {}): Promise<
     const sourceImage = nativeImage.createFromBuffer(await fsp.readFile(options.originalFile));
     if (!sourceImage.isEmpty()) original = sourceImage.toJPEG(90);
   }
-  return store.writeAsset(meta, { cutout: img.toPNG(), thumb: thumbSrc.toPNG(), original });
+  return store.writeAsset(meta, { cutout: cropped.toPNG(), thumb: thumbSrc.toPNG(), original });
 }
 
 const CATEGORY_HINTS: [RegExp, Category][] = [

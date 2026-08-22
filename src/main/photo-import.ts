@@ -25,6 +25,40 @@ export interface PipelineMetadata {
   assets?: PipelineAssetRecord[];
 }
 
+/**
+ * Deterministic real-photo input for the Electron screenshot harness.
+ *
+ * This is deliberately strict and only consumed while the app runs with
+ * `--shots`: normal member imports still come exclusively from the native
+ * file picker.
+ */
+export function parseShotPhotoFixtures(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('PIXELFIT_PHOTO_IMPORT_FIXTURES must be valid JSON');
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error('PIXELFIT_PHOTO_IMPORT_FIXTURES must be a JSON array');
+  }
+  const files = parsed.map((value) => {
+    if (typeof value !== 'string' || !value.trim()) {
+      throw new Error('PIXELFIT_PHOTO_IMPORT_FIXTURES must contain file paths');
+    }
+    const file = value.trim();
+    if (!path.isAbsolute(file)) {
+      throw new Error('PIXELFIT_PHOTO_IMPORT_FIXTURES paths must be absolute');
+    }
+    return path.normalize(file);
+  });
+  if (new Set(files.map((file) => file.toLowerCase())).size !== files.length) {
+    throw new Error('PIXELFIT_PHOTO_IMPORT_FIXTURES contains duplicate paths');
+  }
+  return files;
+}
+
 export interface AdmittedPipelineAsset {
   id: string;
   category: Category;

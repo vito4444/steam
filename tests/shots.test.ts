@@ -65,6 +65,17 @@ describe('shot scenes', () => {
     expect(shots.selectShotScenes('ai-preview,ai-preview-open'))
       .toEqual(['ai-preview', 'ai-preview-open']);
   });
+
+  it('keeps the CERE-53 import evidence in journey order', () => {
+    expect(shots.selectShotScenes(
+      'cere53-worn,cere53-candidates-bottom,cere53-wardrobe,cere53-candidates-top',
+    )).toEqual([
+      'cere53-candidates-top',
+      'cere53-candidates-bottom',
+      'cere53-wardrobe',
+      'cere53-worn',
+    ]);
+  });
 });
 
 interface Check {
