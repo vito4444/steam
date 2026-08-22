@@ -26,7 +26,8 @@ export function useRenderInput(outfit: OutfitState, highlightSlot: Slot | null):
         fit: { ...DEFAULT_FIT, ...asset.fit, ...outfit.fitOverrides[id] },
         hidden: outfit.hidden.includes(s),
         highlight: highlightSlot === s,
-        tuck: outfit.tuckOverrides[id] ?? defaultTuck(asset.attributes, s),
+        tuck: outfit.tuckOverrides[id]
+          ?? defaultTuck(asset.attributes, s, asset.source.origin === 'photo'),
       });
     }
     worn.sort((a, b) => a.z - b.z);

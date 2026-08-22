@@ -65,6 +65,33 @@ describe('shot scenes', () => {
     expect(shots.selectShotScenes('ai-preview,ai-preview-open'))
       .toEqual(['ai-preview', 'ai-preview-open']);
   });
+
+  it('keeps the CERE-53 import evidence in journey order', () => {
+    expect(shots.selectShotScenes(
+      'cere53-worn,cere53-candidates-bottom,cere53-wardrobe,cere53-candidates-top',
+    )).toEqual([
+      'cere53-candidates-top',
+      'cere53-candidates-bottom',
+      'cere53-wardrobe',
+      'cere53-worn',
+    ]);
+  });
+
+  it('keeps the three CERE-60 real-photo outfits in acceptance order', () => {
+    expect(shots.selectShotScenes(
+      'cere60-separates,cere60-flatlay,cere60-layered',
+    )).toEqual([
+      'cere60-layered',
+      'cere60-flatlay',
+      'cere60-separates',
+    ]);
+  });
+
+  it('prepares the real-photo import before isolated CERE-60 scenes', () => {
+    expect(shots.selectShotPrerequisites(['cere60-layered', 'cere60-flatlay']))
+      .toEqual(['cere60-prepare']);
+    expect(shots.selectShotPrerequisites(['main'])).toEqual([]);
+  });
 });
 
 interface Check {
@@ -253,6 +280,31 @@ describe('CERE-24 shot runtime invariants', () => {
     } finally {
       log.mockRestore();
       error.mockRestore();
+      await fsp.rm(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it('runs a CERE-60 setup hook before capturing an isolated acceptance scene', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const calls: string[] = [];
+    const executeJavaScript = vi.fn(async (script: string) => {
+      if (script.includes('__pixelfitState')) return { ready: true, assets: 8 };
+      if (script.includes('__pixelfitShot(\"cere60-prepare\")')) calls.push('prepare');
+      if (script.includes('__pixelfitShot(\"cere60-layered\")')) calls.push('layered');
+      if (script.includes('activeRail')) return {};
+      return [];
+    });
+    const capturePage = vi.fn(async () => ({ toPNG: () => Buffer.from('png') }));
+    const outDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'pixelfit-cere60-shot-'));
+
+    try {
+      await runShots({ webContents: { executeJavaScript, capturePage } } as never, outDir, {
+        requestedScenes: 'cere60-layered', readyAttempts: 1, readyDelayMs: 0, settleDelayMs: 0,
+      });
+      expect(calls).toEqual(['prepare', 'layered']);
+      expect(capturePage).toHaveBeenCalledTimes(1);
+    } finally {
+      log.mockRestore();
       await fsp.rm(outDir, { recursive: true, force: true });
     }
   });

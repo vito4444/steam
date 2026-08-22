@@ -422,7 +422,8 @@ export function useWorn(): WornEntry[] {
         z: SLOT_Z[s] + (outfit.zOverrides[id] ?? asset.z_offset ?? 0),
         fit: { ...DEFAULT_FIT, ...asset.fit, ...outfit.fitOverrides[id] },
         hidden: outfit.hidden.includes(s),
-        tuck: outfit.tuckOverrides[id] ?? defaultTuck(asset.attributes, s),
+        tuck: outfit.tuckOverrides[id]
+          ?? defaultTuck(asset.attributes, s, asset.source.origin === 'photo'),
       });
     }
     return out.sort((a, b) => a.z - b.z);

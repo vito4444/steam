@@ -29,6 +29,7 @@ function asset(slot: Slot, bitmap: { w: number; h: number }, landmarks: Asset['l
     name: `Fit ${slot}`,
     category: slot === 'bottom' ? 'bottom'
       : slot === 'neckwear' ? 'neckwear'
+        : slot === 'bag' ? 'bag'
         : slot.startsWith('shoe') ? 'shoe'
           : slot === 'outer' ? 'outer'
             : slot === 'dress' ? 'dress'
@@ -68,7 +69,7 @@ describe('placeGarment wearable-region placement', () => {
       shoulder_r: { x: 230, y: 50 },
       top_edge: { x: 150, y: 30 },
       hem: { x: 150, y: 300 },
-    }, slot === 'outer' ? [] : ['shoulder_l', 'shoulder_r']);
+    }, ['shoulder_l', 'shoulder_r']);
     const placed = placeGarment(garment, slot, metrics, DEFAULT_FIT);
     const left = garment.landmarks!.shoulder_l!;
     const right = garment.landmarks!.shoulder_r!;
@@ -76,6 +77,62 @@ describe('placeGarment wearable-region placement', () => {
     expect(placed.x + left.x * placed.scaleX).toBeCloseTo(metrics.anchors.shoulder_l.x);
     expect(placed.x + right.x * placed.scaleX).toBeCloseTo(metrics.anchors.shoulder_r.x);
     expect(placed.y + left.y * placed.scaleY).toBeCloseTo(metrics.anchors.shoulder_line.y);
+  });
+
+  it('uses the cropped subject bounds instead of inferred shoulder rows for photo outerwear', () => {
+    const outer = asset('outer', { w: 382, h: 462 }, {
+      top_edge: { x: 218, y: 34 },
+      hem: { x: 63, y: 430 },
+      shoulder_l: { x: 100, y: 82 },
+      shoulder_r: { x: 295, y: 82 },
+    });
+    outer.source.origin = 'photo';
+    outer.review_status = 'needs_optimization';
+
+    const placed = placeGarment(outer, 'outer', metrics, DEFAULT_FIT);
+    const materialTop = placed.y + outer.landmarks!.top_edge!.y * placed.scaleY;
+    const materialHem = placed.y + outer.landmarks!.hem!.y * placed.scaleY;
+
+    expect(placed.w).toBeCloseTo(454.72);
+    expect(materialTop).toBeCloseTo(468.64);
+    // The outer's -0.08 shoulder-width collar offset leaves the hem just below the hip.
+    expect(materialHem).toBeCloseTo(1017.84);
+    expect(placed.precise).toBe(false);
+  });
+
+  it('mounts a photo handbag by its handle top at the right wrist', () => {
+    const bag = asset('bag', { w: 277, h: 390 }, {
+      top_edge: { x: 221, y: 13 },
+      hem: { x: 186, y: 381 },
+    });
+    bag.source.origin = 'photo';
+
+    const placed = placeGarment(bag, 'bag', metrics, DEFAULT_FIT);
+    const renderedHandle = {
+      x: placed.x + bag.landmarks!.top_edge!.x * placed.scaleX,
+      y: placed.y + bag.landmarks!.top_edge!.y * placed.scaleY,
+    };
+
+    expect(renderedHandle.x).toBeCloseTo(metrics.anchors.wrist_r.x);
+    expect(renderedHandle.y).toBeCloseTo(metrics.anchors.wrist_r.y);
+  });
+
+  it('keeps a bundled backpack on the legacy hip-side mount', () => {
+    const backpack = asset('bag', { w: 277, h: 390 }, {
+      top_edge: { x: 140, y: 15 },
+      hem: { x: 140, y: 380 },
+    });
+    backpack.source.origin = 'bundle';
+    backpack.tags = ['backpack'];
+
+    const placed = placeGarment(backpack, 'bag', metrics, DEFAULT_FIT);
+    const renderedCenter = {
+      x: placed.x + backpack.bitmap.w / 2 * placed.scaleX,
+      y: placed.y + backpack.bitmap.h / 2 * placed.scaleY,
+    };
+
+    expect(renderedCenter.x).toBeCloseTo(metrics.anchors.hip.x + metrics.shoulderW * 0.58);
+    expect(renderedCenter.y).toBeCloseTo(metrics.anchors.hip.y);
   });
 
   it.each([
@@ -162,6 +219,22 @@ describe('placeGarment wearable-region placement', () => {
     const materialHem = placed.y + shoes.landmarks!.hem!.y * placed.scaleY;
 
     expect(materialTop).toBeLessThan(metrics.anchors.ankle_l.y);
+    expect(materialHem).toBeCloseTo(metrics.anchors.foot_base.y);
+  });
+
+  it('gives tall photo shoes enough foot length without exceeding the two-ankle span', () => {
+    const shoes = asset('shoe_base', { w: 255, h: 337 }, {
+      top_edge: { x: 127, y: 2 },
+      hem: { x: 127, y: 331 },
+    });
+    shoes.source.origin = 'photo';
+
+    const placed = placeGarment(shoes, 'shoe_base', metrics, DEFAULT_FIT);
+    const materialTop = placed.y + shoes.landmarks!.top_edge!.y * placed.scaleY;
+    const materialHem = placed.y + shoes.landmarks!.hem!.y * placed.scaleY;
+
+    expect(placed.w).toBeCloseTo(257.6);
+    expect(materialTop).toBeCloseTo(2077.28);
     expect(materialHem).toBeCloseTo(metrics.anchors.foot_base.y);
   });
 

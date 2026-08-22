@@ -7,7 +7,7 @@
  * 场景按品类挑素材而不是按名字：衣橱里装的是哪批真实素材，截图脚本不该关心。
  */
 
-import type { Category, Slot } from '@shared/spec';
+import { CATEGORY_LABEL, type Category, type Slot } from '@shared/spec';
 import type { Tuck } from '@shared/occlusion';
 import {
   SHOT_RECIPES,
@@ -74,6 +74,90 @@ function filterWardrobeForImportEvidence(): void {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+function filterWardrobeForCere53Evidence(): void {
+  const input = document.querySelector<HTMLInputElement>('.wardrobe .search input');
+  if (!input) return;
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  valueSetter?.call(input, '照片识别');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function importedCere53Assets() {
+  return latest?.assets.filter((asset) => !asset.source.demo && asset.tags.includes('照片识别')) ?? [];
+}
+
+async function ensureCere60PhotoAssets(): Promise<boolean> {
+  const existing = importedCere53Assets();
+  if (existing.length >= 7) {
+    assertCheck('CERE-60 真实素材前置已就绪', true, `${existing.length} 件`);
+    return true;
+  }
+
+  latest?.setView('import');
+  await wait(120);
+  try {
+    const result = await window.pixelfit.pipeline.importPhotos();
+    if (result.canceled || result.imported === 0) {
+      assertCheck(
+        'CERE-60 可自动准备真实素材',
+        false,
+        result.message ?? `导入 ${result.imported} 件`,
+      );
+      return false;
+    }
+    await latest?.refresh();
+  } catch (error) {
+    assertCheck(
+      'CERE-60 可自动准备真实素材',
+      false,
+      error instanceof Error ? error.message : String(error),
+    );
+    return false;
+  }
+
+  const completed = await waitUntil(() => importedCere53Assets().length >= 7, 30);
+  assertCheck(
+    'CERE-60 可从干净素材库自动准备 7 件真实素材',
+    completed,
+    `实际 ${importedCere53Assets().length} 件`,
+  );
+  return completed;
+}
+
+type PhotoOutfitItem = { photo: 'flatlay' | 'streetshot'; category: Category };
+
+async function prepareCere60Outfit(items: PhotoOutfitItem[]): Promise<boolean> {
+  const s = latest;
+  if (!s) return false;
+  if (!await ensureCere60PhotoAssets()) return false;
+  s.setView('wardrobe');
+  s.setStageTab('try');
+  s.setSelectedSlot(null);
+  s.clearCompare();
+  s.dispatch({ type: 'clear' });
+  s.dispatch({ type: 'set', patch: { noOcclusion: false, rawCompositing: false } });
+  await wait(140);
+  const imported = importedCere53Assets();
+  for (const item of items) {
+    const expectedName = `${item.photo} · ${CATEGORY_LABEL[item.category]}`;
+    const asset = imported.find((candidate) => (
+      candidate.name === expectedName && candidate.category === item.category
+    ));
+    if (!asset) {
+      assertCheck(`CERE-60 素材存在：${expectedName}`, false, `${imported.length} 件真实素材`);
+      return false;
+    }
+    s.wear(asset);
+    if (!await waitUntil(() => latest?.outfit.slots[asset.slot] === asset.id)) {
+      assertCheck(`CERE-60 素材进入 ${asset.slot}`, false, expectedName);
+      return false;
+    }
+  }
+  filterWardrobeForCere53Evidence();
+  await wait(700);
+  return true;
+}
+
 /** AI 预览和画板不依赖某一版素材包的固定 id，按品类挑第一件。 */
 async function wearOnePer(categories: Category[]): Promise<void> {
   const s = latest;
@@ -102,6 +186,10 @@ async function resetFitAcceptance(): Promise<boolean> {
 }
 
 const SCENES: Record<string, () => Promise<void>> = {
+  async 'cere60-prepare'() {
+    await ensureCere60PhotoAssets();
+  },
+
   async onboarding() {
     latest?.setView('import');
     await wait(300);
@@ -131,6 +219,126 @@ const SCENES: Record<string, () => Promise<void>> = {
       .find((element) => element.textContent?.includes('导入素材'));
     assertCheck('已完成 onboarding 后导入流程可见', !!heading);
     assertCheck('稳定导入流程不再显示首次引导', !document.querySelector('[data-testid="first-run-guide"]'));
+  },
+
+  async 'cere53-candidates-top'() {
+    latest?.setView('import');
+    await wait(300);
+    const cta = buttonWithText('选择照片并自动识别');
+    assertCheck('CERE-53 自动识别入口可用', !!cta && !cta.disabled);
+    cta?.click();
+    const completed = await waitUntil(
+      () => document.querySelectorAll('[data-testid="candidate-review"] .candidate-card').length === 7,
+      1800,
+    );
+    assertCheck('两张原图共展示 7 个候选', completed, `${document.querySelectorAll('.candidate-card').length} 个`);
+    const images = [...document.querySelectorAll<HTMLImageElement>('.candidate-card img')];
+    const decoded = await Promise.all(images.map((image) => (
+      image.complete && image.naturalWidth > 0
+        ? Promise.resolve(true)
+        : image.decode().then(() => true, () => false)
+    )));
+    assertCheck('7 个候选缩略图均可解码', images.length === 7 && decoded.every(Boolean));
+    const reports = [...document.querySelectorAll('.candidate-report')];
+    assertCheck(
+      '每个候选展示分数和逐项质量结果',
+      reports.length === 7 && reports.every((report) => (
+        !!report.querySelector('.candidate-score')
+        && !!report.querySelector('li, .candidate-pass-note')
+      )),
+    );
+    const body = document.querySelector<HTMLElement>('.body');
+    body?.scrollTo({ top: 0, behavior: 'auto' });
+    await wait(500);
+  },
+
+  async 'cere53-candidates-bottom'() {
+    const body = document.querySelector<HTMLElement>('.body');
+    assertCheck('候选质检结果在第二屏继续可见', !!document.querySelector('[data-testid="candidate-review"]'));
+    body?.scrollTo({ top: body.scrollHeight, behavior: 'auto' });
+    await wait(500);
+  },
+
+  async 'cere53-wardrobe'() {
+    const s = latest;
+    if (!s) return;
+    s.setView('wardrobe');
+    s.setStageTab('try');
+    s.dispatch({ type: 'clear' });
+    await wait(250);
+    filterWardrobeForCere53Evidence();
+    await wait(500);
+    const imported = importedCere53Assets();
+    const cards = document.querySelectorAll('.wardrobe .card');
+    assertCheck('CERE-53 的 7 件真实照片素材全部入库', imported.length === 7, `实际 ${imported.length} 件`);
+    assertCheck('衣橱过滤后展示 7 件导入素材', cards.length === 7, `实际 ${cards.length} 件`);
+    assertCheck(
+      '待优化状态保留到衣橱卡片',
+      document.querySelectorAll('.wardrobe .review-badge').length === 5,
+      `实际 ${document.querySelectorAll('.wardrobe .review-badge').length} 件`,
+    );
+  },
+
+  async 'cere53-worn'() {
+    const s = latest;
+    if (!s) return;
+    s.setView('wardrobe');
+    s.setStageTab('try');
+    s.dispatch({ type: 'clear' });
+    await wait(150);
+    const imported = importedCere53Assets();
+    const categories: Category[] = ['top', 'bottom', 'outer', 'shoe', 'bag'];
+    for (const category of categories) {
+      const asset = imported.find((candidate) => candidate.category === category);
+      if (asset) s.wear(asset);
+      await wait(100);
+    }
+    const worn = Object.values(latest?.outfit.slots ?? {}).filter(Boolean).length;
+    assertCheck('真实照片的上装/下装/外套/鞋/包已穿到模特', worn >= 5, `实际 ${worn} 个槽位`);
+    assertCheck(
+      '衣橱卡片同步标出穿着中',
+      document.querySelectorAll('.wardrobe .card .badge').length >= 5,
+      `实际 ${document.querySelectorAll('.wardrobe .card .badge').length} 件`,
+    );
+    await wait(700);
+  },
+
+  async 'cere60-layered'() {
+    const ready = await prepareCere60Outfit([
+      { photo: 'flatlay', category: 'top' },
+      { photo: 'streetshot', category: 'bottom' },
+      { photo: 'streetshot', category: 'outer' },
+      { photo: 'streetshot', category: 'shoe' },
+    ]);
+    if (!ready) return;
+    const slots = latest?.outfit.slots ?? {};
+    assertCheck('CERE-60 完整搭配包含外套/上装/下装/鞋', (
+      !!slots.outer && !!slots.top && !!slots.bottom && !!slots.shoe_base
+    ));
+  },
+
+  async 'cere60-flatlay'() {
+    const ready = await prepareCere60Outfit([
+      { photo: 'flatlay', category: 'top' },
+      { photo: 'flatlay', category: 'bottom' },
+      { photo: 'flatlay', category: 'bag' },
+      { photo: 'flatlay', category: 'shoe' },
+    ]);
+    if (!ready) return;
+    const slots = latest?.outfit.slots ?? {};
+    assertCheck('CERE-60 平铺照搭配包含 polo/波点裙/包/拖鞋', (
+      !!slots.top && !!slots.bottom && !!slots.bag && !!slots.shoe_base
+    ));
+  },
+
+  async 'cere60-separates'() {
+    const ready = await prepareCere60Outfit([
+      { photo: 'flatlay', category: 'top' },
+      { photo: 'flatlay', category: 'bottom' },
+    ]);
+    if (!ready) return;
+    const worn = Object.values(latest?.outfit.slots ?? {}).filter(Boolean);
+    assertCheck('CERE-60 最简搭配只包含上下装', worn.length === 2, `实际 ${worn.length} 件`);
   },
 
   async 'imported-wardrobe'() {

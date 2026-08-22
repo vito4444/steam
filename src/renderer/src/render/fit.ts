@@ -69,6 +69,11 @@ const LENGTH_ANCHOR: Record<string, [AnchorName, AnchorName, number]> = {
   floor: ['foot_base', 'foot_base', 0],
 };
 
+/** User-photo outerwear stops around the hip unless the asset declares a length. */
+const PHOTO_LENGTH_SPAN: Partial<Record<Slot, [AnchorName, AnchorName, number]>> = {
+  outer: ['shoulder_line', 'hip', 0.1],
+};
+
 /** 只有素材包**明确给出**的单点才可信。成对点另走 `plausiblePair` 的语义校验。 */
 function given(asset: Asset, key: GarmentLandmark): { x: number; y: number } | undefined {
   return asset.landmarks_given?.includes(key) ? asset.landmarks?.[key] : undefined;
@@ -114,13 +119,32 @@ export function placeGarment(
   m: BaseMetrics,
   fit: Fit,
 ): Placement {
-  const rule = SLOT_PLACEMENT[slot] ?? SLOT_PLACEMENT.top;
+  const baseRule = SLOT_PLACEMENT[slot] ?? SLOT_PLACEMENT.top;
+  // A photographed handbag has a measured handle and belongs in the hand.
+  // Built-in bags include backpacks and retain their established hip-side mount.
+  const rule = asset.source.origin === 'photo' && slot === 'bag'
+    ? {
+      ...baseRule,
+      anchor: 'wrist_r' as const,
+      singleAnchor: true,
+      edge: 'top' as const,
+      attachLandmark: 'top_edge' as const,
+      offsetXK: undefined,
+    }
+    : baseRule;
   const bmp = asset.bitmap;
   const lm = asset.landmarks;
 
   // ---- 1. 按宽度：身体宽度 ÷ 素材参照宽度
   const targetW = (m.width[rule.widthRef] ?? m.shoulderW) * rule.widthK;
-  const semanticPair = rule.alignPair ? plausiblePair(asset, rule.alignPair) : undefined;
+  const measuredPair = rule.alignPair ? plausiblePair(asset, rule.alignPair) : undefined;
+  // A row inferred from an arbitrary user photo is not a shoulder/waist semantic.
+  // CERE-53's jacket is 382 px wide, but its inferred shoulder row is only 195 px;
+  // using that row nearly doubles the rendered jacket. The already-cropped alpha
+  // subject bounds are the stable reference until a pair is explicitly provided.
+  const semanticPair = asset.source.origin === 'photo' && !measuredPair?.explicit
+    ? undefined
+    : measuredPair;
   // 声明了语义 pair 的槽位只有两种状态：整对通过校验，或整对完全不用。
   // 不能让被拒绝的点绕回旧逻辑继续影响宽度或中心。
   const legacyPair = !rule.alignPair
@@ -145,11 +169,13 @@ export function placeGarment(
   const byWidth = targetW / Math.max(refW, 1);
 
   // ---- 2. 按衣长：身上那一段 ÷ 素材上沿→下摆
-  const attach = anchorPoint(rule.anchor, m);
+  const attach = anchorPoint(rule.anchor, m, !rule.singleAnchor);
   const hemY = lm?.hem?.y ?? bmp.h;
   const topY = lm?.top_edge?.y ?? 0;
   const span = hemY - topY;
-  const lengthSpec = LENGTH_ANCHOR[asset.attributes?.length ?? ''] ?? rule.lengthSpan;
+  const lengthSpec = LENGTH_ANCHOR[asset.attributes?.length ?? '']
+    ?? (asset.source.origin === 'photo' ? PHOTO_LENGTH_SPAN[slot] : undefined)
+    ?? rule.lengthSpan;
 
   let byLength: number | null = null;
   if (lengthSpec && span > 8) {
@@ -204,6 +230,9 @@ export function placeGarment(
   else if (wl && wr) ax = (wl.x + wr.x) / 2;
   else if (asset.schema_version >= 3) ax = asset.anchor.x;
 
+  const attachLandmark = rule.attachLandmark ? lm?.[rule.attachLandmark] : undefined;
+  if (attachLandmark) ax = attachLandmark.x;
+
   let ay: number;
   if (rule.edge === 'top') {
     ay = lm?.top_edge?.y ?? (gl && gr ? (gl.y + gr.y) / 2 : 0);
@@ -212,6 +241,7 @@ export function placeGarment(
   } else {
     ay = bmp.h / 2;
   }
+  if (attachLandmark) ay = attachLandmark.y;
 
   let targetX = attach.x + (rule.offsetXK ?? 0) * m.shoulderW;
   let targetY = attach.y + (rule.offsetK ?? 0) * m.shoulderW;
@@ -242,11 +272,11 @@ export function placeGarment(
  * `xxx_l` / `xxx_r` 这类成对锚点取中点。
  * 一张鞋子素材里通常是**两只**鞋，对到单只脚踝上会整体偏一半。
  */
-function anchorPoint(name: string, m: BaseMetrics): { x: number; y: number } {
+function anchorPoint(name: string, m: BaseMetrics, pairSides = true): { x: number; y: number } {
   const table = m.anchors as Record<string, { x: number; y: number }>;
   const self = table[name];
-  const pair = name.endsWith('_l') ? table[`${name.slice(0, -2)}_r`]
-    : name.endsWith('_r') ? table[`${name.slice(0, -2)}_l`]
+  const pair = pairSides && name.endsWith('_l') ? table[`${name.slice(0, -2)}_r`]
+    : pairSides && name.endsWith('_r') ? table[`${name.slice(0, -2)}_l`]
       : null;
   if (self && pair) return { x: (self.x + pair.x) / 2, y: (self.y + pair.y) / 2 };
   return self ?? { x: m.canvas.w / 2, y: m.canvas.h / 2 };

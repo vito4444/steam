@@ -75,6 +75,37 @@ function asset(slot: Slot): Asset {
 }
 
 describe('buildScene structural order', () => {
+  it('clips unstable photo fragments outside the measured material span', () => {
+    const bottom = asset('bottom');
+    bottom.bitmap = { file: 'bottom.png', w: 256, h: 254 };
+    bottom.source.origin = 'photo';
+    bottom.review_status = 'needs_optimization';
+    bottom.landmarks = {
+      top_edge: { x: 161, y: 125 },
+      hem: { x: 110, y: 248 },
+      waist_l: { x: 89, y: 130 },
+      waist_r: { x: 233, y: 130 },
+    };
+    bottom.landmarks_given = [];
+    const input: RenderInput = {
+      base,
+      body: 'base_f02',
+      tone: 0,
+      hairStyle: 'h01',
+      hairHex: '#000000',
+      worn: [
+        { asset: bottom, slot: 'bottom', z: 40, fit: DEFAULT_FIT, hidden: false, highlight: false, tuck: 'out' },
+      ],
+      background: 'none',
+      occlusion: DEFAULT_OCCLUSION,
+    };
+
+    const layer = buildScene(input, metrics, 1).layers.find((candidate) => candidate.key === bottom.id)!;
+
+    expect(layer.clip?.keepFrom).toBeCloseTo(838.16);
+    expect(layer.clip?.keepTo).toBeCloseTo(1021.506875);
+  });
+
   it('uses custom slot order plus clamped caller item offsets', () => {
     const top = asset('top');
     const outer = asset('outer');

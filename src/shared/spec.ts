@@ -191,8 +191,12 @@ export interface PlacementRule {
   offsetXK?: number;
   /** 竖直方向贴到哪个锚点 */
   anchor: AnchorName;
+  /** 左右成对锚点默认取中点；包等单侧挂件必须钉到指定侧。 */
+  singleAnchor?: boolean;
   /** 素材的哪条边贴上去 */
   edge: AttachEdge;
+  /** 同一 landmark 同时提供横纵挂载点；包用手柄顶点，而不是位图中心。 */
+  attachLandmark?: 'top_edge' | 'hem';
   /** 贴合后再沿 y 偏移，单位是「肩宽的倍数」，与画布尺寸无关 */
   offsetK?: number;
   /** 素材 top_edge → hem 要覆盖的身体区间：[起点锚点, 起点偏移K, 终点锚点, 终点偏移K] */
@@ -226,17 +230,17 @@ export const SLOT_PLACEMENT: Record<Slot, PlacementRule> = {
   // 鞋的宽度参照是**双脚站距**（两只脚踝外缘之间的整幅），不是单只脚踝 ——
   // 一张鞋子素材里通常是两只鞋并排，按单脚踝缩会小掉一半。
   shoe_base:  {
-    widthRef: 'ankle', widthK: 1.35, anchor: 'foot_base', edge: 'bottom',
-    verticalSpan: ['ankle_l', -0.04, 'foot_base', 0],
+    widthRef: 'ankle', widthK: 1.12, anchor: 'foot_base', edge: 'bottom',
+    verticalSpan: ['ankle_l', -0.16, 'foot_base', 0],
   },
   shoe_shaft: {
-    widthRef: 'ankle', widthK: 1.28, anchor: 'foot_base', edge: 'bottom',
-    verticalSpan: ['ankle_l', -0.04, 'foot_base', 0],
+    widthRef: 'ankle', widthK: 1.12, anchor: 'foot_base', edge: 'bottom',
+    verticalSpan: ['ankle_l', -0.16, 'foot_base', 0],
   },
   neckwear:   { widthRef: 'shoulder', widthK: 0.66, anchor: 'chin',          edge: 'top', offsetK: 0.1 },
   gloves:     { widthRef: 'shoulder', widthK: 1.18, anchor: 'wrist_l',       edge: 'center' },
 
-  bag:        { widthRef: 'shoulder', widthK: 0.5,  anchor: 'hip', edge: 'center', offsetXK: 0.58 },
+  bag:        { widthRef: 'shoulder', widthK: 0.5, anchor: 'hip', edge: 'center', offsetXK: 0.58 },
   headwear:   { widthRef: 'head',     widthK: 1.22, anchor: 'eye_line',      edge: 'bottom', offsetK: 0.02 },
   eyewear:    { widthRef: 'head',     widthK: 0.94, anchor: 'eye_line',      edge: 'center' },
   hair_back:  { widthRef: 'head',     widthK: 1.12, anchor: 'head_top',      edge: 'top' },

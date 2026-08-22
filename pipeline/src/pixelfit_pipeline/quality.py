@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from typing import Literal
 
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+
+
+QualityDecision = Literal["pass", "needs_optimization", "retry"]
 
 
 @dataclass(frozen=True)
@@ -41,7 +45,7 @@ class QualityReason:
 @dataclass(frozen=True)
 class QualityReport:
     score: int
-    decision: str
+    decision: QualityDecision
     allowed: bool
     reasons: tuple[QualityReason, ...]
     metrics: dict[str, float | bool | int]
@@ -56,6 +60,25 @@ class QualityReport:
             "metrics": dict(self.metrics),
             "thresholds": self.thresholds.to_dict(),
         }
+
+
+def _admission_decision(
+    metrics: dict[str, float | bool | int],
+    reasons: list[QualityReason],
+    thresholds: QualityThresholds,
+) -> tuple[QualityDecision, bool]:
+    """Separate a repairable cutout from output that contains no usable subject."""
+    codes = {reason.code for reason in reasons}
+    severe = bool(codes & {"SUBJECT_TOO_SMALL", "SUBJECT_TOO_LARGE"})
+    missing_over_half = (
+        "LOW_BBOX_FILL" in codes
+        and float(metrics["bbox_fill_ratio"]) < thresholds.min_bbox_fill_ratio / 2
+    )
+    if severe or missing_over_half:
+        return "retry", False
+    if reasons:
+        return "needs_optimization", True
+    return "pass", True
 
 
 def _perimeter(binary: np.ndarray) -> int:
@@ -273,10 +296,10 @@ def evaluate_cutout(
     if codes & {"ALPHA_TRANSITION_MISSING", "ALPHA_TRANSITION_EXCESSIVE"}:
         score -= 20
     score = int(np.clip(score, 0, 100))
-    allowed = not reasons and score >= selected.min_score
+    decision, allowed = _admission_decision(metrics, reasons, selected)
     return QualityReport(
         score=score,
-        decision="pass" if allowed else "reject",
+        decision=decision,
         allowed=allowed,
         reasons=tuple(reasons),
         metrics=metrics,

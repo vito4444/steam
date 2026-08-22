@@ -331,13 +331,19 @@ export type Tuck = 'in' | 'out';
 /**
  * 上装下摆压在下装腰线之上还是之下，**按品类决定**（issue §1）。
  *
- * 判据只用素材自己声明的属性，不猜：短款到腰的上装默认塞进去，其余默认放下来。
- * 用户能在贴合面板里逐件改，改动记进 Look。
+ * 明确衣长优先；没有衣长的照片上装用“塞入”先验，避免遮住同照下装。
+ * 其他未知素材仍默认外放。用户能在贴合面板里逐件改，改动记进 Look。
  */
-export function defaultTuck(attrs: { length?: string; fit?: string } | undefined, slot: Slot): Tuck {
+export function defaultTuck(
+  attrs: { length?: string; fit?: string } | undefined,
+  slot: Slot,
+  preferTuckedWhenUnknown = false,
+): Tuck {
   if (slot !== 'top' && slot !== 'underlayer') return 'out';
   const len = attrs?.length;
   if (len === 'crop' || len === 'waist') return 'in';
+  if (len) return 'out';
   if (attrs?.fit === 'slim' && !len) return 'in';
+  if (preferTuckedWhenUnknown) return 'in';
   return 'out';
 }

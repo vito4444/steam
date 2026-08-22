@@ -1,5 +1,6 @@
 """PixelFit photo-to-wardrobe pipeline."""
 
+from .candidate_generation import CandidateMask, generate_candidates
 from .contracts import PipelineError
 from .editor import EditSession
 from .matting import MattingConfig, RefinementResult, refine_cutout
@@ -9,6 +10,7 @@ from .segmentation import RembgCascadeBackend, SegmentationBundle
 
 __all__ = [
     "EditSession",
+    "CandidateMask",
     "MattingConfig",
     "PipelineError",
     "QualityReport",
@@ -18,6 +20,7 @@ __all__ = [
     "SegmentationBundle",
     "analyze_image",
     "evaluate_cutout",
+    "generate_candidates",
     "refine_cutout",
     "set_category",
 ]

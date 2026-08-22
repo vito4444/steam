@@ -112,6 +112,8 @@ export interface AssetMeta {
   };
 
   tags: string[];
+  /** Automatic candidates with visible defects stay usable but retain this review marker. */
+  review_status?: 'ready' | 'needs_optimization';
   season: ('spring' | 'summer' | 'autumn' | 'winter')[];
 
   source: {
