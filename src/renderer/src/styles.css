@@ -538,6 +538,19 @@ input:focus-visible,
   letter-spacing: 0.04em;
 }
 
+.review-badge {
+  position: absolute;
+  top: 6px;
+  right: 32px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(180, 86, 47, 0.9);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 .fav {
   position: absolute;
   top: 5px;
@@ -1270,6 +1283,178 @@ input:focus-visible,
   line-height: 1.65;
 }
 
+.candidate-review {
+  margin: 0 0 var(--sp-6);
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.candidate-review-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-4);
+}
+
+.candidate-review-head .eyebrow {
+  color: var(--accent);
+}
+
+.candidate-review-head h3 {
+  margin-top: 3px;
+  font-size: 16px;
+  font-weight: 640;
+  letter-spacing: -0.012em;
+}
+
+.candidate-review-head p {
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.candidate-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.candidate-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-top: 2px solid var(--accent-2);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.candidate-card.needs_optimization {
+  border-top-color: var(--accent);
+}
+
+.candidate-card.retry {
+  border-top-color: var(--danger);
+}
+
+.candidate-preview {
+  position: relative;
+  min-height: 158px;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-3);
+  overflow: hidden;
+  border-right: 1px solid var(--line-soft);
+  background-color: #f8f7f5;
+  background-image:
+    linear-gradient(45deg, #ece9e4 25%, transparent 25%),
+    linear-gradient(-45deg, #ece9e4 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ece9e4 75%),
+    linear-gradient(-45deg, transparent 75%, #ece9e4 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+.candidate-preview img {
+  width: 100%;
+  height: 118px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 7px rgba(70, 56, 44, 0.16));
+}
+
+.candidate-state {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(63, 125, 114, 0.92);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 720;
+  letter-spacing: 0.025em;
+}
+
+.candidate-state.needs_optimization {
+  background: rgba(180, 86, 47, 0.94);
+}
+
+.candidate-state.retry {
+  background: rgba(179, 69, 60, 0.94);
+}
+
+.candidate-report {
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.candidate-report-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.candidate-report-title strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.candidate-report-title span:not(.candidate-score) {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-3);
+  font-size: 10.5px;
+}
+
+.candidate-score {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.06em;
+}
+
+.candidate-score small {
+  margin-left: 2px;
+  color: var(--text-3);
+  font-size: 9px;
+  letter-spacing: 0;
+}
+
+.candidate-report ul {
+  list-style: none;
+}
+
+.candidate-report li {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-2);
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 9.5px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+
+.candidate-report li:last-child {
+  border-bottom: 0;
+}
+
+.candidate-pass-note {
+  padding-top: 10px;
+  color: var(--accent-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .import-link-input {
   flex: 1;
   min-width: 260px;
@@ -1474,6 +1659,12 @@ input:focus-visible,
 
   .import-link-input {
     min-width: min(100%, 260px);
+  }
+
+  .candidate-review-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--sp-2);
   }
 }
 
@@ -2336,5 +2527,9 @@ input[type='range']::-webkit-slider-thumb:active {
   }
   .view {
     padding: var(--sp-4) var(--sp-4);
+  }
+
+  .candidate-review-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

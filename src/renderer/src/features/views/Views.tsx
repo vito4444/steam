@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { BODY_LABEL } from '@shared/spec';
+import { BODY_LABEL, CATEGORY_LABEL } from '@shared/spec';
 import { OCCASIONS, occasionLabel } from '@shared/board';
-import type { LinkImportResult, PhotoImportResult } from '@shared/ipc';
+import type {
+  LinkImportResult,
+  PhotoImportCandidate,
+  PhotoImportResult,
+} from '@shared/ipc';
 import type {
   TryOnProviderId,
   TryOnProviderStatus,
@@ -19,6 +23,12 @@ import {
   photoFeedback,
   type ImportFeedback,
 } from '@/features/import/importFeedback';
+import {
+  candidateReasonLine,
+  candidateStateLabel,
+  candidateVisibilityLabel,
+  summarizeCandidates,
+} from '@/features/import/candidateReview';
 import {
   IconBoard, IconFolder, IconImport, IconLooks, IconRefresh, IconSparkle, IconTrash,
 } from '@/ui/icons';
@@ -179,6 +189,7 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
   const [linkUrl, setLinkUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<ImportFeedback | null>(null);
+  const [photoCandidates, setPhotoCandidates] = useState<PhotoImportCandidate[]>([]);
   const linkInputRef = useRef<HTMLInputElement>(null);
   const manualDropzoneRef = useRef<HTMLDivElement>(null);
 
@@ -213,6 +224,7 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
   const importPhotos = async () => {
     setBusy(true);
     setFeedback(null);
+    setPhotoCandidates([]);
     try {
       let result: PhotoImportResult;
       try {
@@ -223,6 +235,7 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
       }
 
       const accepted = photoFeedback(result);
+      setPhotoCandidates(result.candidates ?? []);
       showFeedback(accepted);
       if (result.imported > 0) {
         try {
@@ -312,7 +325,7 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
 
       <header className="view-head">
         <h2>导入素材</h2>
-        <p>照片在本地预处理并过质量门。通过的进衣橱，没通过的不会静默入库。</p>
+        <p>照片只在本机分析；每个候选都会展示，合格与待优化的入库，严重失败的保留预览供你判断。</p>
       </header>
 
       {feedback ? (
@@ -342,6 +355,63 @@ export function ImportView({ onboarding, onOnboardingComplete }: ImportViewProps
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {photoCandidates.length ? (
+        <section
+          className="candidate-review"
+          data-testid="candidate-review"
+          aria-labelledby="candidate-review-title"
+        >
+          <div className="candidate-review-head">
+            <div>
+              <span className="eyebrow">本机质检结果</span>
+              <h3 id="candidate-review-title">这张照片分出了哪些单品</h3>
+            </div>
+            <p>{summarizeCandidates(photoCandidates)}</p>
+          </div>
+          <div className="candidate-review-grid">
+            {photoCandidates.map((candidate) => (
+              <article
+                key={`${candidate.previewUrl}-${candidate.id}`}
+                className={`candidate-card ${candidate.state}`}
+              >
+                <div className="candidate-preview">
+                  <img
+                    src={candidate.previewUrl}
+                    alt={`${CATEGORY_LABEL[candidate.category]}候选`}
+                  />
+                  <span className={`candidate-state ${candidate.state}`}>
+                    {candidateStateLabel(candidate.state)}
+                  </span>
+                </div>
+                <div className="candidate-report">
+                  <div className="candidate-report-title">
+                    <div>
+                      <strong>{CATEGORY_LABEL[candidate.category]}</strong>
+                      <span>{candidateVisibilityLabel(candidate.visibility)}</span>
+                    </div>
+                    <span className="candidate-score">
+                      {candidate.score}
+                      <small>/100</small>
+                    </span>
+                  </div>
+                  {candidate.reasons.length ? (
+                    <ul>
+                      {candidate.reasons.map((reason) => (
+                        <li key={`${reason.code}-${reason.metric}`}>
+                          {candidateReasonLine(reason)}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="candidate-pass-note">所有质量指标均在门槛内。</p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       <div className="info-card">
