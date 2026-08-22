@@ -120,5 +120,34 @@ pack/
   底图的轮廓必须干净：躯干与手臂在腰胯高度要分得开，否则量到的「腰宽」会把手臂
   算进去，衣服会整体偏大。
 
-当前内置的是 CERE-6 的写实无面模特（1152×2304，5 档肤色）——它是过渡，
-等你的真人底图到位就会被顶掉。
+当前正式内置底图是 CERE-13 的 `base_f02`（默认）与 `base_m02`；CERE-6 的
+`s` / `m` / `l` 只剩兼容性遗留且未完成再分发权利清理，处理建议见
+`ATTRIBUTION.md`。
+
+## 6. 来源与许可证是发布闸门
+
+每个衣物条目和每套底图 manifest 都必须带 `provenance`；现有素材的完整示例与署名文案见仓库根目录 `ATTRIBUTION.md`。最低字段如下：
+
+```jsonc
+{
+  "provenance": {
+    "source": "来源站或生成流程",
+    "page_url": "https://...",          // 来源页；确实不存在时写 null 并说明原因
+    "original_url": "https://...",      // 原图；确实不存在时写 null
+    "title": "原作标题",
+    "creator": "作者名",
+    "creator_url": "https://...",
+    "license": "CC BY 2.0",
+    "license_url": "https://...",       // 许可证或合同权利条款的正式页面
+    "attribution": "可直接使用的完整署名文案；包含修改说明",
+    "attribution_required": true,
+    "commercial_use": true,
+    "likeness_release": "not_applicable_no_identifiable_person_in_distributed_cutout",
+    "transformation": "做过的全部实质变换",
+    "sha256": "分发文件的 SHA-256",
+    "reviewed_at": "YYYY-MM-DD"
+  }
+}
+```
+
+底图还必须明确 `synthetic`、`real_person` 和肖像授权依据。来源不明、许可证页面缺失、没有明确允许商业再分发、必需署名无法满足、或真人肖像授权依据缺失时，统一标 `unverified`，**不得进入发布包**；不要用推测值补齐字段。网页会变，发布证据中还要保存带日期的来源页与许可证页快照。
