@@ -13,6 +13,7 @@ import {
   decideLinkImport,
   manualImportFailure,
   parseShotPhotoFixtures,
+  settlePipelineCandidateImports,
   toPhotoImportCandidate,
   type PipelineCandidate,
 } from './photo-import';
@@ -273,6 +274,9 @@ function registerIpc(): void {
           toPhotoImportCandidate(candidate, toAppUrl)));
         needsOptimization += imported.needsOptimization;
         rejected += imported.rejected;
+        failures.push(...imported.failures.map(
+          (failure) => `${path.basename(file)} / ${failure}`,
+        ));
       } catch (error) {
         failures.push(`${path.basename(file)}：${error instanceof Error ? error.message : String(error)}`);
       }
@@ -303,13 +307,16 @@ function registerIpc(): void {
         name: result.product.title,
         commerce: result.commerce,
       });
+      const partialFailures = imported.failures.length > 0;
       return {
-        status: result.status,
+        status: partialFailures ? 'partial' : result.status,
         imported: imported.assets.length,
         assets: imported.assets.map(toAsset),
         platform: result.platform,
         title: result.product.title,
-        message: imported.rejected
+        message: partialFailures
+          ? `已导入 ${imported.assets.length} 件；${imported.failures.join('；')}`
+          : imported.rejected
           ? `已导入 ${imported.assets.length} 件；${imported.rejected} 个候选未通过 CERE-12 质量门。`
           : `已从 ${result.platform} 商品页导入 ${imported.assets.length} 件。`,
       };
@@ -419,18 +426,17 @@ async function importAnalyzedPhoto(
   candidates: PipelineCandidate[];
   rejected: number;
   needsOptimization: number;
+  failures: string[];
 }> {
   const importId = `import-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const outputDir = path.join(store.root, 'pipeline-imports');
   const metadata = await analyzePhoto(file, outputDir, importId);
   const candidates = collectPipelineCandidates(metadata, path.join(outputDir, importId));
-  const assets: AssetMeta[] = [];
-  for (const candidate of candidates) {
-    if (!candidate.importFile) continue;
+  const settled = await settlePipelineCandidateImports(candidates, async (candidate) => {
     const reviewStatus = candidate.state === 'needs_optimization'
       ? 'needs_optimization'
       : 'ready';
-    assets.push(await importOne(candidate.importFile, {
+    return importOne(candidate.importFile!, {
       category: candidate.category,
       name: context.name
         ? `${context.name} · ${CATEGORY_LABEL[candidate.category]}`
@@ -441,15 +447,16 @@ async function importAnalyzedPhoto(
       provenanceModel: 'cere12-cpu-pipeline',
       reviewStatus,
       requireTransparency: true,
-    }));
-  }
+    });
+  });
   return {
-    assets,
+    assets: settled.assets,
     candidates,
     rejected: candidates.filter((candidate) => candidate.state === 'retry').length,
-    needsOptimization: candidates.filter(
-      (candidate) => candidate.state === 'needs_optimization',
+    needsOptimization: settled.reviewStates.filter(
+      (state) => state === 'needs_optimization',
     ).length,
+    failures: settled.failures,
   };
 }
 

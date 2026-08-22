@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from typing import Literal
 
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+
+
+QualityDecision = Literal["pass", "needs_optimization", "retry"]
 
 
 @dataclass(frozen=True)
@@ -41,7 +45,7 @@ class QualityReason:
 @dataclass(frozen=True)
 class QualityReport:
     score: int
-    decision: str
+    decision: QualityDecision
     allowed: bool
     reasons: tuple[QualityReason, ...]
     metrics: dict[str, float | bool | int]
@@ -62,7 +66,7 @@ def _admission_decision(
     metrics: dict[str, float | bool | int],
     reasons: list[QualityReason],
     thresholds: QualityThresholds,
-) -> tuple[str, bool]:
+) -> tuple[QualityDecision, bool]:
     """Separate a repairable cutout from output that contains no usable subject."""
     codes = {reason.code for reason in reasons}
     severe = bool(codes & {"SUBJECT_TOO_SMALL", "SUBJECT_TOO_LARGE"})

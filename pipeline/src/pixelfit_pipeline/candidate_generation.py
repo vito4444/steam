@@ -79,6 +79,36 @@ def _usable(mask: np.ndarray, min_ratio: float = 0.003) -> bool:
     return int(np.count_nonzero(mask)) >= max(1, int(np.ceil(mask.size * min_ratio)))
 
 
+def _intersection_over_union(left: np.ndarray, right: np.ndarray) -> float:
+    union = int(np.count_nonzero(left | right))
+    if union == 0:
+        return 0.0
+    return int(np.count_nonzero(left & right)) / union
+
+
+def _worn_bottom_score(
+    mask: np.ndarray,
+    subject: np.ndarray,
+    upper: np.ndarray,
+) -> float:
+    """Prefer substantial lower-body coverage without duplicating the upper layer."""
+    clipped = mask & subject
+    area = int(np.count_nonzero(clipped))
+    if not _usable(clipped):
+        return float("-inf")
+    bounds = _component_bounds(_largest_component(subject))
+    if bounds is None:
+        return float("-inf")
+    _, top, _, bottom = bounds
+    lower_start = int(round(top + (bottom - top) * 0.45))
+    lower_pixels = int(np.count_nonzero(clipped[lower_start:, :]))
+    lower_fraction = lower_pixels / max(1, area)
+    subject_area = max(1, int(np.count_nonzero(subject)))
+    usable_area = min(1.0, area / (subject_area * 0.30))
+    upper_overlap = _intersection_over_union(clipped, upper & subject)
+    return lower_fraction * 0.55 + usable_area * 0.35 - upper_overlap * 0.75
+
+
 def _flatlay_candidates(
     subject: np.ndarray,
     cloth: Mapping[str, np.ndarray],
@@ -180,14 +210,18 @@ def _worn_candidates(
 
     full = cloth.get("full", np.zeros_like(subject))
     lower = cloth.get("lower", np.zeros_like(subject))
-    bottom = full if _usable(full) else lower
-    if _usable(bottom):
+    bottom_options = [
+        (_worn_bottom_score(full, subject, upper), "full", full),
+        (_worn_bottom_score(lower, subject, upper), "lower", lower),
+    ]
+    bottom_score, bottom_source, bottom = max(bottom_options, key=lambda item: item[0])
+    if np.isfinite(bottom_score):
         candidates.append(
             CandidateMask(
                 "bottom",
                 "bottoms",
                 _mask_image(bottom),
-                "u2net-cloth:full" if bottom is full else "u2net-cloth:lower",
+                f"u2net-cloth:{bottom_source}",
                 "worn",
             )
         )

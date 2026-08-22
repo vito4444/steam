@@ -87,6 +87,31 @@ export interface PipelineCandidate {
   reasons: PipelineQualityReason[];
 }
 
+export async function settlePipelineCandidateImports<T>(
+  candidates: PipelineCandidate[],
+  importer: (candidate: PipelineCandidate) => Promise<T>,
+): Promise<{
+  assets: T[];
+  failures: string[];
+  reviewStates: PipelineCandidateState[];
+}> {
+  const assets: T[] = [];
+  const failures: string[] = [];
+  const reviewStates: PipelineCandidateState[] = [];
+  for (const candidate of candidates) {
+    if (!candidate.importFile) continue;
+    try {
+      assets.push(await importer(candidate));
+      reviewStates.push(candidate.state);
+    } catch (error) {
+      failures.push(
+        `${candidate.id}：${manualImportFailure(candidate.importFile, error).message}`,
+      );
+    }
+  }
+  return { assets, failures, reviewStates };
+}
+
 const PIPELINE_CATEGORY: Record<string, Category> = {
   'upper-body': 'top',
   bottoms: 'bottom',
@@ -109,9 +134,10 @@ function resolvePipelineFile(importRoot: string, relativeFile: string): string {
 }
 
 function candidateState(record: PipelineAssetRecord): PipelineCandidateState {
+  const admitted = record.admission?.allowed === true && Boolean(record.auto_file);
+  if (!admitted || record.review_state === 'retry') return 'retry';
   if (record.review_state === 'needs_optimization') return 'needs_optimization';
-  if (record.review_state === 'retry') return 'retry';
-  return record.admission?.allowed ? 'ready' : 'retry';
+  return 'ready';
 }
 
 /** Preserve inspectable previews while applying the same containment check to every path. */
@@ -123,7 +149,8 @@ export function collectPipelineCandidates(
     const preview = record.preview_file ?? record.auto_file ?? record.quarantine_file;
     if (!preview) return [];
     const file = resolvePipelineFile(importRoot, preview);
-    const importFile = record.admission?.allowed && record.auto_file
+    const state = candidateState(record);
+    const importFile = state !== 'retry' && record.auto_file
       ? resolvePipelineFile(importRoot, record.auto_file)
       : null;
     return [{
@@ -132,7 +159,7 @@ export function collectPipelineCandidates(
       file,
       importFile,
       importable: importFile !== null,
-      state: candidateState(record),
+      state,
       visibility: record.visibility ?? 'complete',
       score: record.admission?.score ?? record.quality?.score ?? 0,
       reasons: record.quality?.reasons ?? [],

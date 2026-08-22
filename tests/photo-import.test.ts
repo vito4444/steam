@@ -4,7 +4,42 @@ import { describe, expect, it } from 'vitest';
 
 import * as photoImport from '../src/main/photo-import';
 
-const { admittedPipelineAssets, collectPipelineCandidates, decideLinkImport } = photoImport;
+const {
+  admittedPipelineAssets,
+  collectPipelineCandidates,
+  decideLinkImport,
+  settlePipelineCandidateImports,
+} = photoImport;
+
+describe('pipeline candidate persistence', () => {
+  it('returns successful assets and sanitized failures when one candidate write fails', async () => {
+    const root = path.resolve('private', 'pipeline-import');
+    const candidates = [
+      {
+        id: 'upper', category: 'top', file: path.join(root, 'upper.png'),
+        importFile: path.join(root, 'upper.png'), importable: true,
+        state: 'ready', visibility: 'complete', score: 100, reasons: [],
+      },
+      {
+        id: 'lower', category: 'bottom', file: path.join(root, 'lower.png'),
+        importFile: path.join(root, 'lower.png'), importable: true,
+        state: 'needs_optimization', visibility: 'complete', score: 75, reasons: [],
+      },
+    ] as Parameters<typeof settlePipelineCandidateImports<string>>[0];
+
+    const result = await settlePipelineCandidateImports(candidates, async (candidate) => {
+      if (candidate.id === 'lower') throw new Error(`cannot persist ${candidate.importFile}`);
+      return candidate.id;
+    });
+
+    expect(result).toEqual({
+      assets: ['upper'],
+      failures: ['lower：cannot persist lower.png'],
+      reviewStates: ['ready'],
+    });
+    expect(JSON.stringify(result)).not.toContain(root);
+  });
+});
 
 describe('photo candidate renderer contract', () => {
   it('accepts only an explicit JSON list of absolute photo fixtures for shot mode', () => {
@@ -136,6 +171,37 @@ describe('collectPipelineCandidates', () => {
         score: 0,
         reasons: [],
       },
+    ]);
+  });
+
+  it('fails closed when admission metadata disagrees with the review state or output file', () => {
+    const root = path.resolve('tmp', 'candidate-incoherent');
+    const result = collectPipelineCandidates({
+      assets: [
+        {
+          asset_id: 'missing-auto',
+          category: 'upper-body',
+          preview_file: 'quarantine/missing-auto.png',
+          auto_file: null,
+          review_state: 'needs_optimization',
+          admission: { allowed: true, score: 75 },
+        },
+        {
+          asset_id: 'retry-with-auto',
+          category: 'bottoms',
+          preview_file: 'quarantine/retry-with-auto.png',
+          auto_file: 'assets/retry-with-auto.png',
+          review_state: 'retry',
+          admission: { allowed: true, score: 100 },
+        },
+      ],
+    }, root);
+
+    expect(result.map(({ id, importFile, importable, state }) => ({
+      id, importFile, importable, state,
+    }))).toEqual([
+      { id: 'missing-auto', importFile: null, importable: false, state: 'retry' },
+      { id: 'retry-with-auto', importFile: null, importable: false, state: 'retry' },
     ]);
   });
 

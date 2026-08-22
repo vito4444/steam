@@ -89,6 +89,19 @@ def test_worn_scene_maps_outer_layer_skirt_and_partial_shoes() -> None:
     assert candidates[-1].mask.getbbox() == (27, 140, 73, 159)
 
 
+def test_worn_scene_prefers_lower_mask_when_full_duplicates_outerwear() -> None:
+    """A usable but upper-body full channel must not be mislabeled as bottoms."""
+    subject, garment_masks = _worn_masks()
+    garment_masks["full"] = _mask(subject.size, [(27, 28, 72, 82)])
+    garment_masks["lower"] = _mask(subject.size, [(34, 84, 65, 119)])
+
+    candidates = generate_candidates(subject, garment_masks)
+
+    bottom = next(candidate for candidate in candidates if candidate.asset_id == "bottom")
+    assert bottom.source == "u2net-cloth:lower"
+    assert bottom.mask.getbbox() == (34, 84, 66, 120)
+
+
 def test_analyze_image_preserves_every_candidate_preview_and_provenance(tmp_path) -> None:
     """Regression: pipeline orchestration must not collapse generated instances to U2Net names."""
     subject, garment_masks = _flatlay_masks()

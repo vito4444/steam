@@ -36,7 +36,8 @@ const formatValue = (value: number | boolean) =>
 export function candidateReasonLine(reason: PhotoImportQualityReason): string {
   const label = REASON_LABEL[reason.code] ?? reason.metric;
   if (typeof reason.value === 'boolean' || typeof reason.threshold === 'boolean') {
-    return `${label}：实测 ${formatValue(reason.value)}，要求 ${formatValue(reason.threshold)}`;
+    const difference = reason.value === reason.threshold ? '无' : '不匹配';
+    return `${label}：实测 ${formatValue(reason.value)}，要求 ${formatValue(reason.threshold)}，差异 ${difference}`;
   }
   const lowerBound = LOWER_BOUND_REASONS.has(reason.code);
   const operator = lowerBound ? '≥' : '≤';
