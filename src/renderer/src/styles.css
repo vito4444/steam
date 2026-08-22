@@ -2382,6 +2382,13 @@ input[type='range']::-webkit-slider-thumb:active {
   flex-direction: column;
   gap: 6px;
 }
+/*
+ * 弹窗里的 .modal 自带 gap，卡片里没有 —— 不补这一下，模型资源包的进度条会贴上
+ * 上面那行文件清单，看起来像画在文字上。
+ */
+.info-card .update-progress {
+  margin-top: var(--sp-3);
+}
 .update-bar {
   height: 6px;
   border-radius: 999px;

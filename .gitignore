@@ -47,3 +47,4 @@ __pycache__/
 # CERE-59 更新流程取证用的临时 profile 与产物，都是可重新生成的。
 .smoke/
 evidence/cere59/
+.pipeline-check/
