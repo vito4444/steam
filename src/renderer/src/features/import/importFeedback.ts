@@ -41,6 +41,17 @@ export const photoFeedback = (result: PhotoImportResult | unknown): ImportFeedba
   if (photo.canceled) {
     return { tone: 'warning', message: '已取消导入。', repair: false, canOpenWardrobe: false };
   }
+  const needsOptimization = photo.needsOptimization
+    ?? photo.candidates?.filter((candidate) => candidate.state === 'needs_optimization').length
+    ?? 0;
+  if (photo.imported > 0 && photo.rejected === 0 && needsOptimization > 0 && !photo.message) {
+    return {
+      tone: 'warning',
+      message: `已入库 ${photo.imported} 件，其中 ${needsOptimization} 件标记为待优化；可以在下方查看每项指标。`,
+      repair: false,
+      canOpenWardrobe: true,
+    };
+  }
   if (photo.imported > 0 && photo.rejected === 0 && !photo.message) {
     return {
       tone: 'success',
@@ -53,6 +64,8 @@ export const photoFeedback = (result: PhotoImportResult | unknown): ImportFeedba
     const message = withPhotoRepair(
       photo.rejected > 0
         ? `已导入 ${photo.imported} 件；${photo.rejected} 个候选未通过质量门`
+        : needsOptimization > 0
+          ? `已入库 ${photo.imported} 件，其中 ${needsOptimization} 件标记为待优化`
         : `已导入 ${photo.imported} 件到衣橱`,
       photo.message,
     );

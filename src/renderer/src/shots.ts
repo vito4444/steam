@@ -74,6 +74,18 @@ function filterWardrobeForImportEvidence(): void {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+function filterWardrobeForCere53Evidence(): void {
+  const input = document.querySelector<HTMLInputElement>('.wardrobe .search input');
+  if (!input) return;
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  valueSetter?.call(input, '照片识别');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function importedCere53Assets() {
+  return latest?.assets.filter((asset) => !asset.source.demo && asset.tags.includes('照片识别')) ?? [];
+}
+
 /** AI 预览和画板不依赖某一版素材包的固定 id，按品类挑第一件。 */
 async function wearOnePer(categories: Category[]): Promise<void> {
   const s = latest;
@@ -131,6 +143,88 @@ const SCENES: Record<string, () => Promise<void>> = {
       .find((element) => element.textContent?.includes('导入素材'));
     assertCheck('已完成 onboarding 后导入流程可见', !!heading);
     assertCheck('稳定导入流程不再显示首次引导', !document.querySelector('[data-testid="first-run-guide"]'));
+  },
+
+  async 'cere53-candidates-top'() {
+    latest?.setView('import');
+    await wait(300);
+    const cta = buttonWithText('选择照片并自动识别');
+    assertCheck('CERE-53 自动识别入口可用', !!cta && !cta.disabled);
+    cta?.click();
+    const completed = await waitUntil(
+      () => document.querySelectorAll('[data-testid="candidate-review"] .candidate-card').length === 7,
+      1800,
+    );
+    assertCheck('两张原图共展示 7 个候选', completed, `${document.querySelectorAll('.candidate-card').length} 个`);
+    const images = [...document.querySelectorAll<HTMLImageElement>('.candidate-card img')];
+    const decoded = await Promise.all(images.map((image) => (
+      image.complete && image.naturalWidth > 0
+        ? Promise.resolve(true)
+        : image.decode().then(() => true, () => false)
+    )));
+    assertCheck('7 个候选缩略图均可解码', images.length === 7 && decoded.every(Boolean));
+    const reports = [...document.querySelectorAll('.candidate-report')];
+    assertCheck(
+      '每个候选展示分数和逐项质量结果',
+      reports.length === 7 && reports.every((report) => (
+        !!report.querySelector('.candidate-score')
+        && !!report.querySelector('li, .candidate-pass-note')
+      )),
+    );
+    const body = document.querySelector<HTMLElement>('.body');
+    body?.scrollTo({ top: 0, behavior: 'auto' });
+    await wait(500);
+  },
+
+  async 'cere53-candidates-bottom'() {
+    const body = document.querySelector<HTMLElement>('.body');
+    assertCheck('候选质检结果在第二屏继续可见', !!document.querySelector('[data-testid="candidate-review"]'));
+    body?.scrollTo({ top: body.scrollHeight, behavior: 'auto' });
+    await wait(500);
+  },
+
+  async 'cere53-wardrobe'() {
+    const s = latest;
+    if (!s) return;
+    s.setView('wardrobe');
+    s.setStageTab('try');
+    s.dispatch({ type: 'clear' });
+    await wait(250);
+    filterWardrobeForCere53Evidence();
+    await wait(500);
+    const imported = importedCere53Assets();
+    const cards = document.querySelectorAll('.wardrobe .card');
+    assertCheck('CERE-53 的 7 件真实照片素材全部入库', imported.length === 7, `实际 ${imported.length} 件`);
+    assertCheck('衣橱过滤后展示 7 件导入素材', cards.length === 7, `实际 ${cards.length} 件`);
+    assertCheck(
+      '待优化状态保留到衣橱卡片',
+      document.querySelectorAll('.wardrobe .review-badge').length === 5,
+      `实际 ${document.querySelectorAll('.wardrobe .review-badge').length} 件`,
+    );
+  },
+
+  async 'cere53-worn'() {
+    const s = latest;
+    if (!s) return;
+    s.setView('wardrobe');
+    s.setStageTab('try');
+    s.dispatch({ type: 'clear' });
+    await wait(150);
+    const imported = importedCere53Assets();
+    const categories: Category[] = ['top', 'bottom', 'outer', 'shoe', 'bag'];
+    for (const category of categories) {
+      const asset = imported.find((candidate) => candidate.category === category);
+      if (asset) s.wear(asset);
+      await wait(100);
+    }
+    const worn = Object.values(latest?.outfit.slots ?? {}).filter(Boolean).length;
+    assertCheck('真实照片的上装/下装/外套/鞋/包已穿到模特', worn >= 5, `实际 ${worn} 个槽位`);
+    assertCheck(
+      '衣橱卡片同步标出穿着中',
+      document.querySelectorAll('.wardrobe .card .badge').length >= 5,
+      `实际 ${document.querySelectorAll('.wardrobe .card .badge').length} 件`,
+    );
+    await wait(700);
   },
 
   async 'imported-wardrobe'() {

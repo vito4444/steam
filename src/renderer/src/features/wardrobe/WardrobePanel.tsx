@@ -214,6 +214,9 @@ export function WardrobePanel() {
                 <img src={a.thumbUrl} alt="" draggable={false} />
                 {wornIds.has(a.id) && <span className="badge">穿着中</span>}
                 {a.source.demo && <span className="demo-badge">示例</span>}
+                {a.review_status === 'needs_optimization' && (
+                  <span className="review-badge">待优化</span>
+                )}
                 <span
                   role="button"
                   tabIndex={-1}

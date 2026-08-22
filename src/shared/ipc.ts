@@ -4,7 +4,7 @@
  */
 
 import type { Asset, AssetMeta, BaseBodySet, LibraryStats, Look, LookRecord } from './types';
-import type { BodyType } from './spec';
+import type { BodyType, Category } from './spec';
 import type {
   TryOnGenerateRequest,
   TryOnGenerateResult,
@@ -45,10 +45,30 @@ export interface PipelineStatus {
 
 export interface PhotoImportResult {
   imported: number;
+  needsOptimization: number;
   rejected: number;
   assets: Asset[];
+  candidates: PhotoImportCandidate[];
   canceled?: boolean;
   message?: string;
+}
+
+export interface PhotoImportQualityReason {
+  code: string;
+  metric: string;
+  value: number | boolean;
+  threshold: number | boolean;
+  message: string;
+}
+
+export interface PhotoImportCandidate {
+  id: string;
+  category: Category;
+  previewUrl: string;
+  state: 'ready' | 'needs_optimization' | 'retry';
+  visibility: 'complete' | 'partial';
+  score: number;
+  reasons: PhotoImportQualityReason[];
 }
 
 export interface ManualImportFailure {

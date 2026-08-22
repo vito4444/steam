@@ -1,8 +1,8 @@
 # PixelFit 照片→衣橱素材管线
 
-这是 PixelFit 的 Windows / CPU-only 照片衣物素材管线。CERE-12 在 CERE-5 的分割与手动修补基础上加入 PyMatting 闭式 alpha matting、连通域清理、小孔修复、半透明边缘去色边，以及 **fail-closed** 质量准入。输出保持原图分辨率、颜色、纹理和款式；不会像素化、量化颜色或缩小后伪造细节。
+这是 PixelFit 的 Windows / CPU-only 照片衣物素材管线。CERE-12 在 CERE-5 的分割与手动修补基础上加入 PyMatting 闭式 alpha matting、连通域清理、小孔修复和半透明边缘去色边；CERE-53 在同一套锁定模型上加入平铺/着装场景分件和三档质量准入。输出保持原图分辨率、颜色、纹理和款式；不会像素化、量化颜色或缩小后伪造细节。
 
-自动结果只有在 `admission.allowed=true` 时才会写入 `assets/`。不合格结果进入 `quarantine/`，并返回稳定的失败原因供 CERE-10 提示用户手动修补或丢弃；严重漏分不会被平滑算法冒充为合格素材。
+质量结果分为 `pass`、`needs_optimization` 和 `retry`。前两档写入 `assets/`，其中有瑕疵但主体可用的候选保留 `needs_optimization` 标记；只有近乎空白、异常占满或主体缺失过半的结果进入 `quarantine/`。每档都返回安全的 `preview_file`、逐项指标、门槛和失败原因，严重漏分不会被平滑算法冒充为合格素材。
 
 ## 组件边界
 

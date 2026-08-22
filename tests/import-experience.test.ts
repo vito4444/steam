@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { completeOnboarding, onboardingPending, ONBOARDING_KEY } from '../src/renderer/src/features/import/onboarding';
 import * as importFeedback from '../src/renderer/src/features/import/importFeedback';
+import * as candidateReview from '../src/renderer/src/features/import/candidateReview';
 
 const { errorMessage, linkFeedback, photoFeedback } = importFeedback;
+const { candidateReasonLine, candidateStateLabel, summarizeCandidates } = candidateReview;
 
 type ManualOutcome =
   | {
@@ -54,6 +56,37 @@ describe('import-first onboarding', () => {
 });
 
 describe('photo import feedback', () => {
+  it('keeps optimization candidates in the wardrobe without calling them rejected', () => {
+    expect(photoFeedback({
+      imported: 3,
+      needsOptimization: 2,
+      rejected: 0,
+      assets: [],
+      candidates: [],
+    })).toEqual({
+      tone: 'warning',
+      message: '已入库 3 件，其中 2 件标记为待优化；可以在下方查看每项指标。',
+      repair: false,
+      canOpenWardrobe: true,
+    });
+  });
+
+  it('does not hide a photo-level failure behind optimization success', () => {
+    expect(photoFeedback({
+      imported: 3,
+      needsOptimization: 2,
+      rejected: 0,
+      assets: [],
+      candidates: [],
+      message: 'streetshot.png：图片损坏',
+    })).toEqual({
+      tone: 'warning',
+      message: '已入库 3 件，其中 2 件标记为待优化。streetshot.png：图片损坏。没通过的没有入库；可以换一张再试，或用页面下方的透明底入口。',
+      repair: true,
+      canOpenWardrobe: true,
+    });
+  });
+
   it('opens the wardrobe after a successful photo import', () => {
     expect(photoFeedback({ imported: 2, rejected: 0, assets: [] })).toEqual({
       tone: 'success', message: '已导入 2 件到衣橱。', repair: false, canOpenWardrobe: true,
@@ -105,6 +138,43 @@ describe('photo import feedback', () => {
       repair: true,
       canOpenWardrobe: true,
     });
+  });
+});
+
+describe('candidate quality details', () => {
+  it('states the measured value, threshold, and exact excess', () => {
+    expect(candidateReasonLine({
+      code: 'MASK_STRUCTURE_UNRELIABLE',
+      metric: 'input_contour_roughness',
+      value: 0.24,
+      threshold: 0.05,
+      message: 'input mask has structural bites',
+    })).toBe('边缘结构：实测 0.240，门槛 ≤ 0.050，超出 0.190');
+  });
+
+  it('states an explicit difference for boolean quality failures', () => {
+    expect(candidateReasonLine({
+      code: 'SUBJECT_TRUNCATED',
+      metric: 'border_contact',
+      value: true,
+      threshold: false,
+      message: 'subject touches the frame',
+    })).toBe('画面边界：实测 是，要求 否，差异 不匹配');
+  });
+
+  it('summarizes all three states without hiding retry candidates', () => {
+    const candidates = [
+      { state: 'ready' },
+      { state: 'needs_optimization' },
+      { state: 'retry' },
+    ] as Parameters<typeof summarizeCandidates>[0];
+
+    expect(candidateStateLabel('ready')).toBe('合格 · 已入库');
+    expect(candidateStateLabel('needs_optimization')).toBe('待优化 · 已入库');
+    expect(candidateStateLabel('retry')).toBe('严重失败 · 需重试');
+    expect(summarizeCandidates(candidates)).toBe(
+      '3 个候选：1 件合格，1 件待优化，1 件需重试',
+    );
   });
 });
 
