@@ -4,7 +4,141 @@ import { describe, expect, it } from 'vitest';
 
 import * as photoImport from '../src/main/photo-import';
 
-const { admittedPipelineAssets, decideLinkImport } = photoImport;
+const { admittedPipelineAssets, collectPipelineCandidates, decideLinkImport } = photoImport;
+
+describe('photo candidate renderer contract', () => {
+  it('maps a safe internal candidate to a renderer preview without exposing its path', () => {
+    const toPhotoImportCandidate = (photoImport as unknown as {
+      toPhotoImportCandidate?: (
+        candidate: {
+          id: string;
+          category: 'top';
+          file: string;
+          state: 'needs_optimization';
+          visibility: 'partial';
+          score: number;
+          reasons: [];
+        },
+        toUrl: (file: string) => string,
+      ) => unknown;
+    }).toPhotoImportCandidate;
+    expect(toPhotoImportCandidate).toBeTypeOf('function');
+
+    const internalPath = path.resolve('private', 'upper.png');
+    const result = toPhotoImportCandidate?.({
+      id: 'upper',
+      category: 'top',
+      file: internalPath,
+      state: 'needs_optimization',
+      visibility: 'partial',
+      score: 75,
+      reasons: [],
+    }, () => 'pf://candidate/upper.png');
+
+    expect(result).toEqual({
+      id: 'upper',
+      category: 'top',
+      previewUrl: 'pf://candidate/upper.png',
+      state: 'needs_optimization',
+      visibility: 'partial',
+      score: 75,
+      reasons: [],
+    });
+    expect(JSON.stringify(result)).not.toContain(internalPath);
+  });
+
+  it('persists an explicit optimization tag only for affected automatic imports', () => {
+    const automaticImportTags = (photoImport as unknown as {
+      automaticImportTags?: (state: 'ready' | 'needs_optimization') => string[];
+    }).automaticImportTags;
+    expect(automaticImportTags).toBeTypeOf('function');
+    expect(automaticImportTags?.('ready')).toEqual(['照片识别']);
+    expect(automaticImportTags?.('needs_optimization')).toEqual(['照片识别', '待优化']);
+  });
+});
+
+describe('collectPipelineCandidates', () => {
+  it('keeps an optimization candidate importable and a retry candidate inspectable', () => {
+    const root = path.resolve('tmp', 'candidate-import');
+    const result = collectPipelineCandidates({
+      assets: [
+        {
+          asset_id: 'upper',
+          category: 'upper-body',
+          preview_file: 'assets/upper-auto.png',
+          auto_file: 'assets/upper-auto.png',
+          review_state: 'needs_optimization',
+          visibility: 'complete',
+          admission: { allowed: true, score: 75 },
+          quality: {
+            reasons: [{
+              code: 'MASK_STRUCTURE_UNRELIABLE',
+              metric: 'input_contour_roughness',
+              value: 0.24,
+              threshold: 0.05,
+              message: 'input mask has structural bites',
+            }],
+          },
+        },
+        {
+          asset_id: 'lower',
+          category: 'bottoms',
+          preview_file: 'quarantine/lower-candidate.png',
+          auto_file: null,
+          review_state: 'retry',
+          visibility: 'partial',
+          admission: { allowed: false, score: 0 },
+          quality: { reasons: [] },
+        },
+      ],
+    }, root);
+
+    expect(result).toEqual([
+      {
+        id: 'upper',
+        category: 'top',
+        file: path.join(root, 'assets', 'upper-auto.png'),
+        importFile: path.join(root, 'assets', 'upper-auto.png'),
+        importable: true,
+        state: 'needs_optimization',
+        visibility: 'complete',
+        score: 75,
+        reasons: [{
+          code: 'MASK_STRUCTURE_UNRELIABLE',
+          metric: 'input_contour_roughness',
+          value: 0.24,
+          threshold: 0.05,
+          message: 'input mask has structural bites',
+        }],
+      },
+      {
+        id: 'lower',
+        category: 'bottom',
+        file: path.join(root, 'quarantine', 'lower-candidate.png'),
+        importFile: null,
+        importable: false,
+        state: 'retry',
+        visibility: 'partial',
+        score: 0,
+        reasons: [],
+      },
+    ]);
+  });
+
+  it('rejects a retry preview that escapes the pipeline import directory', () => {
+    const root = path.resolve('tmp', 'candidate-escape');
+    expect(() => collectPipelineCandidates({
+      assets: [{
+        asset_id: 'lower',
+        category: 'bottoms',
+        preview_file: '../private.png',
+        auto_file: null,
+        review_state: 'retry',
+        admission: { allowed: false, score: 0 },
+      }],
+    }, root)).toThrow(/escapes/i);
+  });
+});
 
 describe('admittedPipelineAssets', () => {
   it('imports only explicitly admitted outputs and maps CERE-12 categories', () => {

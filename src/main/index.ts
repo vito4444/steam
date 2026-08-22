@@ -7,7 +7,14 @@ import { pathToFileURL } from 'node:url';
 import { Store, newId, toAppUrl, fromAppUrl } from './storage';
 import { assetsDir, baseAssetsDir } from './assets';
 import { analyzePhoto, cutoutSubject, pipelineStatus } from './pipeline';
-import { admittedPipelineAssets, decideLinkImport, manualImportFailure } from './photo-import';
+import {
+  automaticImportTags,
+  collectPipelineCandidates,
+  decideLinkImport,
+  manualImportFailure,
+  toPhotoImportCandidate,
+  type PipelineCandidate,
+} from './photo-import';
 import { importBasePhoto, readSilhouette, resetBasePhoto } from './base-import';
 import { importFromLink } from './link-import/index.js';
 import { importPack } from './pack';
@@ -236,14 +243,28 @@ function registerIpc(): void {
       filters: [{ name: '照片', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
       properties: ['openFile', 'multiSelections'],
     });
-    if (res.canceled) return { imported: 0, rejected: 0, assets: [], canceled: true };
+    if (res.canceled) {
+      return {
+        imported: 0,
+        needsOptimization: 0,
+        rejected: 0,
+        assets: [],
+        candidates: [],
+        canceled: true,
+      };
+    }
     const assets: Asset[] = [];
+    const candidates: ReturnType<typeof toPhotoImportCandidate>[] = [];
+    let needsOptimization = 0;
     let rejected = 0;
     const failures: string[] = [];
     for (const file of res.filePaths) {
       try {
         const imported = await importAnalyzedPhoto(file);
         assets.push(...imported.assets.map(toAsset));
+        candidates.push(...imported.candidates.map((candidate) =>
+          toPhotoImportCandidate(candidate, toAppUrl)));
+        needsOptimization += imported.needsOptimization;
         rejected += imported.rejected;
       } catch (error) {
         failures.push(`${path.basename(file)}：${error instanceof Error ? error.message : String(error)}`);
@@ -251,8 +272,10 @@ function registerIpc(): void {
     }
     return {
       imported: assets.length,
+      needsOptimization,
       rejected,
       assets,
+      candidates,
       message: failures.length ? failures.join('\n') : undefined,
     };
   });
@@ -377,20 +400,30 @@ interface ImportOneOptions {
   photoId?: string;
   originalFile?: string;
   provenanceModel?: string;
+  reviewStatus?: 'ready' | 'needs_optimization';
   requireTransparency?: boolean;
 }
 
 async function importAnalyzedPhoto(
   file: string,
   context: Pick<ImportOneOptions, 'name' | 'commerce'> = {},
-): Promise<{ assets: AssetMeta[]; rejected: number }> {
+): Promise<{
+  assets: AssetMeta[];
+  candidates: PipelineCandidate[];
+  rejected: number;
+  needsOptimization: number;
+}> {
   const importId = `import-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const outputDir = path.join(store.root, 'pipeline-imports');
   const metadata = await analyzePhoto(file, outputDir, importId);
-  const approved = admittedPipelineAssets(metadata, path.join(outputDir, importId));
+  const candidates = collectPipelineCandidates(metadata, path.join(outputDir, importId));
   const assets: AssetMeta[] = [];
-  for (const candidate of approved) {
-    assets.push(await importOne(candidate.file, {
+  for (const candidate of candidates) {
+    if (!candidate.importFile) continue;
+    const reviewStatus = candidate.state === 'needs_optimization'
+      ? 'needs_optimization'
+      : 'ready';
+    assets.push(await importOne(candidate.importFile, {
       category: candidate.category,
       name: context.name
         ? `${context.name} · ${CATEGORY_LABEL[candidate.category]}`
@@ -399,10 +432,18 @@ async function importAnalyzedPhoto(
       photoId: importId,
       originalFile: file,
       provenanceModel: 'cere12-cpu-pipeline',
+      reviewStatus,
       requireTransparency: true,
     }));
   }
-  return { assets, rejected: Math.max((metadata.assets ?? []).length - approved.length, 0) };
+  return {
+    assets,
+    candidates,
+    rejected: candidates.filter((candidate) => candidate.state === 'retry').length,
+    needsOptimization: candidates.filter(
+      (candidate) => candidate.state === 'needs_optimization',
+    ).length,
+  };
 }
 
 async function importOne(file: string, options: ImportOneOptions = {}): Promise<AssetMeta> {
@@ -457,7 +498,12 @@ async function importOne(file: string, options: ImportOneOptions = {}): Promise<
     fit: { scale: 1, dx: 0, dy: 0, stretch_x: 1 },
     palette: { dominant: '#8A8A90', color_family: 'multi', colors: [{ hex: '#8A8A90', ratio: 1, role: 'mid' }] },
     attributes: {},
-    tags: [options.provenanceModel ? '照片识别' : '手动导入'],
+    tags: options.provenanceModel
+      ? automaticImportTags(options.reviewStatus ?? 'ready')
+      : ['手动导入'],
+    ...(options.provenanceModel
+      ? { review_status: options.reviewStatus ?? 'ready' }
+      : {}),
     season: [],
     source: {
       origin: options.commerce ? 'link' : options.photoId ? 'photo' : 'manual',
