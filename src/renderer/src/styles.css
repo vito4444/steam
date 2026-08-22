@@ -2370,6 +2370,8 @@ input[type='range']::-webkit-slider-thumb:active {
   max-height: 190px;
   overflow-y: auto;
   white-space: pre-wrap;
+  /* Release 正文里的表格转成纯文本后会很长，让它折行而不是横向滚动。 */
+  overflow-wrap: anywhere;
   font-size: 12.5px;
   line-height: 1.7;
   color: var(--text-2);

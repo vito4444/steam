@@ -12,8 +12,15 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ModelPackState, UpdateState } from '@shared/update';
 import { IconDownload, IconRefresh } from '@/ui/icons';
 
+/**
+ * 只有**真的不知道**才写「未知大小」。
+ *
+ * 之前 `0` 也走这一支，于是差分下载刚开始那一瞬间，进度那行显示成
+ * 「未知大小 / 184.2 MB（0%）」—— 已传 0 字节是确定的事实，不是未知。
+ * latest.yml 里没写包大小时才是真未知，那种情况传 null。
+ */
 function mb(bytes: number | null | undefined): string {
-  if (!bytes || bytes <= 0) return '未知大小';
+  if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return '未知大小';
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
